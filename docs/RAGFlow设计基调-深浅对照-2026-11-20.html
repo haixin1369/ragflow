@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAGFlow 设计基调 · 深色 / 浅色对照 · 2026-11-20</title>
+<!-- 中文字体：思源黑体（Noto Sans SC），SIL Open Font License 1.1，免费商用、可自由嵌入。
+     内网/离线环境可将下方 CDN 替换为镜像域名（如 fonts.loli.net），或直接安装本地字体；
+     未加载成功时自动退回 MiSans / HarmonyOS Sans / 系统默认无衬线，全部为可免费商用字体。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* 主题作用域：同一组语义变量，两套取值 */
+.t-dark{
+  --slidebg:#090c12;--slideline:#141b26;
+  --line:#1f2937;--line2:#2b3648;
+  --ink:#e9eef7;--ink2:#a7b2c5;--mut:#68758a;
+  --acc:#6e7bff;--acc2:#2dd4bf;--accsoft:rgba(110,123,255,.14);
+  --ok:#3ddc97;--bad:#f87171;--field:#0e1420;
+  --cardbg:#121926;--cardsh:none;
+  --btnbg:#161d2a;--btnsh:none;
+  --chipbg:#131a27;--queuebg:#161d2a;
+  --tokbg:#0e141e;
+  --notebg:#0e141e;--notesh:none;
+  --swbg:#2b3549;--swknob:#8ea0bb;--swknobsh:none;
+  --dash:#1c2431;
+  --okbg:rgba(61,220,151,.1);--okline:rgba(61,220,151,.4);
+  --runbg:rgba(110,123,255,.12);--runline:rgba(110,123,255,.45);--runink:#a7b1ff;
+  --badbg:rgba(248,113,113,.1);--badline:rgba(248,113,113,.4);--dngline:rgba(248,113,113,.4);
+}
+.t-light{
+  --slidebg:#f7f9fc;--slideline:#dde3ed;
+  --line:#e4e9f1;--line2:#cfd8e6;
+  --ink:#1b2437;--ink2:#46536d;--mut:#8590a6;
+  --acc:#4c5fe4;--acc2:#0f9d8f;--accsoft:rgba(76,95,228,.09);
+  --ok:#17945c;--bad:#d64545;--field:#f7f9fd;
+  --cardbg:#ffffff;--cardsh:0 1px 3px rgba(28,39,64,.05);
+  --btnbg:#ffffff;--btnsh:0 1px 2px rgba(28,39,64,.05);
+  --chipbg:#f7f9fd;--queuebg:#f0f3f9;
+  --tokbg:#f6f8fc;
+  --notebg:#ffffff;--notesh:0 1px 3px rgba(28,39,64,.05);
+  --swbg:#c3cede;--swknob:#ffffff;--swknobsh:0 1px 2px rgba(28,39,64,.3);
+  --dash:#e6ebf3;
+  --okbg:rgba(23,148,92,.08);--okline:rgba(23,148,92,.3);
+  --runbg:rgba(76,95,228,.08);--runline:rgba(76,95,228,.3);--runink:#3a4ec2;
+  --badbg:rgba(214,69,69,.07);--badline:rgba(214,69,69,.3);--dngline:rgba(214,69,69,.35);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:#eef1f6;font-family:"Noto Sans SC","Noto Sans CJK SC","Source Han Sans SC","Source Han Sans CN","思源黑体","MiSans","HarmonyOS Sans SC",sans-serif;-webkit-font-smoothing:antialiased}
+.slide{min-height:100vh;padding:42px 56px 52px;display:flex;flex-direction:column;gap:16px;border-bottom:1px solid var(--slideline);background:var(--slidebg);color:var(--ink)}
+.top{display:flex;align-items:center;gap:12px}
+.kick{font-size:12px;letter-spacing:.16em;color:var(--mut);font-weight:700;display:flex;align-items:center;gap:8px}
+.kick::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--acc)}
+.pgn{margin-left:auto;font-size:12px;color:var(--mut);font-weight:700;letter-spacing:.12em}
+h1.t{font-size:27px;font-weight:800;letter-spacing:.01em}
+h1.t em{font-style:normal;color:var(--acc)}
+.sub{font-size:14.2px;color:var(--ink2);line-height:1.7;max-width:1050px;border-left:3px solid var(--acc);padding:2px 0 2px 12px}
+.wrap{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(330px,1fr);gap:18px;align-items:start}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:8px;font-size:12.3px;border:1px solid var(--line2);color:var(--ink2);background:var(--btnbg);box-shadow:var(--btnsh);font-weight:600;white-space:nowrap}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.dng{color:var(--bad);border-color:var(--dngline)}
+.inp{background:var(--field);border:1px solid var(--line2);border-radius:8px;padding:5px 10px;font-size:12.3px;color:var(--mut)}
+.card{background:var(--cardbg);border:1px solid var(--line);border-radius:12px;padding:12px 13px;box-shadow:var(--cardsh)}
+.sw{width:26px;height:15px;border-radius:999px;background:var(--swbg);position:relative;display:inline-block;flex:0 0 auto}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--swknob);box-shadow:var(--swknobsh)}
+.sw.on{background:var(--acc)}
+.sw.on::after{left:auto;right:2px;background:#fff}
+.nb{display:inline-flex;min-width:16px;height:16px;border-radius:999px;background:var(--acc);color:#fff;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 4px;margin-left:6px;vertical-align:1px}
+.tag{font-size:10.8px;padding:1px 8px;border-radius:999px;border:1px solid;font-weight:700;white-space:nowrap}
+.tag.ok{background:var(--okbg);border-color:var(--okline);color:var(--ok)}
+.tag.run{background:var(--runbg);border-color:var(--runline);color:var(--runink)}
+.tag.bad{background:var(--badbg);border-color:var(--badline);color:var(--bad)}
+.tag.queue{background:var(--queuebg);border-color:var(--line2);color:var(--mut)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;border:1px solid var(--line2);font-size:11.8px;color:var(--ink2);background:var(--chipbg);font-weight:600;white-space:nowrap}
+.note{background:var(--notebg);border:1px solid var(--line);border-radius:14px;padding:15px 17px;box-shadow:var(--notesh)}
+.note h3{font-size:14.8px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.note h3::before{content:"";width:4px;height:14px;border-radius:2px;background:var(--acc2)}
+.ni{display:flex;gap:10px;padding:9px 0;border-bottom:1px dashed var(--dash);font-size:13.4px;line-height:1.62;color:var(--ink2)}
+.ni:last-child{border-bottom:none}
+.ni .n{flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:var(--acc);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.ni b{color:var(--ink)}
+.fl{font-size:12px;color:var(--mut);font-weight:700;letter-spacing:.04em;margin-bottom:5px}
+.swatch{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.swatch div{border-radius:10px 10px 6px 6px;border:1px solid var(--line2);position:relative}
+.swatch span{position:absolute;left:0;right:0;bottom:-20px;text-align:center;font-size:10.5px;color:var(--mut)}
+.tok{display:flex;gap:14px;flex-wrap:wrap}
+.tok .tk{background:var(--tokbg);border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:12.4px;color:var(--ink2);line-height:1.7}
+.tok .tk b{color:var(--ink)}
+.sep{height:1px;background:var(--line);margin:4px 0}
+@media (max-width:1100px){.wrap{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- 深色主题 · 设计基调 -->
+<section class="slide t-dark">
+  <div class="top"><span class="kick">设计系统 · STYLE TOKENS</span><span class="pgn">深色主题版</span></div>
+  <h1 class="t">设计基调：<em>暗色石墨 + 靛蓝</em>，一套可落地的设计变量</h1>
+  <p class="sub">延续现网的暗色使用习惯并重新设计层级：深石墨底色承载界面，靛蓝作为唯一强调色（主操作 / 选中 / 徽标），青色仅用于增长类指标。圆角 8–14px、1px 描边分层、中文正文 13–14px。</p>
+  <div class="wrap" style="margin-top:4px">
+    <div>
+      <div class="card">
+        <div class="fl">色板 · COLOR</div>
+        <div class="swatch" style="padding-bottom:24px">
+          <div style="width:92px;height:56px;background:#090c12"><span>背景 #090C12<span class="nb">1</span></span></div>
+          <div style="width:92px;height:56px;background:#121826"><span>面板 #121826</span></div>
+          <div style="width:92px;height:56px;background:#1f2937"><span>描边 #1F2937<span class="nb">3</span></span></div>
+          <div style="width:92px;height:56px;background:#6e7bff"><span>主色 #6E7BFF<span class="nb">2</span></span></div>
+          <div style="width:92px;height:56px;background:#2dd4bf"><span>辅色 #2DD4BF</span></div>
+          <div style="width:92px;height:56px;background:#f2b544"><span>警示 #F2B544</span></div>
+          <div style="width:92px;height:56px;background:#f87171"><span>危险 #F87171</span></div>
+        </div>
+        <div class="sep" style="margin:14px 0 10px"></div>
+        <div class="fl">组件形态 · 基样</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span class="btn pri">主按钮</span><span class="btn">次按钮</span><span class="btn dng">删除</span>
+          <span class="inp">输入框 placeholder</span>
+          <span class="chip">筛选标签</span>
+          <span class="sw on"></span><span class="sw"></span>
+          <span class="tag ok">成功</span><span class="tag run">解析中</span><span class="tag bad">失败</span><span class="tag queue">排队中</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="fl">排版与密度<span class="nb">5</span></div>
+        <div class="tok">
+          <div class="tk"><b>标题 27px / 800</b><br>屏内大标题，页面唯一</div>
+          <div class="tk"><b>正文 13–14px / 400–600</b><br>表格 12.3px，高密度可读</div>
+          <div class="tk"><b>说明 11.5px / 次灰</b><br>时间戳、计数、辅助提示</div>
+          <div class="tk"><b>圆角 8 / 12 / 14px<span class="nb">4</span></b><br>按钮 8 · 卡片 12 · 容器 14</div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <h3>样式说明</h3>
+      <div class="ni"><span class="n">1</span><div><b>暗色优先：</b>与现网一致默认深色，浅色主题作为可切换项保留，两套共用同一组变量。</div></div>
+      <div class="ni"><span class="n">2</span><div><b>单强调色纪律：</b>靛蓝只给「可点击的下一步」；状态一律用语义色（成功 / 运行 / 失败 / 排队）。</div></div>
+      <div class="ni"><span class="n">3</span><div><b>描边分层：</b>面板之间用 1px 描边区分层级，不用重阴影；弹层与抽屉才允许投影。</div></div>
+      <div class="ni"><span class="n">4</span><div><b>数字字体等宽：</b>分块数 / 大小 / Token 等数字列使用等宽数字，便于纵向对齐。</div></div>
+      <div class="ni"><span class="n">5</span><div><b>中文排版：</b>全局思源黑体（Noto Sans SC，SIL OFL 1.1 开源授权，免费商用）；中西文混排自动间距；表格名称列允许两行截断。</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 浅色主题 · 设计基调 -->
+<section class="slide t-light">
+  <div class="top"><span class="kick">设计系统 · STYLE TOKENS</span><span class="pgn">浅色主题版</span></div>
+  <h1 class="t">设计基调：<em>纸白 + 靛蓝</em>，一套可落地的设计变量</h1>
+  <p class="sub">以纸白底色承载界面并重新设计层级：白底面板 + 浅灰分区，靛蓝作为唯一强调色（主操作 / 选中 / 徽标），青色仅用于增长类指标。圆角 8–14px、1px 描边 + 极浅投影分层、中文正文 13–14px。</p>
+  <div class="wrap" style="margin-top:4px">
+    <div>
+      <div class="card">
+        <div class="fl">色板 · COLOR</div>
+        <div class="swatch" style="padding-bottom:24px">
+          <div style="width:92px;height:56px;background:#f7f9fc"><span>背景 #F7F9FC<span class="nb">1</span></span></div>
+          <div style="width:92px;height:56px;background:#ffffff"><span>面板 #FFFFFF</span></div>
+          <div style="width:92px;height:56px;background:#e4e9f1"><span>描边 #E4E9F1<span class="nb">3</span></span></div>
+          <div style="width:92px;height:56px;background:#4c5fe4"><span>主色 #4C5FE4<span class="nb">2</span></span></div>
+          <div style="width:92px;height:56px;background:#0f9d8f"><span>辅色 #0F9D8F</span></div>
+          <div style="width:92px;height:56px;background:#b45309"><span>警示 #B45309</span></div>
+          <div style="width:92px;height:56px;background:#d64545"><span>危险 #D64545</span></div>
+        </div>
+        <div class="sep" style="margin:14px 0 10px"></div>
+        <div class="fl">组件形态 · 基样</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span class="btn pri">主按钮</span><span class="btn">次按钮</span><span class="btn dng">删除</span>
+          <span class="inp">输入框 placeholder</span>
+          <span class="chip">筛选标签</span>
+          <span class="sw on"></span><span class="sw"></span>
+          <span class="tag ok">成功</span><span class="tag run">解析中</span><span class="tag bad">失败</span><span class="tag queue">排队中</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="fl">排版与密度<span class="nb">5</span></div>
+        <div class="tok">
+          <div class="tk"><b>标题 27px / 800</b><br>屏内大标题，页面唯一</div>
+          <div class="tk"><b>正文 13–14px / 400–600</b><br>表格 12.3px，高密度可读</div>
+          <div class="tk"><b>说明 11.5px / 次灰</b><br>时间戳、计数、辅助提示</div>
+          <div class="tk"><b>圆角 8 / 12 / 14px<span class="nb">4</span></b><br>按钮 8 · 卡片 12 · 容器 14</div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <h3>样式说明</h3>
+      <div class="ni"><span class="n">1</span><div><b>浅色优先：</b>默认纸白主题，深色主题作为可切换项保留；两套共用同一组变量与布局，仅 token 层切换。</div></div>
+      <div class="ni"><span class="n">2</span><div><b>单强调色纪律：</b>靛蓝只给「可点击的下一步」；状态一律用语义色（成功 / 运行 / 失败 / 排队）。</div></div>
+      <div class="ni"><span class="n">3</span><div><b>描边分层：</b>面板之间用 1px 描边 + 极浅投影区分层级；弹层与抽屉才允许重投影。</div></div>
+      <div class="ni"><span class="n">4</span><div><b>数字字体等宽：</b>分块数 / 大小 / Token 等数字列使用等宽数字，便于纵向对齐。</div></div>
+      <div class="ni"><span class="n">5</span><div><b>中文排版：</b>全局思源黑体（Noto Sans SC，SIL OFL 1.1 开源授权，免费商用）；中西文混排自动间距；表格名称列允许两行截断。</div></div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

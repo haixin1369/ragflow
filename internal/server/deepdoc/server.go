@@ -20,6 +20,9 @@
 package deepdoc
 
 import (
+	"fmt"
+	"os"
+	native "ragflow/internal/deepdoc/native"
 	goruntime "runtime"
 	"strconv"
 	"strings"
@@ -27,7 +30,6 @@ import (
 	"go.uber.org/zap"
 
 	"ragflow/internal/common"
-	"ragflow/internal/deepdoc/native"
 	pdf "ragflow/internal/deepdoc/parser/pdf"
 	infnative "ragflow/internal/deepdoc/parser/pdf/inference/native_analyzer"
 	"ragflow/internal/server"
@@ -51,6 +53,19 @@ func inferenceTotalCores() int {
 	return n
 }
 
+// resolveDeviceSpec picks the DeepDoc device spec from CLI and env, trimming
+// whitespace and defaulting to "cpu". A non-blank CLI value wins over env; a
+// blank CLI value falls back to env; both blank resolve to "cpu".
+func resolveDeviceSpec(cli, env string) string {
+	if spec := strings.TrimSpace(cli); spec != "" {
+		return spec
+	}
+	if spec := strings.TrimSpace(env); spec != "" {
+		return spec
+	}
+	return "cpu"
+}
+
 // RegisterNativeDeepDoc wires the in-process (Go) DeepDoc backend as the local
 // inference backend. The server is built with -tags cgo and links ONNX Runtime
 // statically (libonnxruntime.a, resolved at runtime via dlopen(NULL) from the
@@ -65,7 +80,21 @@ func RegisterNativeDeepDoc(arguments *bootstrap.ServerArgs) error {
 	modelDir := resolveDeepDocModelDir()
 	dropScore := resolveDeepDocDropScore()
 
-	if err := infnative.Register(modelDir, dropScore); err != nil {
+	// Resolve the device policy. The default build accepts only cpu; a gpu
+	// request fails fast here via native.ParseDevice. CLI overrides env. No
+	// silent fallback to CPU.
+	cliDevice := ""
+	if arguments.DeepdocDevice != nil {
+		cliDevice = *arguments.DeepdocDevice
+	}
+	deviceSpec := resolveDeviceSpec(cliDevice, os.Getenv(common.EnvDeepDocDevice))
+	dev, err := native.ParseDevice(deviceSpec)
+	if err != nil {
+		return fmt.Errorf("invalid DeepDoc device: %w", err)
+	}
+	native.SetDevice(dev)
+
+	if err = infnative.Register(modelDir, dropScore); err != nil {
 		common.Warn("in-process DeepDoc backend unavailable",
 			zap.String("reason", err.Error()))
 	}
@@ -75,10 +104,7 @@ func RegisterNativeDeepDoc(arguments *bootstrap.ServerArgs) error {
 	// backend cannot serve (ORT + models must be present when built with -tags
 	// cgo).
 	if !infnative.Serving() {
-		common.Fatal("no in-process DeepDoc backend serving: provide the local ORT "+
-			"runtime + models and build with -tags cgo",
-			zap.String("model_dir", modelDir),
-			zap.String("ort_lib", "static (libonnxruntime.a via dlopen(NULL))"))
+		return fmt.Errorf("no in-process DeepDoc backend serving: provide the local ORT runtime and models in %s, and build with -tags cgo", modelDir)
 	}
 	common.Info("in-process DeepDoc backend registered (production backend)",
 		zap.String("model_dir", modelDir))
@@ -95,11 +121,11 @@ func RegisterNativeDeepDoc(arguments *bootstrap.ServerArgs) error {
 	cfg := server.GetConfig()
 	K, _, errK := cfg.GetDeepDocInferenceConcurrency(arguments.DeepdocInferenceConcurrency)
 	if errK != nil {
-		common.Fatal("invalid deepdoc inference concurrency", zap.Error(errK))
+		return fmt.Errorf("invalid deepdoc inference concurrency: %w", errK)
 	}
 	rawN, explicitN, errN := cfg.GetDeepDocInferenceCPUCores(arguments.DeepdocInferenceCPUCores)
 	if errN != nil {
-		common.Fatal("invalid deepdoc inference cpu cores", zap.Error(errN))
+		return fmt.Errorf("invalid deepdoc inference cpu cores: %w", errN)
 	}
 	// When N is unset, derive it from K so each Run opens with a single intra-op
 	// thread (coresPerInference = max(1, K/K) = 1), preserving the prior
@@ -115,7 +141,7 @@ func RegisterNativeDeepDoc(arguments *bootstrap.ServerArgs) error {
 	// all cores here.
 	coresPerInference, totalCPUCores, errV := native.ValidateInferenceConfig(totalCores, resolvedN, K)
 	if errV != nil {
-		common.Fatal("invalid deepdoc inference configuration", zap.Error(errV))
+		return fmt.Errorf("invalid deepdoc inference configuration: %w", errV)
 	}
 	// Register the per-session intra-op thread count before any model session is
 	// created (the native package reads it on every SessionOptions build).
@@ -131,7 +157,7 @@ func RegisterNativeDeepDoc(arguments *bootstrap.ServerArgs) error {
 	// Resolve the per-document page concurrency (N) from CLI > env > config >
 	// default(2) and register it with the shared page worker pool. Fail fast on
 	// an out-of-range value.
-	pageConcurrency, err := server.GetConfig().GetIngestorPageConcurrency(arguments.IngestorPageConcurrency)
+	pageConcurrency, err := server.GetConfig().GetIngestorPageConcurrency()
 	if err != nil {
 		return err
 	}

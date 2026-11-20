@@ -18,38 +18,75 @@ package chatter
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"ragflow/internal/channels"
 	"ragflow/internal/common"
 	"ragflow/internal/engine/kvrocks"
 	"ragflow/internal/server"
 	"ragflow/internal/server/bootstrap"
-	"ragflow/internal/server/local"
+	"ragflow/internal/service"
 )
 
 // Run owns the channel runtime until cancellation, including adapter shutdown.
-func Run(ctx context.Context, _ context.CancelFunc, serverName string, args *bootstrap.ServerArgs) error {
+func Run(ctx context.Context, args *bootstrap.ServerArgs, services *bootstrap.AgentServices) error {
 	if !kvrocks.IsEnabled() {
 		return fmt.Errorf("chatter requires Kvrocks for shared channel runtime status")
 	}
-	bootstrap.SetLogger(serverName, args)
-	closeTokenizer, err := bootstrap.InitializeAgentTokenizer()
-	if err != nil {
-		return err
-	}
-	defer closeTokenizer()
-	bootstrap.SetIngestLog(serverName)
-	agentServices := bootstrap.NewAgentServices()
-	runtime, err := channels.Start(ctx, agentServices.AgentService)
+	var closeTokenizer func()
+	var runtimeMu sync.Mutex
+	stopped := false
+	defer func() {
+		runtimeMu.Lock()
+		defer runtimeMu.Unlock()
+		stopped = true
+		if closeTokenizer != nil {
+			closeTokenizer()
+		}
+	}()
+	getAgentService := sync.OnceValues(func() (*service.AgentService, error) {
+		if services != nil {
+			return services.AgentService, nil
+		}
+		// Adapter shutdown can time out while a first message is initializing.
+		runtimeMu.Lock()
+		defer runtimeMu.Unlock()
+		if stopped {
+			return nil, context.Canceled
+		}
+		// A standalone chatter needs the dictionaries only when a message arrives.
+		common.Info("Initializing chat-channel agent runtime")
+		var err error
+		closeTokenizer, err = bootstrap.InitializeAgentTokenizer()
+		if err != nil {
+			return nil, err
+		}
+		return bootstrap.NewAgentServices().AgentService, nil
+	})
+	runtime, err := channels.Start(ctx, getAgentService)
 	if err != nil {
 		return fmt.Errorf("start chat-channel: %w", err)
 	}
 	defer runtime.Stop()
-	local.InitAdminStatus()
+
+	if common.GetRAGFlowType() == common.EnterpriseEdition {
+		common.Info("\n  ____ _           _   _\n" +
+			" / ___| |__   __ _| |_| |_ ___ _ __\n" +
+			"| |   | '_ \\ / _` | __| __/ _ \\ '__|\n" +
+			"| |___| | | | (_| | |_| ||  __/ |\n" +
+			" \\____|_| |_|\\__,_|\\__|\\__\\___|_|\n")
+	}
+
 	if hb := bootstrap.StartHeartbeat(common.ServerTypeChatter, fmt.Sprintf("chatter-%s", common.GenerateUUID()[:8]), 0, server.GetConfig().GetHeartbeatInterval()); hb != nil {
+		defer hb.Wait()
 		defer hb.Stop()
 	}
-	common.Info("Chat-channel process started")
+	common.Info("Chat-channel service started")
+	if args.Ready != nil {
+		if err := args.Ready(); err != nil {
+			return err
+		}
+	}
 	<-ctx.Done()
 	return nil
 }

@@ -52,7 +52,6 @@ export enum Routes {
   Profile = '/profile',
   Api = '/api',
   Mcp = '/mcp',
-  Team = '/team',
   Integrations = '/integrations',
   Plan = '/plan',
   Model = '/model',
@@ -62,11 +61,6 @@ export enum Routes {
   DataSourceDetailPage = '/data-source-detail-page',
   ChatChannel = '/chat-channel',
   ProfileMcp = `${ProfileSetting}${Mcp}`,
-  ProfileTeam = `${ProfileSetting}${Team}`,
-  ProfilePlan = `${ProfileSetting}${Plan}`,
-  ProfileModel = `${ProfileSetting}${Model}`,
-  ProfilePrompt = `${ProfileSetting}${Prompt}`,
-  ProfileProfile = `${ProfileSetting}${Profile}`,
   DatasetTesting = '/retrieval',
   Chunk = '/chunk',
   Parsed = '/parsed',
@@ -78,6 +72,8 @@ export enum Routes {
   ChatShare = `${Chats}/share`,
   ChatWidget = `${Chats}/widget`,
   UserSetting = '/user-setting',
+  UserManagement = '/user-management',
+  RoleManagement = '/role-management',
   DataSetOverview = '/logs',
   DataSetSetting = '/configuration',
   DataflowResult = '/dataflow-result',
@@ -200,10 +196,6 @@ const routeConfigOptions = [
         ),
       },
       {
-        path: `${Routes.UserSetting}${Routes.Team}`,
-        element: <QueryPreservingNavigate to={Routes.Team} />,
-      },
-      {
         path: `${Routes.UserSetting}${Routes.Mcp}`,
         element: (
           <QueryPreservingNavigate to={`${Routes.Integrations}${Routes.Mcp}`} />
@@ -231,6 +223,19 @@ const routeConfigOptions = [
     path: Routes.Root,
     Component: () => import('@/layouts/root-layout'),
     children: [
+      {
+        Component: () => import('@/layouts/nav-group-layout'),
+        children: [
+          {
+            path: Routes.UserManagement,
+            Component: () => import('@/pages/enterprise/user-management'),
+          },
+          {
+            path: Routes.RoleManagement,
+            Component: () => import('@/pages/enterprise/role-management'),
+          },
+        ],
+      },
       {
         Component: () => import('@/layouts/nav-group-layout'),
         children: [
@@ -363,10 +368,6 @@ const routeConfigOptions = [
           {
             path: `${Routes.Integrations}${Routes.Mcp}`,
             Component: () => import('@/pages/user-setting/mcp'),
-          },
-          {
-            path: Routes.Team,
-            Component: () => import('@/pages/user-setting/setting-team'),
           },
         ],
       },

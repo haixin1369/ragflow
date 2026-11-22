@@ -263,9 +263,11 @@ func validateAdminUserListPagination(c *gin.Context, page, pageSize, top int) bo
 
 // CreateUserHTTPRequest create user request
 type CreateUserHTTPRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Role     string `json:"role"`
+	Username     string `json:"username" binding:"required"`
+	Password     string `json:"password" binding:"required"`
+	Role         string `json:"role"`
+	DepartmentID string `json:"department_id"`
+	RoleID       string `json:"role_id"`
 }
 
 // CreateUser handle create user
@@ -286,7 +288,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	}
 	ctx := c.Request.Context()
 
-	userInfo, err := h.service.CreateUser(ctx, req.Username, req.Password, req.Role)
+	userInfo, err := h.service.CreateUser(ctx, req.Username, req.Password, req.Role, req.DepartmentID, req.RoleID)
 	if err != nil {
 		common.RespondError(c, common.CodeServerError, err.Error())
 		return

@@ -42,6 +42,9 @@ export interface IFetchDocumentListRequestBody {
   return_empty_metadata?: boolean;
   metadata?: Record<string, string[]>;
   ids?: string[];
+  // Directory scoping: omit for every document, '' for the unfiled root,
+  // an id for one folder. Omitted and empty are different requests.
+  folder_id?: string;
 }
 
 export interface IFetchArtifactListRequestParams {

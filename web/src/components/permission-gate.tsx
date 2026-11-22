@@ -14,16 +14,27 @@
  *  limitations under the License.
  */
 
-import { TeamManagement } from '@/ee/pages/user-setting/setting-team/team-management';
+import { ReactNode } from 'react';
+import { usePermission } from '@/hooks/use-permission';
 
-import styles from '@/ee/pages/user-setting/setting-team/index.module.less';
+interface PermissionGateProps {
+  code: string;
+  children: ReactNode;
+  // Rendered instead of children when the code is not granted; defaults to
+  // rendering nothing.
+  fallback?: ReactNode;
+}
 
-const UserSettingTeam = () => {
-  return (
-    <div className={styles.teamWrapper}>
-      <TeamManagement />
-    </div>
-  );
-};
+export function PermissionGate({
+  code,
+  children,
+  fallback = null,
+}: PermissionGateProps) {
+  const { has } = usePermission();
 
-export default UserSettingTeam;
+  if (!has(code)) {
+    return fallback;
+  }
+
+  return <>{children}</>;
+}

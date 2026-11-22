@@ -16,12 +16,11 @@
 
 import api from '@/utils/api';
 import registerServer from '@/utils/register-server';
-import request, { post } from '@/utils/request';
+import request from '@/utils/request';
 
 const {
   login,
   logout,
-  register,
   setting,
   userInfo,
   tenantInfo,
@@ -40,10 +39,6 @@ const methods = {
   },
   logout: {
     url: logout,
-    method: 'post',
-  },
-  register: {
-    url: register,
     method: 'post',
   },
   setting: {
@@ -94,26 +89,6 @@ const methods = {
 
 const userService = registerServer<keyof typeof methods>(methods, request);
 
-export const listTenantUser = (tenantId: string) =>
-  request.get(api.listTenantUser(tenantId));
-
-export const addTenantUser = (tenantId: string, email: string) =>
-  post(api.addTenantUser(tenantId), { email });
-
-export const deleteTenantUser = ({
-  tenantId,
-  userId,
-}: {
-  tenantId: string;
-  userId: string;
-}) =>
-  request.delete(api.deleteTenantUser(tenantId), {
-    data: { userId },
-  });
-
 export const listTenant = () => request.get(api.listTenant);
-
-export const agreeTenant = (tenantId: string) =>
-  request.patch(api.agreeTenant(tenantId));
 
 export default userService;

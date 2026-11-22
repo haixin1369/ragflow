@@ -2,6 +2,7 @@ import { CardContainer } from '@/components/card-container';
 import DuplicateDialog from '@/ee/components/duplicate-dialog';
 import { EmptyCardType } from '@/components/empty/constant';
 import { EmptyAppCard } from '@/components/empty/empty';
+import { PermissionGate } from '@/components/permission-gate';
 import { NavGroupListFilterBar } from '@/layouts/components/nav-group-list-filter-bar';
 import { PrivilegeManagementDialog } from '@/ee/components/privilege-management/privilege-management-dialog';
 import { RenameDialog } from '@/components/rename-dialog';
@@ -11,6 +12,7 @@ import { Spin } from '@/components/ui/spin';
 import { ListDeletionKey } from '@/constants/list-deletion';
 import { useGoToPreviousPageOnEmpty } from '@/hooks/logic-hooks';
 import { useFetchNextKnowledgeListByPage } from '@/hooks/use-knowledge-request';
+import { FunctionPermissionCode } from '@/services/user-permission-service';
 import { useQueryClient } from '@tanstack/react-query';
 import { pick } from 'lodash';
 import { Plus } from 'lucide-react';
@@ -115,10 +117,12 @@ export default function Datasets() {
             filters={owners}
             onChange={handleFilterSubmit}
           >
-            <Button onClick={showModal}>
-              <Plus className="size-[1em]" />
-              {t('knowledgeList.createKnowledgeBase')}
-            </Button>
+            <PermissionGate code={FunctionPermissionCode.KbCreate}>
+              <Button onClick={showModal}>
+                <Plus className="size-[1em]" />
+                {t('knowledgeList.createKnowledgeBase')}
+              </Button>
+            </PermissionGate>
           </NavGroupListFilterBar>
         </header>
 

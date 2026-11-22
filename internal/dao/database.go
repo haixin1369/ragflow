@@ -246,6 +246,12 @@ func buildVastbaseMetaDSN(cfg config.VastbaseMetaConfig) string {
 func autoMigrateModels() []interface{} {
 	dataModels := []interface{}{
 		&entity.User{},
+		&entity.Department{},
+		&entity.Role{},
+		&entity.RolePermission{},
+		&entity.FunctionPermission{},
+		&entity.KBMember{},
+		&entity.KBFolder{},
 		&entity.Tenant{},
 		&entity.UserTenant{},
 		&entity.File{},
@@ -475,6 +481,9 @@ func InitDB(ctx context.Context, migrateDB bool) error {
 	}
 	if err = SeedSystemSettings(ctx, DB); err != nil {
 		return fmt.Errorf("failed to seed system settings: %w", err)
+	}
+	if err = SeedFunctionPermissions(ctx, DB); err != nil {
+		return fmt.Errorf("failed to seed function permissions: %w", err)
 	}
 	// Conversation lists filter by dialog and usually order by update time.
 	for _, table := range []string{"conversation", "api_4_conversation"} {

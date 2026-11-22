@@ -18,7 +18,7 @@ func TestFileQueryScopeFiltersInSQLAndReturnsBatchAccessMasks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.File{}, &entity.File2Document{}, &entity.Document{}, &entity.Knowledgebase{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.File{}, &entity.File2Document{}, &entity.Document{}, &entity.Knowledgebase{}, &entity.UserTenant{}, &entity.User{}, &entity.KBMember{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 
@@ -35,12 +35,18 @@ func TestFileQueryScopeFiltersInSQLAndReturnsBatchAccessMasks(t *testing.T) {
 	}
 
 	for _, dataset := range []entity.Knowledgebase{
-		{ID: "team-dataset", TenantID: "dataset-tenant", Name: "Team", EmbdID: "embedding", Permission: string(entity.TenantPermissionTeam), CreatedBy: "dataset-owner", Status: &valid},
-		{ID: "private-dataset", TenantID: "dataset-tenant", Name: "Private", EmbdID: "embedding", Permission: string(entity.TenantPermissionMe), CreatedBy: "dataset-owner", Status: &valid},
+		{ID: "team-dataset", TenantID: "dataset-tenant", Name: "Team", EmbdID: "embedding", CreatedBy: "dataset-owner", Status: &valid},
+		{ID: "private-dataset", TenantID: "dataset-tenant", Name: "Private", EmbdID: "embedding", CreatedBy: "dataset-owner", Status: &valid},
 	} {
 		if err := db.Create(&dataset).Error; err != nil {
 			t.Fatalf("create dataset %q: %v", dataset.ID, err)
 		}
+	}
+
+	// Enterprise visibility is default-deny: the reader reaches the team
+	// dataset only through an explicit edit-level member grant.
+	if err := db.Create(&entity.KBMember{ID: "team-dataset-member", KbID: "team-dataset", UserID: "reader", Permission: entity.KBMemberPermissionEdit}).Error; err != nil {
+		t.Fatalf("create kb_member: %v", err)
 	}
 
 	for _, file := range []entity.File{
@@ -105,7 +111,8 @@ func TestFileQueryScopeFiltersInSQLAndReturnsBatchAccessMasks(t *testing.T) {
 	if accesses[refs[0]].PermissionMask != ResourcePermissionOwner {
 		t.Errorf("owner access mask = %d, want %d", accesses[refs[0]].PermissionMask, ResourcePermissionOwner)
 	}
-	sharedMask := ResourcePermissionRead | ResourcePermissionWrite | ResourcePermissionManage
+	// Edit-level members read and write the shared file but hold no manage rights.
+	sharedMask := ResourcePermissionRead | ResourcePermissionWrite
 	if accesses[refs[1]].PermissionMask != sharedMask {
 		t.Errorf("shared access mask = %d, want %d", accesses[refs[1]].PermissionMask, sharedMask)
 	}
@@ -126,14 +133,14 @@ func TestFileQueryScopeUsesLinkedDatasetOwner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.File{}, &entity.File2Document{}, &entity.Document{}, &entity.Knowledgebase{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.File{}, &entity.File2Document{}, &entity.Document{}, &entity.Knowledgebase{}, &entity.UserTenant{}, &entity.User{}, &entity.KBMember{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 
 	valid := string(entity.StatusValid)
 	dataset := entity.Knowledgebase{
 		ID: "private-dataset", UserID: "dataset-member", TenantID: "dataset-tenant", CreatedBy: "tenant-owner",
-		Name: "Private", EmbdID: "embedding", Permission: string(entity.TenantPermissionMe), Status: &valid,
+		Name: "Private", EmbdID: "embedding", Status: &valid,
 	}
 	document := entity.Document{
 		ID: "private-document", KbID: dataset.ID, UserID: "dataset-member", CreatedBy: "tenant-owner",

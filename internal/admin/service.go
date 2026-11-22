@@ -19,7 +19,6 @@ package admin
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -153,7 +152,7 @@ func generateRandomHex(n int) string {
 // Returns:
 //   - map[string]interface{}: user information without password
 //   - error: error message
-func (s *Service) CreateUser(ctx context.Context, username, password, role string) (map[string]interface{}, error) {
+func (s *Service) CreateUser(ctx context.Context, username, password, role, departmentID, roleID string) (map[string]interface{}, error) {
 	emailRegex := regexp.MustCompile(`^[\w\._-]+@([\w_-]+\.)+[\w-]{2,}$`)
 	if !emailRegex.MatchString(username) {
 		return nil, fmt.Errorf("invalid email address: %s", username)
@@ -192,6 +191,10 @@ func (s *Service) CreateUser(ctx context.Context, username, password, role strin
 		IsAnonymous:     "0",
 		LoginChannel:    &loginChannel,
 		IsSuperuser:     &isSuperuser,
+	}
+
+	if err := s.ApplyUserEnterpriseFields(ctx, user, departmentID, roleID); err != nil {
+		return nil, err
 	}
 
 	// Start transaction for creating user and related data
@@ -366,6 +369,16 @@ func (s *Service) DeleteUser(ctx context.Context, username string) (*servicepkg.
 	// Check if user is superuser - cannot delete admin accounts
 	if user.IsSuperuser != nil && *user.IsSuperuser {
 		return nil, fmt.Errorf("user '%s' is admin account and cannot be deleted", username)
+	}
+
+	// A deleted owner would orphan its knowledge bases: refuse until the
+	// superuser transfers or removes them.
+	ownedKBs, err := s.CountUserOwnedKnowledgebases(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count owned knowledge bases: %w", err)
+	}
+	if ownedKBs > 0 {
+		return nil, fmt.Errorf("user '%s' owns %d knowledge base(s); transfer or delete them before deleting the account", username, ownedKBs)
 	}
 
 	return (servicepkg.UserDeletionService{}).Delete(ctx, user)
@@ -1444,10 +1457,9 @@ func (s *Service) InitDefaultAdmin() error {
 		loginChannel := "password"
 		isSuperuser := true
 
-		// Python: password = encode_to_base64(password) = base64.b64encode(password)
-		// Then: generate_password_hash(base64_password) creates werkzeug hash
-		password := base64.StdEncoding.EncodeToString([]byte(defaultPassword))
-		hashedPassword, err := common.GenerateWerkzeugPasswordHash(password)
+		// Hash the plaintext password: login verifies the RSA-decrypted
+		// plaintext directly, matching the register and password-change paths.
+		hashedPassword, err := common.GenerateWerkzeugPasswordHash(defaultPassword)
 		if err != nil {
 			return fmt.Errorf("failed to hash password: %w", err)
 		}

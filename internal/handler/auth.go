@@ -192,19 +192,18 @@ func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 			}
 		}
 
-		if identity.User.IsSuperuser != nil && *identity.User.IsSuperuser {
-			common.Respond(c, http.StatusForbidden, common.CodeForbidden, nil, "Super user shouldn't access the URL")
-			c.Abort()
-			return
-		}
-
-		if !local.IsAdminAvailable() {
-			adminStatus := local.GetAdminStatus()
-			errMsg := fmt.Sprintf("server error: %s", adminStatus.Reason)
-			common.Warn(errMsg)
-			common.Respond(c, http.StatusServiceUnavailable, common.CodeUnauthorized, nil, errMsg)
-			c.Abort()
-			return
+		// The superuser is the only system-administration entry point: it
+		// manages accounts, roles and departments and may open any knowledge
+		// base, so it authenticates into the user API like everyone else.
+		if identity.User.IsSuperuser == nil || !*identity.User.IsSuperuser {
+			if !local.IsAdminAvailable() {
+				adminStatus := local.GetAdminStatus()
+				errMsg := fmt.Sprintf("server error: %s", adminStatus.Reason)
+				common.Warn(errMsg)
+				common.Respond(c, http.StatusServiceUnavailable, common.CodeUnauthorized, nil, errMsg)
+				c.Abort()
+				return
+			}
 		}
 
 		setAuthIdentity(c, identity)

@@ -190,7 +190,18 @@ type Resource struct {
 	CreatorOperations   []Operation
 	SharedWithUserIDs   []string
 	SharedWithTenantIDs []string
-	Active              bool
+	// OwnerDelegateUserIDs names users holding owner-level access in addition
+	// to OwnerUserID (e.g. the knowledge base owner on a document created by
+	// an edit-level member).
+	OwnerDelegateUserIDs []string
+	// SharedEditUserIDs names users holding an edit-level grant on the resource
+	// (knowledge base member authorization). View-level members live in
+	// SharedWithUserIDs; their operation lists come from SharedViewOperations
+	// and SharedEditOperations, falling back to OwnerOperations when unset.
+	SharedEditUserIDs    []string
+	SharedViewOperations []Operation
+	SharedEditOperations []Operation
+	Active               bool
 }
 
 // AccessSource identifies the rule that granted access.

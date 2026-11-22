@@ -22,6 +22,9 @@ import (
 	"testing"
 
 	"ragflow/internal/common"
+	"ragflow/internal/dao"
+	"ragflow/internal/entity"
+	"ragflow/internal/ingestion/testutil"
 )
 
 func TestConfiguredSuperuserNickname(t *testing.T) {

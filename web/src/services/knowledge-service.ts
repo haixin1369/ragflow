@@ -451,7 +451,15 @@ export const listDocument = (
 export const documentFilter = (kb_id: string) =>
   request.get(api.getDatasetFilter(kb_id), { params: {} });
 
-export const uploadDocument = async (datasetId: string, formData: FormData) => {
+export const uploadDocument = async (
+  datasetId: string,
+  formData: FormData,
+  // Upload target folder; '' files under the unfiled root.
+  folderId?: string,
+) => {
+  if (folderId !== undefined) {
+    formData.append('folder_id', folderId);
+  }
   const url = api.documentUpload(datasetId);
   const response = await request.post(url, { data: formData });
   return response.data;

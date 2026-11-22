@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 
@@ -29,14 +30,14 @@ func TestDatabaseCheckerAuthorizesDatasetFromPersistedRows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.Knowledgebase{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.Knowledgebase{}, &entity.UserTenant{}, &entity.User{}, &entity.KBMember{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 
 	valid := string(entity.StatusValid)
 	dataset := entity.Knowledgebase{
 		ID: "dataset-1", UserID: "tenant-owner", TenantID: "tenant-1", CreatedBy: "creator-1",
-		Permission: string(entity.TenantPermissionTeam), Status: &valid,
+		Status: &valid,
 	}
 	ownerMembership := entity.UserTenant{
 		ID: "owner-membership", UserID: "tenant-owner", TenantID: dataset.TenantID,
@@ -54,6 +55,11 @@ func TestDatabaseCheckerAuthorizesDatasetFromPersistedRows(t *testing.T) {
 	}
 	if err := db.Create(&ownerMembership).Error; err != nil {
 		t.Fatalf("create owner membership: %v", err)
+	}
+	// Enterprise visibility is default-deny: member-1 reaches the dataset only
+	// through an explicit edit-level member grant.
+	if err := db.Create(&entity.KBMember{ID: "member-grant", KbID: dataset.ID, UserID: membership.UserID, Permission: entity.KBMemberPermissionEdit}).Error; err != nil {
+		t.Fatalf("create kb_member: %v", err)
 	}
 
 	checker := newCommunityDatabaseChecker(db)
@@ -101,8 +107,8 @@ func TestDatabaseCheckerAuthorizesDatasetFromPersistedRows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAccess(dataset) error = %v", err)
 	}
-	if access.TenantID != dataset.TenantID || access.Source != AccessSourceTenant {
-		t.Fatalf("dataset access = %+v, want tenant access", access)
+	if access.TenantID != dataset.TenantID || access.Source != AccessSourceShared {
+		t.Fatalf("dataset access = %+v, want shared member access", access)
 	}
 }
 
@@ -175,14 +181,14 @@ func TestDatabaseCheckerRejectsPrivateDatasetForOtherTenantMember(t *testing.T) 
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.Knowledgebase{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.Knowledgebase{}, &entity.UserTenant{}, &entity.User{}, &entity.KBMember{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 
 	valid := string(entity.StatusValid)
 	dataset := entity.Knowledgebase{
 		ID: "dataset-private", TenantID: "tenant-1", CreatedBy: "creator-1",
-		Permission: string(entity.TenantPermissionMe), Status: &valid,
+		Status: &valid,
 	}
 	membership := entity.UserTenant{
 		ID: "membership-1", UserID: "member-1", TenantID: "tenant-1",
@@ -216,7 +222,7 @@ func TestDisabledDocumentRemainsReadableWithinDataset(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.Knowledgebase{}, &entity.Document{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.Knowledgebase{}, &entity.Document{}, &entity.UserTenant{}, &entity.User{}, &entity.KBMember{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 
@@ -226,7 +232,7 @@ func TestDisabledDocumentRemainsReadableWithinDataset(t *testing.T) {
 	tenantID := "tenant-1"
 	dataset := entity.Knowledgebase{
 		ID: "dataset-1", UserID: ownerID, TenantID: tenantID, Name: "dataset",
-		EmbdID: "embedding", Permission: string(entity.TenantPermissionMe), Status: &valid,
+		EmbdID: "embedding", Status: &valid,
 	}
 	document := entity.Document{
 		ID: "document-1", KbID: dataset.ID, UserID: ownerID, CreatedBy: ownerID,
@@ -294,19 +300,24 @@ func TestDatasetAndDocumentQueryScopesUseResourceOwners(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.Knowledgebase{}, &entity.Document{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.Knowledgebase{}, &entity.Document{}, &entity.UserTenant{}, &entity.User{}, &entity.KBMember{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 
 	valid := string(entity.StatusValid)
 	datasets := []entity.Knowledgebase{
-		{ID: "private-dataset", UserID: "dataset-owner", TenantID: "tenant-1", CreatedBy: "tenant-owner", Permission: string(entity.TenantPermissionMe), Status: &valid},
-		{ID: "team-dataset", UserID: "dataset-owner", TenantID: "tenant-1", CreatedBy: "tenant-owner", Permission: string(entity.TenantPermissionTeam), Status: &valid},
+		{ID: "private-dataset", UserID: "dataset-owner", TenantID: "tenant-1", CreatedBy: "tenant-owner", Status: &valid},
+		{ID: "team-dataset", UserID: "dataset-owner", TenantID: "tenant-1", CreatedBy: "tenant-owner", Status: &valid},
 	}
 	for i := range datasets {
 		if err := db.Create(&datasets[i]).Error; err != nil {
 			t.Fatalf("create dataset %q: %v", datasets[i].ID, err)
 		}
+	}
+	// Enterprise visibility is default-deny: team-reader reaches the team
+	// dataset only through an explicit edit-level member grant.
+	if err := db.Create(&entity.KBMember{ID: "team-reader-grant", KbID: "team-dataset", UserID: "team-reader", Permission: entity.KBMemberPermissionEdit}).Error; err != nil {
+		t.Fatalf("create kb_member: %v", err)
 	}
 	documents := []entity.Document{
 		{ID: "private-owned-document", KbID: "private-dataset", UserID: "dataset-owner", CreatedBy: "tenant-owner", Status: &valid, ParserConfig: entity.JSONMap{}},
@@ -345,7 +356,7 @@ func TestDatasetAndDocumentQueryScopesUseResourceOwners(t *testing.T) {
 		wantCheck map[string]bool
 		wantDocs  map[string]bool
 	}{
-		{userID: "dataset-owner", wantIDs: []string{"private-dataset", "team-dataset"}, wantCheck: map[string]bool{"private-dataset": true, "team-dataset": true}, wantDocs: map[string]bool{"private-owned-document": true, "private-other-document": false, "team-document": true}},
+		{userID: "dataset-owner", wantIDs: []string{"private-dataset", "team-dataset"}, wantCheck: map[string]bool{"private-dataset": true, "team-dataset": true}, wantDocs: map[string]bool{"private-owned-document": true, "private-other-document": true, "team-document": true}},
 		{userID: "tenant-owner", wantIDs: nil, wantCheck: map[string]bool{"private-dataset": false, "team-dataset": false}, wantDocs: map[string]bool{"private-owned-document": false, "private-other-document": false, "team-document": false}},
 		{userID: "team-reader", wantIDs: []string{"team-dataset"}, wantCheck: map[string]bool{"private-dataset": false, "team-dataset": true}, wantDocs: map[string]bool{"private-owned-document": false, "private-other-document": false, "team-document": true}},
 	} {
@@ -385,7 +396,8 @@ func TestDatasetAndDocumentQueryScopesUseResourceOwners(t *testing.T) {
 				wantIDs    []string
 				parentRead bool
 			}{
-				{datasetID: "private-dataset", wantIDs: []string{"private-owned-document"}, parentRead: tc.userID == "dataset-owner"},
+				// The knowledge base owner lists every document in the knowledge base.
+				{datasetID: "private-dataset", wantIDs: []string{"private-other-document", "private-owned-document"}, parentRead: tc.userID == "dataset-owner"},
 				{datasetID: "team-dataset", wantIDs: []string{"team-document"}, parentRead: tc.userID == "dataset-owner" || tc.userID == "team-reader"},
 			} {
 				documentScope, err := checker.QueryScope(ctx, ScopeQuery{
@@ -423,20 +435,25 @@ func TestDatabaseCheckerScopesDatasetsToMembershipAndVisibility(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.Knowledgebase{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.Knowledgebase{}, &entity.UserTenant{}, &entity.User{}, &entity.KBMember{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 
 	valid := string(entity.StatusValid)
 	datasets := []entity.Knowledgebase{
-		{ID: "team-visible", TenantID: "member-tenant", CreatedBy: "tenant-owner", Permission: string(entity.TenantPermissionTeam), Status: &valid},
-		{ID: "private-hidden", TenantID: "member-tenant", CreatedBy: "tenant-owner", Permission: string(entity.TenantPermissionMe), Status: &valid},
-		{ID: "outside-tenant", TenantID: "other-tenant", CreatedBy: "other-owner", Permission: string(entity.TenantPermissionTeam), Status: &valid},
+		{ID: "team-visible", TenantID: "member-tenant", CreatedBy: "tenant-owner", Status: &valid},
+		{ID: "private-hidden", TenantID: "member-tenant", CreatedBy: "tenant-owner", Status: &valid},
+		{ID: "outside-tenant", TenantID: "other-tenant", CreatedBy: "other-owner", Status: &valid},
 	}
 	for i := range datasets {
 		if err := db.Create(&datasets[i]).Error; err != nil {
 			t.Fatalf("create dataset %q: %v", datasets[i].ID, err)
 		}
+	}
+	// Enterprise visibility is default-deny: the ordinary member reaches only
+	// the dataset carrying an explicit member grant.
+	if err := db.Create(&entity.KBMember{ID: "member-grant", KbID: "team-visible", UserID: "member-user", Permission: entity.KBMemberPermissionView}).Error; err != nil {
+		t.Fatalf("create kb_member: %v", err)
 	}
 	memberships := []entity.UserTenant{
 		{ID: "member", UserID: "member-user", TenantID: "member-tenant", Role: string(RoleNormal), Status: &valid},
@@ -817,7 +834,7 @@ func TestDatabaseCheckerAuthorizesFilesThroughLinkedDatasetAccess(t *testing.T) 
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.File{}, &entity.File2Document{}, &entity.Document{}, &entity.Knowledgebase{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.File{}, &entity.File2Document{}, &entity.Document{}, &entity.Knowledgebase{}, &entity.KBMember{}, &entity.UserTenant{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 
@@ -858,8 +875,6 @@ func TestDatabaseCheckerAuthorizesFilesThroughLinkedDatasetAccess(t *testing.T) 
 	}
 	memberships := []entity.UserTenant{
 		{ID: "team-owner-membership", UserID: "team-owner", TenantID: "team-tenant", Role: string(RoleOwner), Status: &valid},
-		{ID: "team-member-membership", UserID: "team-member", TenantID: "team-tenant", Role: string(RoleNormal), Status: &valid},
-		{ID: "team-admin-membership", UserID: "team-admin", TenantID: "team-tenant", Role: string(RoleAdmin), Status: &valid},
 		{ID: "private-owner-membership", UserID: "private-owner", TenantID: "private-tenant", Role: string(RoleOwner), Status: &valid},
 	}
 	for i := range memberships {
@@ -867,23 +882,35 @@ func TestDatabaseCheckerAuthorizesFilesThroughLinkedDatasetAccess(t *testing.T) 
 			t.Fatalf("create membership %q: %v", memberships[i].ID, err)
 		}
 	}
+	// Dataset visibility is default-deny: only the owner and explicit kb_member
+	// grants reach the dataset and, through it, the linked file.
+	members := []entity.KBMember{
+		{ID: "team-view-grant", KbID: "team-dataset", UserID: "kb-viewer", Permission: entity.KBMemberPermissionView},
+		{ID: "team-edit-grant", KbID: "team-dataset", UserID: "kb-editor", Permission: entity.KBMemberPermissionEdit},
+	}
+	for i := range members {
+		if err := db.Create(&members[i]).Error; err != nil {
+			t.Fatalf("create kb member %q: %v", members[i].ID, err)
+		}
+	}
 
 	checker := newCommunityDatabaseChecker(db)
 	teamFile := ResourceRef{Kind: ResourceKindFile, ID: "team-file"}
-	if err := checker.CheckResource(WithIdentity(context.Background(), "team-member", ""), teamFile, OperationRead); err != nil {
-		t.Errorf("team member CheckResource(file read) error = %v, want nil", err)
+	for _, userID := range []string{"team-owner", "kb-viewer", "kb-editor"} {
+		if err := checker.CheckResource(WithIdentity(context.Background(), userID, ""), teamFile, OperationRead); err != nil {
+			t.Errorf("%s CheckResource(file read) error = %v, want nil", userID, err)
+		}
 	}
-	if err := checker.CheckResource(WithIdentity(context.Background(), "team-admin", ""), teamFile, OperationRead); !errors.Is(err, ErrPermissionDenied) {
-		t.Errorf("team admin CheckResource(file read) error = %v, want permission denied (dataset access requires a normal member)", err)
-	}
-	if err := checker.CheckResource(WithIdentity(context.Background(), "outsider", ""), teamFile, OperationRead); !errors.Is(err, ErrPermissionDenied) {
-		t.Errorf("outsider CheckResource(file read) error = %v, want permission denied", err)
+	for _, userID := range []string{"team-admin", "outsider"} {
+		if err := checker.CheckResource(WithIdentity(context.Background(), userID, ""), teamFile, OperationRead); !errors.Is(err, ErrPermissionDenied) {
+			t.Errorf("%s CheckResource(file read) error = %v, want permission denied (no kb_member grant)", userID, err)
+		}
 	}
 	if err := checker.CheckResource(WithIdentity(context.Background(), "private-owner", ""), ResourceRef{Kind: ResourceKindFile, ID: "private-file"}, OperationRead); err != nil {
 		t.Errorf("private dataset owner CheckResource(file read) error = %v, want nil", err)
 	}
-	if err := checker.CheckResource(WithIdentity(context.Background(), "team-member", ""), ResourceRef{Kind: ResourceKindFile, ID: "private-file"}, OperationRead); !errors.Is(err, ErrPermissionDenied) {
-		t.Errorf("team member CheckResource(private file read) error = %v, want permission denied", err)
+	if err := checker.CheckResource(WithIdentity(context.Background(), "team-owner", ""), ResourceRef{Kind: ResourceKindFile, ID: "private-file"}, OperationRead); !errors.Is(err, ErrPermissionDenied) {
+		t.Errorf("team owner CheckResource(private file read) error = %v, want permission denied", err)
 	}
 
 	resources, err := (&databaseSource{db: db}).GetResources(context.Background(), []ResourceRef{teamFile})
@@ -897,8 +924,9 @@ func TestDatabaseCheckerAuthorizesFilesThroughLinkedDatasetAccess(t *testing.T) 
 	if resource.TenantID != "file-owner" || resource.OwnerUserID != "file-creator" || resource.CreatedBy != "file-creator" {
 		t.Errorf("file authorization facts = %+v, want tenant file-owner and creator/owner file-creator", resource)
 	}
-	if resource.Visibility != VisibilityShared || len(resource.SharedWithTenantIDs) != 1 || resource.SharedWithTenantIDs[0] != "team-tenant" || len(resource.SharedWithUserIDs) != 1 || resource.SharedWithUserIDs[0] != "team-owner" {
-		t.Errorf("file sharing facts = %+v, want team tenant and its owner", resource)
+	wantSharedUsers := []string{"team-owner", "kb-viewer"}
+	if resource.Visibility != VisibilityShared || len(resource.SharedWithTenantIDs) != 0 || !slices.Equal(resource.SharedWithUserIDs, wantSharedUsers) || !slices.Equal(resource.SharedEditUserIDs, []string{"kb-editor"}) {
+		t.Errorf("file sharing facts = %+v, want shared visibility with users %v and edit user kb-editor", resource, wantSharedUsers)
 	}
 }
 
@@ -907,7 +935,7 @@ func TestDatabaseSourceResolvesFileOwnerFromItsTenant(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.File{}, &entity.File2Document{}, &entity.Document{}, &entity.Knowledgebase{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.File{}, &entity.File2Document{}, &entity.Document{}, &entity.Knowledgebase{}, &entity.KBMember{}, &entity.UserTenant{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 
@@ -938,7 +966,7 @@ func TestDatabaseCheckerScopesFilesAndFoldersToOwnedFolder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.File{}, &entity.File2Document{}, &entity.Document{}, &entity.Knowledgebase{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.File{}, &entity.File2Document{}, &entity.Document{}, &entity.Knowledgebase{}, &entity.KBMember{}, &entity.UserTenant{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 	files := []entity.File{
@@ -990,7 +1018,7 @@ func TestFileResourceFallsBackToTenantOwnerWhenCreatorIsMissing(t *testing.T) {
 	resource := fileResource(ResourceKindFile, &entity.File{
 		ID:       "legacy-file",
 		TenantID: "owner-user",
-	}, nil, nil, nil)
+	}, nil, nil, nil, nil)
 	if resource.OwnerUserID != "owner-user" {
 		t.Fatalf("legacy file owner = %q, want tenant owner %q", resource.OwnerUserID, "owner-user")
 	}

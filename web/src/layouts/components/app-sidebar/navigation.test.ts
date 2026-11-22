@@ -46,7 +46,6 @@ describe('getActiveNavItemKey', () => {
     ['/compilation-templates/edit-next/1', NavItemKey.Studio],
     ['/files', NavItemKey.Library],
     ['/files/skills', NavItemKey.Library],
-    ['/team', NavItemKey.Team],
   ])('maps %s to %s', (pathname, expected) => {
     expect(getActiveNavItemKey(pathname)).toBe(expected);
   });
@@ -77,7 +76,7 @@ describe('getActiveIntegrationKey', () => {
   });
 
   it('does not match non-integration routes', () => {
-    expect(getActiveIntegrationKey('/team')).toBeUndefined();
+    expect(getActiveIntegrationKey('/files')).toBeUndefined();
     expect(getActiveIntegrationKey('/user-setting/profile')).toBeUndefined();
   });
 });

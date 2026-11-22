@@ -29,6 +29,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
@@ -193,7 +194,19 @@ func DecryptPassword(encryptedPassword string) (string, error) {
 		return encryptedPassword, nil
 	}
 
-	return string(plaintext), nil
+	return unwrapPasswordPlaintext(string(plaintext)), nil
+}
+
+// unwrapPasswordPlaintext restores the client contract: the frontend RSA-encrypts
+// base64(password), so a decrypted payload that is itself valid base64 decodes to
+// the actual password. Payloads that are not valid base64 or do not decode to
+// valid UTF-8 (plain passwords sent by scripts) are returned unchanged.
+func unwrapPasswordPlaintext(plaintext string) string {
+	decoded, err := base64.StdEncoding.DecodeString(plaintext)
+	if err != nil || len(decoded) == 0 || !utf8.Valid(decoded) {
+		return plaintext
+	}
+	return string(decoded)
 }
 
 // LoadPrivateKey loads and decrypts the RSA private key from conf/private.pem

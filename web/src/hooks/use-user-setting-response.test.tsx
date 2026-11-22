@@ -1,9 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import {
-  useAgreeTenant,
   useDeleteLangfuseConfig,
-  useDeleteTenantUser,
   useFetchSystemVersion,
   useFetchTenantInfo,
   useRemoveSystemToken,
@@ -13,8 +11,6 @@ const mockGetSystemVersion = jest.fn();
 const mockGetTenantInfo = jest.fn();
 const mockDeleteLangfuseConfig = jest.fn();
 const mockRemoveToken = jest.fn();
-const mockDeleteTenantUser = jest.fn();
-const mockAgreeTenant = jest.fn();
 const mockSuccess = jest.fn();
 const mockWarning = jest.fn();
 
@@ -26,8 +22,6 @@ jest.mock('@/services/user-service', () => ({
     removeToken: (...args: unknown[]) => mockRemoveToken(...args),
     getTenantInfo: () => mockGetTenantInfo(),
   },
-  deleteTenantUser: (...args: unknown[]) => mockDeleteTenantUser(...args),
-  agreeTenant: (...args: unknown[]) => mockAgreeTenant(...args),
 }));
 jest.mock('@/services/knowledge-service', () => ({
   __esModule: true,
@@ -162,33 +156,14 @@ it.each([0, 102])(
       data: { code, message: code === 0 ? 'success' : 'failed' },
     };
     mockRemoveToken.mockResolvedValue(response);
-    mockDeleteTenantUser.mockResolvedValue(response);
-    mockAgreeTenant.mockResolvedValue(response);
-    const { result } = renderHook(
-      () => ({
-        tokens: useRemoveSystemToken(),
-        members: useDeleteTenantUser(),
-        invites: useAgreeTenant(),
-      }),
-      { wrapper: createWrapper() },
-    );
+    const { result } = renderHook(() => useRemoveSystemToken(), {
+      wrapper: createWrapper(),
+    });
 
     await act(async () => {
-      expect(await result.current.tokens.removeToken('token-1')).toBe(code);
-      expect(
-        await result.current.members.deleteTenantUser({
-          userId: 'user-1',
-          tenantId: 'tenant-1',
-        }),
-      ).toBe(code);
-      expect(await result.current.invites.agreeTenant('tenant-1')).toBe(code);
+      expect(await result.current.removeToken('token-1')).toBe(code);
     });
 
     expect(mockRemoveToken).toHaveBeenCalledWith({}, 'token-1');
-    expect(mockDeleteTenantUser).toHaveBeenCalledWith({
-      tenantId: 'tenant-1',
-      userId: 'user-1',
-    });
-    expect(mockAgreeTenant).toHaveBeenCalledWith('tenant-1');
   },
 );

@@ -21,6 +21,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { usePermission } from '@/hooks/use-permission';
+import { FunctionPermissionCode } from '@/services/user-permission-service';
 import { Plus } from 'lucide-react';
 import { AgentCreateAction } from './hooks/use-agent-create-actions';
 
@@ -33,6 +35,12 @@ export function AgentCreateMenu({
   // dropdown and creates directly.
   directOnClick?: () => void;
 }) {
+  const { has } = usePermission();
+
+  if (!has(FunctionPermissionCode.AgentCreate)) {
+    return null;
+  }
+
   if (directOnClick) {
     return (
       <Button data-testid="create-agent" onClick={directOnClick}>
@@ -72,6 +80,12 @@ export function AgentsEmptyStateActions({
 }: {
   actions: AgentCreateAction[];
 }) {
+  const { has } = usePermission();
+
+  if (!has(FunctionPermissionCode.AgentCreate)) {
+    return null;
+  }
+
   return (
     <ul className="flex flex-col gap-y-5 text-text-secondary text-sm pt-5">
       {actions.map((action) => (

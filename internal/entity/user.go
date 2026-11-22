@@ -36,6 +36,12 @@ type User struct {
 	LoginChannel    *string    `gorm:"column:login_channel;index" json:"login_channel,omitempty"`
 	Status          *string    `gorm:"column:status;size:1;default:1;index" json:"status"`
 	IsSuperuser     *bool      `gorm:"column:is_superuser;index" json:"is_superuser,omitempty"`
+	// DepartmentID is "" for an unassigned user. A user belongs to exactly one
+	// department.
+	DepartmentID string `gorm:"column:department_id;size:32;not null;default:'';index:idx_user_department" json:"department_id"`
+	// RoleID is "" for a user without a role, which means no function
+	// permissions (the superuser bypasses the role system entirely).
+	RoleID string `gorm:"column:role_id;size:32;not null;default:'';index:idx_user_role" json:"role_id"`
 	BaseModel
 }
 

@@ -32,7 +32,10 @@ import (
 //
 // Gaps vs Python (documented, not yet ported): thumbnail generation and
 // read_potential_broken_pdf repair.
-func (s *DocumentService) UploadLocalDocuments(ctx context.Context, kb *entity.Knowledgebase, files []*multipart.FileHeader, parentPath string, parserConfigOverride map[string]interface{}) ([]map[string]interface{}, []string) {
+// UploadLocalDocuments inserts the uploaded files into the dataset. An optional
+// trailing folderID files the new documents into one knowledge base directory;
+// callers omit it to leave them in the unfiled root.
+func (s *DocumentService) UploadLocalDocuments(ctx context.Context, kb *entity.Knowledgebase, files []*multipart.FileHeader, parentPath string, parserConfigOverride map[string]interface{}, folderID ...string) ([]map[string]interface{}, []string) {
 	userID := permission.UserIDFromContext(ctx)
 	if userID == "" {
 		return nil, []string{permission.ErrUnauthenticated.Error()}
@@ -62,6 +65,20 @@ func (s *DocumentService) UploadLocalDocuments(ctx context.Context, kb *entity.K
 	}
 	for k, v := range parserConfigOverride {
 		merged[k] = v
+	}
+
+	// File the new documents into the requested directory when one is given.
+	targetFolderID := ""
+	if len(folderID) > 0 {
+		targetFolderID = strings.TrimSpace(folderID[0])
+	}
+	if targetFolderID != "" {
+		var count int64
+		if err := dao.DB.WithContext(ctx).Model(&entity.KBFolder{}).
+			Where("id = ? AND kb_id = ?", targetFolderID, kb.ID).
+			Count(&count).Error; err != nil || count == 0 {
+			return nil, []string{"目标目录不存在"}
+		}
 	}
 
 	safeParent := utility.SanitizeFilename(parentPath)
@@ -106,6 +123,7 @@ func (s *DocumentService) UploadLocalDocuments(ctx context.Context, kb *entity.K
 
 		selection, parserConfig := resolveDocumentParser(ctx, kb, filename, filetype, merged)
 		doc := s.newDatasetDocument(kb, userID, filename, location, string(filetype), selection, parserConfig, "local", int64(len(blob)), blob)
+		doc.FolderID = targetFolderID
 		if err = s.InsertDocument(ctx, doc); err != nil {
 			// Roll back the orphaned blob so a failed insert doesn't leak storage.
 			rmErr := storage.RemoveBlob(ctx, storageImpl, kb.ID, location)

@@ -48,6 +48,8 @@ export interface IDocumentInfo {
   meta_fields?: Record<string, any>;
   chunk_method: string;
   chunk_count: number;
+  // "" for a document in the unfiled root of its knowledge base.
+  folder_id?: string;
 }
 
 export interface IParserConfig {

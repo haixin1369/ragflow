@@ -58,6 +58,8 @@ type Router struct {
 	compilationTemplateHandler      *handler.CompilationTemplateHandler
 	compilationTemplateGroupHandler *handler.CompilationTemplateGroupHandler
 	datasetArtifactHandler          *handler.DatasetArtifactHandler
+	kbMemberHandler                 *handler.KBMemberHandler
+	kbFolderHandler                 *handler.KBFolderHandler
 }
 
 // NewRouter create router
@@ -131,6 +133,8 @@ func NewRouter(
 		compilationTemplateHandler:      compilationTemplateHandler,
 		compilationTemplateGroupHandler: compilationTemplateGroupHandler,
 		datasetArtifactHandler:          datasetArtifactHandler,
+		kbMemberHandler:                 handler.NewKBMemberHandler(),
+		kbFolderHandler:                 handler.NewKBFolderHandler(),
 	}
 }
 
@@ -257,6 +261,8 @@ func (r *Router) Setup(engine *gin.Engine) {
 				// For EE
 				users.GET("/me/admin", r.userHandler.IsAdmin)
 				users.GET("/me/meta", r.userHandler.GetMeta)
+				// Button-level function permission codes for PermissionGate
+				users.GET("/me/permissions", r.userHandler.MePermissions)
 			}
 
 			user := v1.Group("/settings")
@@ -331,6 +337,14 @@ func (r *Router) Setup(engine *gin.Engine) {
 				datasets.GET("", r.datasetsHandler.ListDatasets)
 				datasets.GET("/tags/aggregation", r.datasetsHandler.AggregateTags)
 				datasets.GET("/:dataset_id", r.datasetsHandler.GetDataset)
+				datasets.GET("/:dataset_id/members", r.kbMemberHandler.ListDatasetMembers)
+				datasets.PUT("/:dataset_id/members", r.kbMemberHandler.SetDatasetMember)
+				datasets.DELETE("/:dataset_id/members/:user_id", r.kbMemberHandler.RemoveDatasetMember)
+				datasets.GET("/:dataset_id/folders", r.kbFolderHandler.ListDatasetFolders)
+				datasets.POST("/:dataset_id/folders", r.kbFolderHandler.CreateDatasetFolder)
+				datasets.PUT("/:dataset_id/folders/:folder_id", r.kbFolderHandler.UpdateDatasetFolder)
+				datasets.DELETE("/:dataset_id/folders/:folder_id", r.kbFolderHandler.DeleteDatasetFolder)
+				datasets.PUT("/:dataset_id/documents/:document_id/folder", r.kbFolderHandler.MoveDocumentToFolder)
 				datasets.PUT("/:dataset_id", r.datasetsHandler.UpdateDataset)
 				datasets.GET("/:dataset_id/graph", r.datasetsHandler.GetKnowledgeGraph)
 				datasets.POST("/:dataset_id/embedding/check", r.datasetsHandler.CheckEmbedding)

@@ -427,6 +427,14 @@ These steps are not gated by the version marker. They use schema or data checks 
 | `knowledgebase` | Adds `pipeline_version_id varchar(32) NULL` (dataflow canvas version binding; design section 5/B4). |
 | `document` | Adds `pipeline_version_id varchar(32) NULL` (inherits the dataset pinned version at upload; design section 5). |
 | `user_canvas_version` | Adds `alias varchar(255) NULL` (free-text version alias for the version list filter; design A2/F1). |
+| `user` | Adds `department_id varchar(32) NOT NULL DEFAULT ''` (department membership, `''` = unassigned) and `role_id varchar(32) NOT NULL DEFAULT ''` (function-permission role, `''` = no role), with `idx_user_department` and `idx_user_role`. |
+| `document` | Adds `folder_id varchar(32) NOT NULL DEFAULT ''` (`''` = unfiled root of the knowledge base) and the index `idx_document_kb_folder (kb_id, folder_id)`. |
+| `department` | Created by `AutoMigrate`. Columns: `id` (PK, varchar 32), `name`, `parent_id` (`''` = root), `path` (materialized ancestor chain), base timestamps. Index `idx_department_parent (parent_id)`. |
+| `role` | Created by `AutoMigrate`. Columns: `id` (PK, varchar 32), `name`, `description`, base timestamps. Unique index `uni_role_name (name)`. |
+| `role_permission` | Created by `AutoMigrate`. Composite primary key `(role_id, permission_code)`. |
+| `function_permission` | Created by `AutoMigrate`. Columns: `code` (PK, varchar 64), `name`, `description`. Seeded at startup; see the data changes below. |
+| `kb_member` | Created by `AutoMigrate`. Columns: `id` (PK, varchar 32), `kb_id`, `user_id`, `permission` (`view` / `edit`), base timestamps. Unique index `uni_kb_member (kb_id, user_id)` and index `idx_kb_member_user (user_id)`. Owners and the superuser are never stored here. |
+| `kb_folder` | Created by `AutoMigrate`. Columns: `id` (PK, varchar 32), `kb_id`, `parent_id` (`''` = root), `name`, `path` (materialized ancestor chain), base timestamps. Unique index `uni_kb_folder (kb_id, parent_id, name)` (no duplicate folder names under one parent) and index `idx_kb_folder_parent (kb_id, parent_id)`. |
 
 `migrateColumnWidths` performs the width changes above. It reads
 `ColumnTypes().Length()` and only issues `ALTER COLUMN` when the current width is
@@ -442,3 +450,4 @@ The existing `pipeline_title` index is preserved.
 |---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `knowledgebase`, `dialog` | `parser_config` entries stored under the legacy key `TokenChunker:SixApplesFall` are rewritten to `GeneralChunker:SixApplesFall`. Values already stored under the new key win; `TokenChunker`-only fields (`delimiter_mode`, `outputs`) are dropped, and a legacy `delimiter` becomes `delimiters`. `delimiter` is discarded when `delimiters` already exists. |
 | `connector` | When `RAGFLOW_CONNECTOR_KEY` is set, a plaintext `config["credentials"]` value is encrypted to an `enc:v1:` string (AES-256-GCM). Rows that are already encrypted and rows whose `config` is not valid JSON are left unchanged. Without the key, the step changes nothing. |
+| `function_permission` | `SeedFunctionPermissions` upserts the built-in permission catalogue (`kb.create`, `doc.upload`, `doc.delete`, `doc.reparse`, `chat.create`, `agent.create`, `file.manage`) on every startup: `name` and `description` are rewritten to mirror the code, while `role_permission` grants are never touched. The step is skipped with a warning when the table does not exist yet. |

@@ -15,25 +15,14 @@
  */
 
 import message from '@/components/ui/message';
-import { TenantRole } from '@/ee/constants/team';
 import { ResponseGetType } from '@/interfaces/database/base';
 import { IToken } from '@/interfaces/database/chat';
 import { ILangfuseConfig } from '@/interfaces/database/system';
-import {
-  ITenant,
-  ITenantUser,
-  IUserInfo,
-} from '@/interfaces/database/user-setting';
+import { ITenant, IUserInfo } from '@/interfaces/database/user-setting';
 import { ISetLangfuseConfigRequestBody } from '@/interfaces/request/system';
 import { DEFAULT_LANGUAGE_CODE, supportedLanguages } from '@/locales/config';
 import kbService from '@/services/knowledge-service';
-import userService, {
-  addTenantUser,
-  agreeTenant,
-  deleteTenantUser,
-  listTenant,
-  listTenantUser,
-} from '@/services/user-service';
+import userService, { listTenant } from '@/services/user-service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -47,11 +36,7 @@ export const enum UserSettingApiAction {
   FetchSystemTokenList = 'fetchSystemTokenList',
   RemoveSystemToken = 'removeSystemToken',
   CreateSystemToken = 'createSystemToken',
-  ListTenantUser = 'listTenantUser',
-  AddTenantUser = 'addTenantUser',
-  DeleteTenantUser = 'deleteTenantUser',
   ListTenant = 'listTenant',
-  AgreeTenant = 'agreeTenant',
   SetLangfuseConfig = 'setLangfuseConfig',
   DeleteLangfuseConfig = 'deleteLangfuseConfig',
   ListPipelines = 'listPipelines',
@@ -341,96 +326,6 @@ export const useCreateSystemToken = () => {
   return { data, loading, createToken: mutateAsync };
 };
 
-export const useListTenantUser = (
-  tenantId: string,
-  excludePendingInvitations = false,
-) => {
-  const {
-    data,
-    isFetching: loading,
-    refetch,
-  } = useQuery<ITenantUser[]>({
-    queryKey: [UserSettingApiAction.ListTenantUser, tenantId],
-    initialData: [],
-    gcTime: 0,
-    enabled: !!tenantId,
-    select: (data) =>
-      excludePendingInvitations
-        ? data.filter((x) => x.role !== TenantRole.Invite)
-        : data,
-    queryFn: async () => {
-      const { data } = await listTenantUser(tenantId);
-
-      return data?.data ?? [];
-    },
-  });
-
-  return { data, loading, refetch };
-};
-
-export const useAddTenantUser = () => {
-  const { data: tenantInfo } = useFetchTenantInfo();
-  const queryClient = useQueryClient();
-  const {
-    data,
-    isPending: loading,
-    mutateAsync,
-  } = useMutation({
-    mutationKey: [UserSettingApiAction.AddTenantUser],
-    mutationFn: async (email: string) => {
-      const { data } = await addTenantUser(tenantInfo.tenant_id, email);
-      if (data.code === 0) {
-        queryClient.invalidateQueries({
-          queryKey: [UserSettingApiAction.ListTenantUser],
-        });
-      }
-      return data?.code;
-    },
-  });
-
-  return { data, loading, addTenantUser: mutateAsync };
-};
-
-export const useDeleteTenantUser = () => {
-  const { data: tenantInfo } = useFetchTenantInfo();
-  const queryClient = useQueryClient();
-  const { t } = useTranslation();
-
-  const {
-    data,
-    isPending: loading,
-    mutateAsync,
-  } = useMutation({
-    mutationKey: [UserSettingApiAction.DeleteTenantUser],
-    mutationFn: async ({
-      userId,
-      tenantId,
-    }: {
-      userId: string;
-      tenantId?: string;
-    }) => {
-      const { data } = await deleteTenantUser({
-        tenantId: tenantId ?? tenantInfo.tenant_id,
-        userId,
-      });
-      if (data.code === 0) {
-        message.success(t('message.deleted'));
-        // Refresh the member table; the tenant list also changes when the
-        // deleted user is the current user quitting a team.
-        queryClient.invalidateQueries({
-          queryKey: [UserSettingApiAction.ListTenantUser],
-        });
-        queryClient.invalidateQueries({
-          queryKey: [UserSettingApiAction.ListTenant],
-        });
-      }
-      return data?.code;
-    },
-  });
-
-  return { data, loading, deleteTenantUser: mutateAsync };
-};
-
 export const useListTenant = () => {
   const { data: tenantInfo } = useFetchTenantInfo();
   const tenantId = tenantInfo.tenant_id;
@@ -451,31 +346,6 @@ export const useListTenant = () => {
   });
 
   return { data, loading, refetch };
-};
-
-export const useAgreeTenant = () => {
-  const queryClient = useQueryClient();
-  const { t } = useTranslation();
-
-  const {
-    data,
-    isPending: loading,
-    mutateAsync,
-  } = useMutation({
-    mutationKey: [UserSettingApiAction.AgreeTenant],
-    mutationFn: async (tenantId: string) => {
-      const { data } = await agreeTenant(tenantId);
-      if (data.code === 0) {
-        message.success(t('message.operated'));
-        queryClient.invalidateQueries({
-          queryKey: [UserSettingApiAction.ListTenant],
-        });
-      }
-      return data?.code;
-    },
-  });
-
-  return { data, loading, agreeTenant: mutateAsync };
 };
 
 export const useSetLangfuseConfig = () => {

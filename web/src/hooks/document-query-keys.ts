@@ -39,6 +39,8 @@ export const DocumentKeys = {
     searchString: string,
     pagination: unknown,
     filter: unknown,
+    // undefined = every document, '' = the unfiled root, an id = one folder.
+    folderId?: string,
   ) =>
     [
       ...DocumentKeys.all(),
@@ -46,6 +48,7 @@ export const DocumentKeys = {
       searchString,
       pagination,
       filter,
+      folderId,
     ] as const,
   allFilters: () => [DocumentApiAction.FetchDocumentFilter] as const,
   filter: (searchString: string, knowledgeId?: string) =>

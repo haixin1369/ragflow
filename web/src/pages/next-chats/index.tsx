@@ -1,6 +1,7 @@
 import { CardContainer } from '@/components/card-container';
 import { EmptyCardType } from '@/components/empty/constant';
 import { EmptyAppCard } from '@/components/empty/empty';
+import { PermissionGate } from '@/components/permission-gate';
 import { NavGroupListFilterBar } from '@/layouts/components/nav-group-list-filter-bar';
 import { PrivilegeManagementDialog } from '@/ee/components/privilege-management/privilege-management-dialog';
 import { RenameDialog } from '@/components/rename-dialog';
@@ -10,6 +11,7 @@ import { Spin } from '@/components/ui/spin';
 import { ListDeletionKey } from '@/constants/list-deletion';
 import { useGoToPreviousPageOnEmpty } from '@/hooks/logic-hooks';
 import { useFetchChatList } from '@/hooks/use-chat-request';
+import { FunctionPermissionCode } from '@/services/user-permission-service';
 import { buildOwnersFilter } from '@/utils/list-filter-util';
 import { pick } from 'lodash';
 import { Plus } from 'lucide-react';
@@ -136,10 +138,12 @@ export default function ChatList() {
             value={filterValue}
             onChange={handleFilterSubmit}
           >
-            <Button data-testid="create-chat" onClick={handleShowCreateModal}>
-              <Plus className="size-[1em]" />
-              {t('chat.createChat')}
-            </Button>
+            <PermissionGate code={FunctionPermissionCode.ChatCreate}>
+              <Button data-testid="create-chat" onClick={handleShowCreateModal}>
+                <Plus className="size-[1em]" />
+                {t('chat.createChat')}
+              </Button>
+            </PermissionGate>
           </NavGroupListFilterBar>
         </header>
 

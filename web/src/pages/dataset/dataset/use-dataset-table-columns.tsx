@@ -11,6 +11,7 @@ import { useNavigatePage } from '@/hooks/logic-hooks/navigate-hooks';
 import { useDatasetEditButtonDisabled } from '@/ee/hooks/logic-hooks/use-permission';
 import { UseRowSelectionType } from '@/hooks/logic-hooks/use-row-selection';
 import { useSetDocumentStatus } from '@/hooks/use-document-request';
+import { useKbManagePermission } from '../hooks/use-kb-manage-permission';
 import { IDocumentInfo } from '@/interfaces/database/document';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/utils/date';
@@ -31,16 +32,19 @@ type UseDatasetTableColumnsType = UseChangeDocumentParserShowType &
   Pick<UseRowSelectionType, 'setRowSelection'> & {
     showLog: (record: IDocumentInfo) => void;
     showManageMetadataModal: (config: ShowManageMetadataModalProps) => void;
+    showMoveToFolderModal: (record: IDocumentInfo) => void;
   };
 
 export function useDatasetTableColumns({
   showChangeParserModal,
   showRenameModal,
   showManageMetadataModal,
+  showMoveToFolderModal,
   showLog,
   setRowSelection,
 }: UseDatasetTableColumnsType) {
   const datasetEditButtonDisabled = useDatasetEditButtonDisabled();
+  const { canManage: canMoveToFolder } = useKbManagePermission();
   const { t } = useTranslation('translation', {
     keyPrefix: 'knowledgeDetails',
   });
@@ -259,6 +263,8 @@ export function useDatasetTableColumns({
             <DatasetActionCell
               record={record}
               showRenameModal={showRenameModal}
+              showMoveToFolderModal={showMoveToFolderModal}
+              canMoveToFolder={canMoveToFolder}
               setRowSelection={setRowSelection}
               datasetEditButtonDisabled={datasetEditButtonDisabled}
             />
@@ -274,9 +280,11 @@ export function useDatasetTableColumns({
       showChangeParserModal,
       showRenameModal,
       showManageMetadataModal,
+      showMoveToFolderModal,
       showLog,
       setRowSelection,
       datasetEditButtonDisabled,
+      canMoveToFolder,
     ],
   );
 

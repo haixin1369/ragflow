@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAGFlow 企业权限管理体系 · 功能需求文档（v0.1 草案）</title>
+<style>
+  :root {
+    --ink: #1f2329;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --brand: #1a56db;
+    --brand-soft: #eff4ff;
+    --warn-bg: #fff7ed;
+    --warn-line: #fdba74;
+    --ok: #047857;
+    --ok-bg: #ecfdf5;
+    --no: #b91c1c;
+    --no-bg: #fef2f2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    color: var(--ink);
+    background: #f8fafc;
+    line-height: 1.75;
+    font-size: 15px;
+  }
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 32px 96px; }
+  header.doc { border-bottom: 3px solid var(--ink); padding-bottom: 20px; margin-bottom: 36px; }
+  header.doc h1 { margin: 0 0 8px; font-size: 26px; }
+  header.doc .meta { color: var(--muted); font-size: 13px; display: flex; gap: 24px; flex-wrap: wrap; }
+  h2 { font-size: 20px; margin: 44px 0 14px; padding-left: 10px; border-left: 4px solid var(--brand); }
+  h3 { font-size: 16.5px; margin: 28px 0 8px; }
+  p { margin: 8px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 22px; font-size: 14px; background: #fff; }
+  th, td { border: 1px solid var(--line); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--brand-soft); font-weight: 600; white-space: nowrap; }
+  tbody tr:nth-child(even) { background: #fafbfc; }
+  .yes { color: var(--ok); font-weight: 700; }
+  .no { color: var(--no); font-weight: 700; }
+  .pill { display: inline-block; font-size: 12px; padding: 1px 10px; border-radius: 999px; margin-left: 6px; vertical-align: 2px; }
+  .pill.p0 { background: var(--brand-soft); color: var(--brand); border: 1px solid #bcd0f7; }
+  .pill.p1 { background: #f3f4f6; color: var(--muted); border: 1px solid var(--line); }
+  .assumption {
+    background: var(--warn-bg); border: 1px solid var(--warn-line);
+    border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 14px;
+  }
+  .assumption b { color: #c2410c; }
+  .openq {
+    background: #f0f9ff; border: 1px solid #7dd3fc; border-radius: 6px;
+    padding: 14px 18px; margin: 12px 0;
+  }
+  .openq b { color: #0369a1; }
+  .fr { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 20px 24px; margin: 18px 0; }
+  .fr h3 { margin-top: 0; }
+  .fr dl { margin: 10px 0 0; }
+  .fr dt { font-weight: 600; margin-top: 12px; color: #374151; font-size: 14px; }
+  .fr dd { margin: 4px 0 0; padding-left: 0; }
+  ul { margin: 6px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  .chain { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+  footer { margin-top: 56px; border-top: 1px solid var(--line); padding-top: 16px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="doc">
+  <h1>RAGFlow 企业权限管理体系 · 功能需求文档</h1>
+  <div class="meta">
+    <span>版本：v0.3（增补 FR-08 目录结构管理）</span>
+    <span>日期：2026-11-21</span>
+    <span>适用对象：RAGFlow 二次开发（Go 后端 + React 前端）</span>
+  </div>
+</header>
+
+<h2>1. 背景与目标</h2>
+<p>RAGFlow 开源版本的权限模型面向个人与小团队场景：任何登录用户都能浏览、创建知识库，不存在组织维度的隔离，知识库之间默认互通。这无法满足中国企业"多子公司 / 多部门各自管理知识库、权限统一由管理员管控"的要求。</p>
+<p>本次二次开发引入三层能力，使知识库从"默认可见"变为"默认不可见、按需授权"：</p>
+<ol>
+  <li><b>组织架构</b>：支持子公司 / 部门层级，用户归属唯一部门，各部门独立管理自己的知识库；</li>
+  <li><b>角色化功能权限</b>：功能权限由系统内置超级管理员通过"角色"统一定义与分配；</li>
+  <li><b>资源级授权</b>：知识库所有者可为其知识库配置可查看 / 可编辑人员，无授权的用户完全不可见该知识库。</li>
+</ol>
+<p class="chain">证据（客户要求）→ 受影响角色（普通用户、知识库所有者、超级管理员）→ 产品决策（组织隔离 + 角色授权 + 资源授权）→ 可观察结果（无权限者看不到知识库，超管可全局管控）。</p>
+
+<h2>2. 角色与对象模型</h2>
+
+<h3>2.1 角色</h3>
+<table>
+  <thead><tr><th>角色</th><th>性质</th><th>能力边界</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>超级管理员</b></td>
+      <td>系统内置且<b>全系统仅一个账号</b>，不可停用、不可删除、其权限不可编辑</td>
+      <td>唯一的系统管理入口持有者：维护组织架构与账号、定义角色与功能权限、查看并管控全部知识库（改成员权限、强制转移所有权）。<span class="pill p0">P0</span></td>
+    </tr>
+    <tr>
+      <td><b>自定义角色</b></td>
+      <td>由超管创建，数量不限</td>
+      <td>一组功能权限的集合。用户被赋予角色后获得对应功能权限；未被赋予任何角色的用户没有任何功能权限。</td>
+    </tr>
+    <tr>
+      <td><b>普通用户</b></td>
+      <td>账号由超管创建</td>
+      <td>归属唯一部门；功能权限由角色决定；对自己拥有的知识库拥有完整控制权（含成员配置）。</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>2.2 对象</h3>
+<table>
+  <thead><tr><th>对象</th><th>定义</th><th>关键属性</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>部门 / 子公司</b></td>
+      <td>树形组织单元，支持多级层级</td>
+      <td>名称、上级部门；成员用户；部门下知识库（由创建者归属推导）</td>
+    </tr>
+    <tr>
+      <td><b>用户</b></td>
+      <td>登录主体</td>
+      <td>唯一所属部门（不可多属）；角色（0 或 1 个）；账号由超管创建 / 停用 / 删除</td>
+    </tr>
+    <tr>
+      <td><b>知识库</b></td>
+      <td>核心共享资源</td>
+      <td>唯一所有者（创建者）；归属部门（= 所有者所在部门）；成员授权（可查看 / 可编辑，仅针对个人用户）；多级目录树（文档按目录分类管理，FR-08）</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>2.3 知识库权限层级</h3>
+<p>所有者 &gt; 可编辑 &gt; 可查看 &gt; 无权限（不可见）。同一用户在同一知识库上只持有其中一级；层级之间不叠加。</p>
+
+<h2>3. 范围</h2>
+<table>
+  <thead><tr><th>优先级</th><th>内容</th></tr></thead>
+  <tbody>
+    <tr><td><span class="pill p0">P0</span></td><td>组织架构管理（FR-01）、用户账号管理（FR-02）、角色与功能权限管理（FR-03）、知识库创建与归属（FR-04）、知识库成员授权（FR-05）、可见性控制（FR-06）、超管知识库管理（FR-07）、知识库目录结构管理（FR-08）</td></tr>
+    <tr><td><span class="pill p1">P1</span></td><td>权限变更与所有权转移的审计日志；按部门维度的知识库统计报表</td></tr>
+    <tr><td><b>明确排除</b></td><td>不引入"部门管理员"中间角色（账号与组织全部由超管管理）；不做授权审批流；不改变 RAGFlow 其他业务功能的行为</td></tr>
+  </tbody>
+</table>
+
+<h2>4. 功能需求</h2>
+
+<div class="fr">
+  <h3>FR-01 组织架构管理 <span class="pill p0">P0</span></h3>
+  <dl>
+    <dt>目的</dt><dd>建立子公司 / 部门层级，作为用户归属与知识库归属的组织依据。</dd>
+    <dt>触发者</dt><dd>仅超级管理员，入口在系统管理 → 组织架构。</dd>
+    <dt>处理规则</dt>
+    <dd><ul>
+      <li>支持新增、重命名、调整上级、删除部门节点，树形展示；</li>
+      <li><b>删除约束</b>：部门下仍有在岗用户或归属知识库时，不允许删除，需先转移用户或知识库；</li>
+      <li>部门节点数量、层级深度不做业务上限。</dd>
+    </ul></dd>
+    <dt>结果与状态</dt><dd>组织树持久保存；删除为即时生效并要求二次确认。</dd>
+  </dl>
+</div>
+
+<div class="fr">
+  <h3>FR-02 用户账号管理 <span class="pill p0">P0</span></h3>
+  <dl>
+    <dt>目的</dt><dd>由超管统一维护企业内全部用户账号及其组织 / 角色归属。</dd>
+    <dt>触发者</dt><dd>仅超级管理员，入口在系统管理 → 用户管理。</dd>
+    <dt>处理规则</dt>
+    <dd><ul>
+      <li>创建用户时必须指定：姓名 / 账号、初始密码、<b>唯一所属部门</b>、角色（可不选）；</li>
+      <li>支持编辑所属部门与角色、重置密码、停用 / 启用、删除账号；</li>
+      <li><b>停用</b>：立即禁止登录，保留账号与其拥有的知识库；</li>
+      <li><b>删除</b>：账号名下仍有知识库时<b>阻断删除</b>，须先通过 FR-07 逐一转移所有权；转移完成后方可删除，删除时自动将其从所有知识库的成员授权名单中移除；</li>
+      <li>用户不可自行修改自己的部门与角色。</dd>
+    </ul></dd>
+    <dt>异常</dt><dd>内置超管账号不可停用、不可删除；同账号名重复创建时提示冲突。</dd>
+  </dl>
+</div>
+
+<div class="fr">
+  <h3>FR-03 角色与功能权限管理 <span class="pill p0">P0</span></h3>
+  <dl>
+    <dt>目的</dt><dd>功能权限统一收口：只有超管能定义角色与分配功能权限，普通用户无法自我提权。</dd>
+    <dt>触发者</dt><dd>仅超级管理员，入口在系统管理 → 角色管理。</dd>
+    <dt>处理规则</dt>
+    <dd><ul>
+      <li>超管可创建任意数量的角色，为每个角色勾选功能权限项；</li>
+      <li><b>P0 功能权限项</b>：创建知识库；</li>
+      <li><b>权限粒度为按钮级</b>（已确认）：每个功能权限项对应到具体操作（如创建知识库、上传文档、创建对话助手等），用户无某项权限时，对应<b>操作按钮不显示</b>，仅能看到自己可执行的操作；完整权限项清单需在实施前与现有功能菜单逐一对齐；</li>
+      <li>编辑角色权限后，所有持有该角色的用户即时生效；</li>
+      <li>删除角色时若仍有用户持有该角色，阻断并提示先调整用户。</dd>
+    </ul></dd>
+    <dt>结果与状态</dt><dd>用户登录后仅看到其功能权限范围内的功能入口；失去权限的功能即时隐藏。</dd>
+  </dl>
+</div>
+
+<div class="fr">
+  <h3>FR-04 知识库创建与归属 <span class="pill p0">P0</span></h3>
+  <dl>
+    <dt>目的</dt><dd>将"谁能创建知识库"收敛为功能权限，创建即建立所有权与部门归属。</dd>
+    <dt>触发者</dt><dd>被授予"创建知识库"功能权限的用户。</dd>
+    <dt>处理规则</dt>
+    <dd><ul>
+      <li>创建者自动成为该知识库的<b>所有者</b>；</li>
+      <li>知识库<b>归属创建者所在部门</b>，归属关系随所有者转移（FR-07）而更新；</li>
+      <li>无该功能权限的用户看不到任何创建知识库入口。</dd>
+    </ul></dd>
+  </dl>
+</div>
+
+<div class="fr">
+  <h3>FR-05 知识库成员授权 <span class="pill p0">P0</span></h3>
+  <dl>
+    <dt>目的</dt><dd>所有者自主控制自己知识库的协作者范围与协作深度。</dd>
+    <dt>触发者</dt><dd>仅知识库<b>所有者</b>（可编辑人员不能配置成员权限；这是本需求与常见协作系统的关键差异）。</dd>
+    <dt>处理规则</dt>
+    <dd><ul>
+      <li>所有者在知识库设置 → 成员管理中维护两个名单：<b>可查看人员</b>、<b>可编辑人员</b>；</li>
+      <li>授权对象为<b>个人用户</b>（支持按姓名 / 账号搜索全部用户，含跨部门用户——已确认允许跨部门授权）；</li>
+      <li>支持<b>批量添加</b>：可按部门整批导入其全部成员（如添加整个部门的人员）；批量导入后仍逐人落地为个人授权，后续部门成员变动不会自动同步名单，由所有者自行维护；</li>
+      <li>同一用户在同一知识库只能存在于一个名单；将查看人员升级为编辑（或反之）视为移动，不产生重复授权；</li>
+      <li>所有者本人不出现在两个名单中，也不能将自己移出所有者身份（所有权变更只能通过 FR-07）；</li>
+      <li>移除成员即时生效。</dd>
+    </ul></dd>
+    <dt>异常</dt><dd>授权已被停用 / 已删除的用户时提示不可选；成员名单为空时知识库仅所有者与超管可见。</dd>
+  </dl>
+</div>
+
+<div class="fr">
+  <h3>FR-06 知识库可见性控制 <span class="pill p0">P0</span></h3>
+  <dl>
+    <dt>目的</dt><dd>落实"不可查看没权限的知识库"——可见即授权，无授权即不可见。</dd>
+    <dt>判定规则（唯一判定口径）</dt>
+    <dd>某用户对某知识库<b>可见</b>，当且仅当满足以下任一条件：
+      <ul>
+        <li>该用户是超级管理员；</li>
+        <li>该用户是该知识库的所有者；</li>
+        <li>该用户在该知识库的可查看名单中；</li>
+        <li>该用户在该知识库的可编辑名单中。</li>
+      </ul>
+      部门归属<b>不</b>自动产生可见性（已确认：即使同部门，也一律须经所有者显式授权）。
+    </dd>
+    <dt>处理规则</dt>
+    <dd><ul>
+      <li>不可见的知识库不出现在知识库列表、搜索结果与任何下拉选择器中；</li>
+      <li>直接通过 URL / ID 访问不可见知识库时返回"不存在或无权限"，不泄露其存在性；</li>
+      <li>被移出成员名单后，用户下次访问即被拒绝（不承诺中断进行中的会话）。</dd>
+    </ul></dd>
+  </dl>
+</div>
+
+<div class="fr">
+  <h3>FR-07 超管知识库管理 <span class="pill p0">P0</span></h3>
+  <dl>
+    <dt>目的</dt><dd>超管对企业内全部知识库拥有最终管控权，覆盖人员调整与所有权纠偏。</dd>
+    <dt>触发者</dt><dd>仅超级管理员。</dd>
+    <dt>处理规则</dt>
+    <dd><ul>
+      <li>超管的知识库列表展示<b>全部知识库</b>（含其无成员授权的），并支持按部门、所有者筛选，列表标注每库的所有者与归属部门；</li>
+      <li>超管可修改任意知识库的成员名单（增删可查看 / 可编辑人员），规则同 FR-05；</li>
+      <li><b>强制转移所有权</b>：超管选择新所有者后二次确认；转移即时生效——新所有者立即获得所有者权限（含成员配置权），知识库归属部门更新为新所有者所在部门；</li>
+      <li>转移时原所有者的后续权限<b>降为"可查看人员"</b>（已确认）。</dd>
+    </ul></dd>
+    <dt>异常</dt><dd>新所有者候选为已停用 / 已删除用户时不可选；转移操作失败时回滚，不产生部分生效状态。</dd>
+  </dl>
+</div>
+
+<div class="fr">
+  <h3>FR-08 知识库目录结构管理 <span class="pill p0">P0</span></h3>
+  <dl>
+    <dt>目的</dt><dd>支撑上万级文档的知识库：在知识库内建立多级目录树，文档按目录分类上传、浏览与移动，保证大规模文档可组织、可定位。</dd>
+    <dt>触发者</dt><dd>目录的新建 / 重命名 / 移动 / 删除与文档上传同权限层级（所有者与可编辑人员，见第 5 章权限矩阵）；可查看人员仅可浏览目录树并按目录查看文档。</dd>
+    <dt>处理规则</dt>
+    <dd><ul>
+      <li>每个知识库内可建立<b>多级目录树</b>，支持新建、重命名、移动、删除目录；同一父目录下目录名称不得重复；</li>
+      <li>文档上传时选择目标目录，默认进入根目录（未分类）；<b>每份文档归属唯一目录</b>，可在目录间移动；</li>
+      <li>目录不产生独立权限：目录内文档的可见性与操作权限完全继承其所在知识库（同 FR-06 判定口径）；</li>
+      <li><b>删除目录约束</b>：目录下仍有文档或子目录时阻断删除，须先清空或移走内容，避免大规模误删；</li>
+      <li>面向上万级文档的规模要求：目录树支持懒加载；文档列表按目录分页展示；支持按文档名称在知识库内全局搜索，搜索结果标注所属目录路径。</dd>
+    </ul></dd>
+    <dt>结果与状态</dt><dd>知识库详情页采用左侧目录树 + 右侧文档列表布局；目录与文档的目录归属变更即时生效。</dd>
+    <dt>异常</dt><dd>删除目录需二次确认；移动文档失败时文档保留原目录，不产生丢失。</dd>
+  </dl>
+</div>
+
+<div class="assumption"><b>假设 A3</b>：目录本身不设独立授权，目录内文档权限完全随所在知识库；如需目录级授权请指出。</div>
+<div class="assumption"><b>假设 A4</b>：每份文档同一时刻仅归属一个目录；本期目录间仅支持移动，不支持同一文档多目录挂载。</div>
+
+<h2>5. 共享规则：知识库权限矩阵</h2>
+<p>以下矩阵是全部知识库相关操作的唯一权限口径，FR-05 / FR-06 / FR-07 均引用本表。</p>
+<table>
+  <thead>
+    <tr><th>操作</th><th>所有者</th><th>可编辑人员</th><th>可查看人员</th><th>无权限用户</th><th>超级管理员</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>列表可见 / 进入知识库</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗ 不可见</td><td class="yes">✓（全量）</td></tr>
+    <tr><td>浏览 / 检索库内文档</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>新增 / 删除 / 重新解析文档</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>修改知识库配置（名称、描述、分块策略等）</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>新建 / 重命名 / 移动 / 删除目录（FR-08）</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>配置成员权限（增删查看 / 编辑人员）</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>删除知识库</td><td class="yes">✓（二次确认）</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓（二次确认）</td></tr>
+    <tr><td>强制转移所有权</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓（二次确认）</td></tr>
+  </tbody>
+</table>
+<div class="assumption"><b>假设 A1</b>：超管除需求明确列出的"查看全部 / 改成员权限 / 转移所有权"外，同样拥有文档编辑与删除知识库能力（企业管控惯例）；若需收窄请指出。</div>
+<div class="assumption"><b>假设 A2</b>：授权与可见性变更即时生效，不区分在线会话；被移出成员正在进行的操作在下一次请求时被拒绝。</div>
+
+<h2>6. 核心流程</h2>
+<h3>6.1 知识库协作建立流程</h3>
+<p>超管创建用户并赋予"创建知识库"角色 → 用户创建知识库（成为所有者，归属其部门）→ 所有者在成员管理中添加可查看 / 可编辑人员 → 被授权用户在列表中看到该知识库并按层级操作 → 未授权用户全程不可见。</p>
+<h3>6.2 所有权纠偏流程（离职 / 调岗）</h3>
+<p>用户离职 → 超管在知识库管理中按所有者筛出其名下知识库 → 逐一强制转移所有权给接手人（原所有者降为可查看人员）→ 全部转移完成后方可删除账号（自动移出各库成员名单）→ 归属部门更新，接管人获得完整控制权。</p>
+
+<h2>7. 已确认决策记录（2026-11-21）</h2>
+<table>
+  <thead><tr><th>议题</th><th>确认结论</th><th>落点</th></tr></thead>
+  <tbody>
+    <tr><td>部门内可见性（原 Q1）</td><td>必须显式授权，同部门默认也不可见</td><td>FR-06</td></tr>
+    <tr><td>跨部门授权（原 Q2）</td><td>允许</td><td>FR-05</td></tr>
+    <tr><td>强制转移后原所有者权限（原 Q3）</td><td>降为<b>可查看人员</b></td><td>FR-07</td></tr>
+    <tr><td>功能权限粒度（原 Q4）</td><td><b>按钮级控制</b>：无权限时不显示相关操作按钮</td><td>FR-03</td></tr>
+    <tr><td>超管账号（原 Q5）</td><td>全系统仅一个内置超管账号</td><td>2.1 / FR-02</td></tr>
+    <tr><td>账号删除前置条件（追加）</td><td>名下有知识库时须先转移所有权，方可删除</td><td>FR-02</td></tr>
+    <tr><td>成员批量添加（追加）</td><td>支持按部门整批添加成员（落地为逐人个人授权）</td><td>FR-05</td></tr>
+    <tr><td>知识库目录结构管理（2026-11-21 追加）</td><td>知识库内增加多级目录，文档按目录分类上传管理，支撑上万级文档</td><td>FR-08</td></tr>
+    <tr><td>遗留假设 A1–A4</td><td>已于 2026-11-21 全部确认，PRD 定稿</td><td>—</td></tr>
+  </tbody>
+</table>
+<p>本文档已定稿（v0.3），进入技术方案设计阶段（Go 后端数据模型与权限校验、React 前端按钮级权限控制）。</p>
+
+<footer>
+  本文档已按 2026-11-21 确认结论更新至 v0.3：第 2、5 章的模型与矩阵为权限体系的唯一口径；遗留假设 A1–A4 无异议后即定稿进入技术方案设计。
+</footer>
+
+</div>
+</body>
+</html>

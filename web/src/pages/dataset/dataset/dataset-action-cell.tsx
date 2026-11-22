@@ -1,5 +1,7 @@
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
+import { PermissionGate } from '@/components/permission-gate';
 import { Button } from '@/components/ui/button';
+import { RAGFlowTooltip } from '@/components/ui/tooltip';
 import {
   HoverCard,
   HoverCardContent,
@@ -13,14 +15,16 @@ import {
 import { UseRowSelectionType } from '@/hooks/logic-hooks/use-row-selection';
 import { useRemoveDocument } from '@/hooks/use-document-request';
 import { IDocumentInfo } from '@/interfaces/database/document';
+import { FunctionPermissionCode } from '@/services/user-permission-service';
 import { cn } from '@/lib/utils';
 import { downloadDatasetDocument } from '@/services/file-manager-service';
 import { formatFileSize } from '@/utils/common-util';
 import { formatDate } from '@/utils/date';
 import { downloadFileFromBlob } from '@/utils/file-util';
-import { Download, Eye, PenLine, Trash2 } from 'lucide-react';
+import { Download, Eye, FolderInput, PenLine, Trash2 } from 'lucide-react';
 import { omit } from 'lodash';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UseRenameDocumentShowType } from './use-rename-document';
 import { isDocumentProcessing } from './utils';
 
@@ -35,16 +39,22 @@ const FunctionMap = {
 type DatasetActionCellProps = {
   record: IDocumentInfo;
   datasetEditButtonDisabled?: boolean;
+  // Folder management is owner/superuser/edit-member only.
+  canMoveToFolder?: boolean;
+  showMoveToFolderModal?: (record: IDocumentInfo) => void;
 } & UseRenameDocumentShowType &
   Pick<UseRowSelectionType, 'setRowSelection'>;
 
 export function DatasetActionCell({
   record,
   showRenameModal,
+  showMoveToFolderModal,
+  canMoveToFolder,
   setRowSelection,
   datasetEditButtonDisabled,
 }: DatasetActionCellProps) {
   const { id, type } = record;
+  const { t } = useTranslation();
   const isRunning = isDocumentProcessing(record);
   const isVirtualDocument = type === DocumentType.Virtual;
   const actionDisabled = isRunning || Boolean(datasetEditButtonDisabled);
@@ -80,6 +90,10 @@ export function DatasetActionCell({
     showRenameModal(record);
   }, [record, showRenameModal]);
 
+  const handleShowMoveToFolder = useCallback(() => {
+    showMoveToFolderModal?.(record);
+  }, [record, showMoveToFolderModal]);
+
   return (
     <div
       className={cn(
@@ -88,6 +102,18 @@ export function DatasetActionCell({
       )}
     >
       <DocumentPrivilegeAction record={record} disabled={actionDisabled} />
+      {canMoveToFolder && showMoveToFolderModal && (
+        <RAGFlowTooltip asChild tooltip={t('kbFolder.moveToFolder')}>
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            disabled={actionDisabled}
+            onClick={handleShowMoveToFolder}
+          >
+            <FolderInput className="size-[1em]" />
+          </Button>
+        </RAGFlowTooltip>
+      )}
       <Button
         size="icon-xs"
         variant="ghost"
@@ -133,16 +159,18 @@ export function DatasetActionCell({
           <Download className="size-[1em]" />
         </Button>
       )}
-      <ConfirmDeleteDialog onOk={handleRemove}>
-        <Button
-          data-testid="document-delete"
-          size="icon-xs"
-          variant="ghost"
-          disabled={actionDisabled}
-        >
-          <Trash2 className="size-[1em]" />
-        </Button>
-      </ConfirmDeleteDialog>
+      <PermissionGate code={FunctionPermissionCode.DocDelete}>
+        <ConfirmDeleteDialog onOk={handleRemove}>
+          <Button
+            data-testid="document-delete"
+            size="icon-xs"
+            variant="ghost"
+            disabled={actionDisabled}
+          >
+            <Trash2 className="size-[1em]" />
+          </Button>
+        </ConfirmDeleteDialog>
+      </PermissionGate>
     </div>
   );
 }

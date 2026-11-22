@@ -68,8 +68,26 @@ func (r *Router) Setup(engine *gin.Engine) {
 			protected.DELETE("/users/:username", r.handler.DeleteUser)
 			protected.PUT("/users/:username/password", r.handler.ChangePassword)
 			protected.PUT("/users/:username/activate", r.handler.UpdateUserActivateStatus)
+			protected.PUT("/users/:username/department", r.handler.AssignUserDepartment)
+			protected.PUT("/users/:username/role", r.handler.AssignUserRole)
 			protected.PUT("/users/:username/admin", r.handler.GrantAdmin)
 			protected.DELETE("/users/:username/admin", r.handler.RevokeAdmin)
+
+			// Enterprise permission management
+			protected.GET("/departments", r.handler.ListDepartments)
+			protected.POST("/departments", r.handler.CreateDepartment)
+			protected.PUT("/departments/:department_id", r.handler.UpdateDepartment)
+			protected.DELETE("/departments/:department_id", r.handler.DeleteDepartment)
+			protected.GET("/roles", r.handler.ListRoles)
+			protected.POST("/roles", r.handler.CreateRole)
+			protected.PUT("/roles/:role_id", r.handler.UpdateRole)
+			protected.DELETE("/roles/:role_id", r.handler.DeleteRole)
+			protected.GET("/permissions", r.handler.ListFunctionPermissions)
+			protected.GET("/knowledgebases", r.handler.ListAdminKnowledgebases)
+			protected.GET("/knowledgebases/:kb_id/members", r.handler.ListKBMembers)
+			protected.PUT("/knowledgebases/:kb_id/members", r.handler.SetKBMember)
+			protected.DELETE("/knowledgebases/:kb_id/members/:user_id", r.handler.RemoveKBMember)
+			protected.POST("/knowledgebases/:kb_id/transfer", r.handler.TransferKBOwnership)
 
 			// Service management
 			protected.GET("/services", r.handler.GetServices)

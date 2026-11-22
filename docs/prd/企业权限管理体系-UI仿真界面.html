@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAGFlow 企业权限管理体系 · UI 仿真界面（按现有系统样式）</title>
+<style>
+  /* ===== 对齐 web/tailwind.css 设计 token（浅色主题） ===== */
+  :root {
+    --bg-base:#ffffff;
+    --bg-list:#f6f6f7;                 /* bg-list / canvas */
+    --bg-card:rgba(0,0,0,.05);
+    --hover:rgba(0,0,0,.05);
+    --ink:rgb(22,22,24);               /* text-primary */
+    --sec:rgb(117,120,122);            /* text-secondary */
+    --disabled:#b2b5b7;
+    --border:rgba(0,0,0,.1);           /* border-button */
+    --input-border:rgba(22,22,24,.2);  /* input-border */
+    --primary:#161618;                 /* shadcn primary（深色主按钮） */
+    --primary-fg:#f6f6f7;
+    --blue:rgb(22,119,255);            /* button-blue-text */
+    --teal:rgb(0,190,180);             /* accent-primary */
+    --ok:#3ba05c; --warn:#faad14; --err:#d8494b;
+    --radius:0.5rem;
+    --sidebar-accent:#f4f4f5;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#e9ebef; font-family:Inter,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; color:var(--ink); font-size:14px; }
+  .wrap { max-width:1280px; margin:0 auto; padding:34px 26px 70px; }
+  .head-note h1 { font-size:20px; margin:0 0 6px; }
+  .head-note p { color:var(--sec); margin:0 0 4px; font-size:13.5px; }
+  .head-note code { background:var(--bg-list); padding:1px 6px; border-radius:4px; font-size:12px; }
+  .head-note .navitem-code { font-family:Consolas,monospace; }
+
+  /* 浏览器框 */
+  .frame { background:#dfe3e9; border-radius:12px; padding:30px 30px 6px; box-shadow:0 10px 30px rgba(15,23,42,.14); margin-top:18px; }
+  .chrome { background:#e2e8f0; border-radius:9px 9px 0 0; display:flex; align-items:center; gap:8px; padding:8px 14px; }
+  .chrome .dot { width:11px; height:11px; border-radius:50%; }
+  .chrome .url { flex:1; background:#f6f6f7; color:var(--sec); border-radius:6px; font-size:12px; padding:4px 12px; font-family:Consolas,monospace; }
+  .viewport { background:var(--bg-list); border-radius:0 0 9px 9px; min-height:640px; position:relative; overflow:hidden; display:grid; grid-template-columns:auto minmax(0,1fr); }
+
+  /* ===== 应用外壳：左侧边栏（复刻 AppSidebar） ===== */
+  .sidebar { width:232px; background:var(--bg-base); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:10px; }
+  .sb-logo { display:flex; align-items:center; gap:9px; padding:10px 10px 16px; }
+  .sb-logo .mark { width:26px; height:26px; border-radius:7px; background:linear-gradient(135deg,#00d0c2 0%,#1677ff 100%); color:#fff; font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  .sb-logo .word { font-weight:800; font-size:16px; letter-spacing:.2px; }
+  .sb-group-label { font-size:11px; color:var(--disabled); padding:10px 10px 4px; font-weight:600; }
+  .nav-item { display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border-radius:8px; border:0; background:none; color:var(--ink); font-size:13.5px; cursor:pointer; font-family:inherit; text-align:left; }
+  .nav-item:hover { background:var(--hover); }
+  .nav-item.on { background:var(--sidebar-accent); font-weight:600; }
+  .nav-item svg { width:16px; height:16px; flex-shrink:0; }
+  .nav-item .chev { margin-left:auto; width:12px; height:12px; transition:transform .15s; color:var(--sec); }
+  .nav-item.open .chev { transform:rotate(180deg); }
+  .sub-item { display:flex; align-items:center; gap:8px; width:100%; padding:6px 10px 6px 36px; border-radius:7px; border:0; background:none; color:var(--sec); font-size:13px; cursor:pointer; font-family:inherit; text-align:left; }
+  .sub-item:hover { background:var(--hover); color:var(--ink); }
+  .sub-item.on { background:var(--sidebar-accent); color:var(--ink); font-weight:600; }
+  .sub-item svg { width:14px; height:14px; }
+  .nav-children { display:none; padding:2px 0 4px; }
+  .nav-children.show { display:block; }
+  .sb-footer { margin-top:auto; border-top:1px solid var(--border); padding-top:8px; position:relative; }
+  .sb-user { display:flex; align-items:center; gap:9px; width:100%; padding:8px 10px; border-radius:8px; border:0; background:none; cursor:pointer; font-family:inherit; font-size:13px; color:var(--ink); }
+  .sb-user:hover { background:var(--hover); }
+  .avatar { width:26px; height:26px; border-radius:50%; background:#dbeafe; color:#1e40af; font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sb-user .chev { margin-left:auto; width:12px; height:12px; color:var(--sec); }
+  .user-menu { position:absolute; bottom:46px; left:8px; right:8px; background:#fff; border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 22px rgba(0,0,0,.12); padding:5px; display:none; z-index:40; }
+  .user-menu.show { display:block; }
+  .user-menu button { display:flex; gap:8px; align-items:center; width:100%; border:0; background:none; padding:7px 10px; border-radius:6px; font-size:13px; font-family:inherit; cursor:pointer; color:var(--ink); text-align:left; }
+  .user-menu button:hover { background:var(--hover); }
+
+  /* ===== 主内容区 ===== */
+  .content { padding:18px 22px; overflow:auto; max-height:640px; }
+  .crumb { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .crumb h2 { font-size:17px; margin:0; font-weight:700; }
+  .crumb .count { color:var(--sec); font-size:12.5px; }
+  .crumb .actions { margin-left:auto; display:flex; gap:8px; }
+
+  .btn { display:inline-flex; align-items:center; gap:6px; border-radius:8px; padding:7px 14px; font-size:13px; cursor:pointer; font-family:inherit; border:1px solid var(--border); background:#fff; color:var(--ink); }
+  .btn:hover { background:var(--bg-list); }
+  .btn.primary { background:var(--primary); border-color:var(--primary); color:var(--primary-fg); }
+  .btn.primary:hover { opacity:.88; background:var(--primary); }
+  .btn.link { border:0; background:none; color:var(--blue); padding:4px 6px; }
+  .btn.danger { color:var(--err); }
+  .btn.sm { padding:4px 10px; font-size:12.5px; border-radius:7px; }
+  .btn.icon { padding:5px 7px; }
+  .input { border:1px solid var(--input-border); border-radius:8px; padding:7px 12px; font-size:13px; font-family:inherit; background:#fff; color:var(--ink); outline:none; }
+  .input:focus { border-color:var(--ink); }
+  .select { border:1px solid var(--input-border); border-radius:8px; padding:6px 10px; font-size:13px; background:#fff; font-family:inherit; color:var(--ink); }
+  .search { display:flex; align-items:center; gap:6px; background:var(--bg-card); border-radius:8px; padding:0 10px; }
+  .search input { border:0; background:none; padding:7px 4px; font-size:13px; outline:none; width:180px; font-family:inherit; color:var(--ink); }
+
+  .card { background:#fff; border:1px solid var(--border); border-radius:10px; }
+  .table-wrap { background:#fff; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  table.ui { width:100%; border-collapse:collapse; font-size:13px; }
+  table.ui th { text-align:left; color:var(--sec); font-weight:500; padding:10px 14px; border-bottom:1px solid var(--border); background:var(--bg-list); white-space:nowrap; }
+  table.ui td { padding:10px 14px; border-bottom:1px solid var(--bg-list); vertical-align:middle; }
+  table.ui tr:last-child td { border-bottom:0; }
+  table.ui tbody tr:hover td { background:var(--bg-list); }
+
+  .pill { display:inline-flex; align-items:center; gap:4px; font-size:11px; border-radius:999px; padding:1px 9px; }
+  .pill.gray { background:var(--bg-card); color:var(--sec); }
+  .pill.blue { background:rgba(22,119,255,.1); color:var(--blue); }
+  .pill.teal { background:rgba(0,190,180,.12); color:rgb(0,140,132); }
+  .pill.green { background:rgba(59,160,92,.12); color:var(--ok); }
+  .pill.red { background:rgba(216,73,75,.1); color:var(--err); }
+  .pill.amber { background:rgba(250,173,20,.15); color:#ad6800; }
+
+  /* 页签（复刻 PageTabGroups 胶囊 tab） */
+  .page-tabs { display:inline-flex; background:var(--bg-card); border-radius:999px; padding:3px; margin-bottom:14px; }
+  .page-tabs button { border:0; background:none; border-radius:999px; padding:5px 16px; font-size:13px; cursor:pointer; font-family:inherit; color:var(--sec); }
+  .page-tabs button.on { background:#fff; color:var(--ink); font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+
+  /* 知识库卡片（复刻 datasets 卡片网格） */
+  .kb-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:14px; }
+  .kb-card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 16px; cursor:pointer; transition:box-shadow .15s; }
+  .kb-card:hover { box-shadow:0 4px 14px rgba(22,22,24,.08); }
+  .kb-card .nm { font-weight:700; font-size:14.5px; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+  .kb-card .desc { color:var(--sec); font-size:12.5px; margin-bottom:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .kb-card .meta { display:flex; gap:14px; font-size:12px; color:var(--sec); }
+
+  /* 组织架构树 */
+  .user-layout { display:grid; grid-template-columns:260px minmax(0,1fr); gap:16px; align-items:start; }
+  .org-panel { background:#fff; border:1px solid var(--border); border-radius:10px; padding:12px; }
+  .org-panel .phead { display:flex; align-items:center; gap:8px; padding:2px 4px 10px; border-bottom:1px solid var(--bg-list); margin-bottom:8px; }
+  .org-panel .phead b { font-size:13.5px; }
+  .tree { font-size:13px; user-select:none; }
+  .tree .node { display:flex; align-items:center; gap:5px; padding:5px 7px; border-radius:7px; cursor:pointer; white-space:nowrap; min-width:0; }
+  .tree .node:hover { background:var(--bg-list); }
+  .tree .node.on { background:var(--sidebar-accent); font-weight:600; }
+  .tree .chev { width:13px; text-align:center; color:var(--sec); font-size:9px; transition:transform .15s; flex-shrink:0; }
+  .tree .kids { display:none; padding-left:15px; }
+  .tree .node.open > .kids { display:block; }
+  .tree .node.open > .chev { transform:rotate(90deg); }
+  .tree .cnt { margin-left:auto; font-size:11px; color:var(--disabled); }
+  .tree .rowtools { display:none; gap:1px; flex-shrink:0; }
+  .tree .node:hover .rowtools { display:inline-flex; }
+  .tree .node:hover .cnt { display:none; }
+  .tree .rowtools button { border:0; background:none; cursor:pointer; font-size:11px; padding:1px 4px; border-radius:4px; color:var(--sec); }
+  .tree .rowtools button:hover { background:var(--bg-card); color:var(--ink); }
+
+  /* 权限树（角色管理） */
+  .role-layout { display:grid; grid-template-columns:240px minmax(0,1fr); gap:16px; align-items:start; }
+  .role-list .node { padding:8px 10px; }
+  .perm-tree .grp { font-weight:700; font-size:13px; margin:14px 0 4px; }
+  .perm-tree .leaf { display:flex; align-items:center; gap:9px; padding:6px 0 6px 16px; font-size:13px; }
+  .perm-tree .leaf code { font-size:11px; background:var(--bg-list); padding:1px 6px; border-radius:4px; color:var(--sec); font-family:Consolas,monospace; }
+  .perm-tree .leaf .desc { color:var(--sec); font-size:12px; margin-left:auto; }
+
+  /* 弹窗 / toast */
+  .overlay { position:absolute; inset:0; background:rgba(22,22,24,.45); display:none; align-items:center; justify-content:center; z-index:60; }
+  .overlay.show { display:flex; }
+  .dialog { background:#fff; border-radius:12px; width:480px; max-width:92%; box-shadow:0 20px 50px rgba(0,0,0,.25); overflow:hidden; }
+  .dialog .dhead { display:flex; align-items:center; padding:14px 20px; border-bottom:1px solid var(--border); font-weight:700; font-size:14.5px; }
+  .dialog .dhead .x { margin-left:auto; cursor:pointer; color:var(--sec); border:0; background:none; font-size:15px; }
+  .dialog .dbody { padding:18px 20px; max-height:400px; overflow:auto; }
+  .dialog .dfoot { padding:12px 20px; border-top:1px solid var(--bg-list); display:flex; justify-content:flex-end; gap:10px; }
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:12.5px; color:var(--sec); margin-bottom:5px; }
+  .field .input, .field .select { width:100%; }
+  .toast { position:absolute; top:12px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:9px 18px; border-radius:8px; font-size:13px; z-index:80; display:none; box-shadow:0 8px 20px rgba(0,0,0,.3); max-width:80%; text-align:center; }
+  .toast.show { display:block; animation:pop .2s; }
+  @keyframes pop { from { opacity:0; transform:translate(-50%,-8px);} to { opacity:1; transform:translate(-50%,0);} }
+  .callout { position:absolute; z-index:30; background:#fbbf24; color:#78350f; font-size:11.5px; line-height:1.5; padding:7px 10px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,.18); max-width:200px; }
+  .screen { display:none; }
+  .screen.active { display:block; }
+  .notes { background:#fff; border:1px solid #e5e7eb; border-left:4px solid var(--teal); border-radius:8px; padding:14px 20px; margin-top:16px; }
+  .notes h3 { margin:0 0 8px; font-size:14px; color:rgb(0,140,132); }
+  .notes ul { margin:0; padding-left:20px; }
+  .notes li { margin:4px 0; font-size:13.5px; }
+  .muted { color:var(--sec); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="head-note">
+  <h1>UI 仿真界面 · 按现有系统样式（v0.2）</h1>
+  <p>布局复刻真实 RAGFlow：<b>左侧边栏导航</b>（首页 / 知识库 / 对话 / Agent / 文件管理 / 团队 …，菜单与顺序完全不动），新增两个一级菜单<b>「用户管理」</b>（左侧组织架构树可管理 + 右侧用户列表）与<b>「角色管理」</b>（无系统管理父级层级，2026-11-22 确认）。</p>
+  <p>样式对齐 <span class="navitem-code">web/tailwind.css</span> 设计 token：白底侧栏、<code>#f6f6f7</code> 列表底色、深色主按钮、青色 accent、<code>rgba(0,0,0,0.1)</code> 分隔线。点击侧栏菜单切换页面；树节点可展开；删除按钮可体验阻断提示。</p>
+</div>
+
+<div class="frame">
+  <div class="chrome"><span class="dot" style="background:#f87171"></span><span class="dot" style="background:#fbbf24"></span><span class="dot" style="background:#34d399"></span><span class="url">http://127.0.0.1:9222/</span></div>
+  <div class="viewport">
+
+    <!-- ===== 侧边栏 ===== -->
+    <aside class="sidebar">
+      <div class="sb-logo"><span class="mark">R</span><span class="word">RAGFlow</span></div>
+      <div class="sb-group-label">工作区</div>
+      <button class="nav-item" data-nav="datasets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>知识库</button>
+      <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>对话</button>
+      <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg>Agent</button>
+      <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>文件管理</button>
+      <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 21c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 15c3 .3 4.5 2.4 4.5 6"/></svg>团队</button>
+      <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>集成
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="nav-children">
+        <button class="sub-item">模型</button>
+        <button class="sub-item">数据源</button>
+        <button class="sub-item">聊天渠道</button>
+        <button class="sub-item">MCP</button>
+      </div>
+
+      <div class="sb-group-label">管理</div>
+      <button class="nav-item" data-nav="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>用户管理</button>
+      <button class="nav-item" data-nav="roles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>角色管理</button>
+
+      <div class="sb-footer">
+        <div class="user-menu" id="user-menu">
+          <button>👤 个人设置</button>
+          <button>🔑 API</button>
+          <button>🌙 主题</button>
+          <button>🌐 语言</button>
+          <button>↪ 退出登录</button>
+        </div>
+        <button class="sb-user" onclick="document.getElementById('user-menu').classList.toggle('show')">
+          <span class="avatar">管</span>admin <span class="pill red" style="margin-left:2px">超管</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ===== 内容区 ===== -->
+    <div class="content">
+
+      <!-- S-A 知识库（菜单位置不动） -->
+      <section class="screen" id="scr-datasets">
+        <div class="page-tabs"><button class="on">知识库</button><button>记忆</button></div>
+        <div class="crumb">
+          <h2>知识库</h2><span class="count">3 个可见</span>
+          <div class="actions">
+            <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#75787a" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input placeholder="搜索我可见的知识库…"></div>
+            <button class="btn primary">＋ 新建知识库</button>
+          </div>
+        </div>
+        <div class="kb-grid">
+          <div class="kb-card">
+            <div class="nm">产品宣传资料库 <span class="pill teal">所有者</span></div>
+            <div class="desc">品牌物料、产品海报、展会与发布会素材</div>
+            <div class="meta"><span>📄 128 文档</span><span>📁 8 目录</span><span>4,231 chunks</span></div>
+          </div>
+          <div class="kb-card">
+            <div class="nm">行业研究报告 <span class="pill blue">可编辑</span></div>
+            <div class="desc">战略部汇总的行业与竞品研究</div>
+            <div class="meta"><span>📄 356 文档</span><span>12,804 chunks</span></div>
+          </div>
+          <div class="kb-card">
+            <div class="nm">集团财务制度 <span class="pill gray">可查看</span></div>
+            <div class="desc">财务报销、预算与审批制度文件</div>
+            <div class="meta"><span>📄 89 文档</span><span>2,102 chunks</span></div>
+          </div>
+        </div>
+        <div class="muted" style="margin-top:16px; font-size:12.5px; text-align:center">知识库菜单位置保持不变 · 仅展示被授权的知识库（默认拒绝）</div>
+      </section>
+
+      <!-- S-B 系统管理 / 用户管理 -->
+      <section class="screen active" id="scr-users">
+        <div class="crumb">
+          <h2>用户管理</h2><span class="count">共 96 名用户</span>
+          <div class="actions">
+            <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#75787a" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input placeholder="搜索姓名 / 账号…"></div>
+            <button class="btn primary" onclick="showDlg('dlg-user')">＋ 新建用户</button>
+          </div>
+        </div>
+        <div class="user-layout">
+          <div class="org-panel">
+            <div class="phead"><b>组织架构</b><button class="btn sm icon" style="margin-left:auto" title="新增根部门" onclick="toast('该功能支持新增根部门 / 子公司')">＋</button></div>
+            <div class="tree" id="org-tree">
+              <div class="node open"><span class="chev">▶</span>🏢 集团总部 <span class="cnt">50</span>
+                <span class="rowtools"><button title="新增子部门" onclick="toast('s-users','弹出「新增子部门」表单')">＋</button><button title="重命名" onclick="toast('s-users','弹出「重命名」表单')">✎</button><button title="删除" onclick="toast('s-users','无法删除：该部门下仍有用户与归属知识库')">🗑</button></span>
+                <div class="kids">
+                  <div class="node on"><span class="chev"></span>📁 市场部 <span class="cnt">18</span>
+                    <span class="rowtools"><button title="新增子部门" onclick="toast('s-users','弹出「新增子部门」表单')">＋</button><button title="重命名">✎</button><button title="删除" onclick="toast('s-users','无法删除：该部门下仍有 18 名用户、5 个归属知识库')">🗑</button></span>
+                  </div>
+                  <div class="node open"><span class="chev">▶</span>📁 销售部 <span class="cnt">32</span>
+                    <span class="rowtools"><button title="新增子部门">＋</button><button title="重命名">✎</button><button title="删除" onclick="toast('s-users','无法删除：该部门下仍有子部门或用户')">🗑</button></span>
+                    <div class="kids">
+                      <div class="node"><span class="chev"></span>📁 大客户组 <span class="cnt">12</span><span class="rowtools"><button>＋</button><button>✎</button><button onclick="toast('s-users','无法删除：该部门下仍有 12 名用户')">🗑</button></span></div>
+                      <div class="node"><span class="chev"></span>📁 渠道组 <span class="cnt">20</span><span class="rowtools"><button>＋</button><button>✎</button><button onclick="toast('s-users','无法删除：该部门下仍有 20 名用户')">🗑</button></span></div>
+                    </div>
+                  </div>
+                  <div class="node"><span class="chev"></span>📁 财务部 <span class="cnt">9</span><span class="rowtools"><button>＋</button><button>✎</button><button onclick="toast('s-users','无法删除：该部门下仍有 9 名用户')">🗑</button></span></div>
+                </div>
+              </div>
+              <div class="node"><span class="chev">▶</span>🏢 子公司A <span class="cnt">28</span>
+                <span class="rowtools"><button>＋</button><button>✎</button><button onclick="toast('s-users','无法删除：该子公司下仍有用户')">🗑</button></span>
+                <div class="kids">
+                  <div class="node"><span class="chev"></span>📁 研发部 <span class="cnt">16</span></div>
+                  <div class="node"><span class="chev"></span>📁 行政部 <span class="cnt">12</span></div>
+                </div>
+              </div>
+              <div class="node"><span class="chev">▶</span>🏢 子公司B <span class="cnt">18</span><span class="rowtools"><button>＋</button><button>✎</button><button onclick="toast('s-users','删除成功（空部门）')">🗑</button></span>
+                <div class="kids"><div class="node"><span class="chev"></span>📁 运营部 <span class="cnt">18</span></div></div>
+              </div>
+              <div class="node"><span class="chev"></span>📁 未分配部门 <span class="cnt">2</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="muted" style="font-size:12.5px; margin-bottom:8px">当前部门：<b style="color:var(--ink)">市场部</b>（集团总部 / 市场部） · 展示该部门及子部门用户</div>
+            <div class="table-wrap">
+              <table class="ui">
+                <thead><tr><th>用户</th><th>所属部门</th><th>角色</th><th>名下知识库</th><th>状态</th><th style="width:240px">操作</th></tr></thead>
+                <tbody>
+                  <tr><td><span class="avatar">张</span> <b>张三</b> <span class="muted" style="font-size:12px">zhangsan@co.com</span></td><td>市场部</td><td><span class="pill blue">内容运营</span></td><td>1</td><td><span class="pill green">在岗</span></td><td><button class="btn sm">编辑</button><button class="btn sm">重置密码</button><button class="btn sm">停用</button><button class="btn sm danger" onclick="toast('s-users','无法删除：张三名下仍有 1 个知识库（产品宣传资料库），请先在「知识库管理」中转移所有权')">删除</button></td></tr>
+                  <tr><td><span class="avatar">钱</span> <b>钱七</b> <span class="muted" style="font-size:12px">qianqi@co.com</span></td><td>市场部</td><td><span class="pill gray">无角色</span></td><td>0</td><td><span class="pill green">在岗</span></td><td><button class="btn sm">编辑</button><button class="btn sm">重置密码</button><button class="btn sm">停用</button><button class="btn sm danger" onclick="toast('s-users','删除成功（该账号名下无知识库）')">删除</button></td></tr>
+                  <tr><td><span class="avatar">孙</span> <b>孙八</b> <span class="muted" style="font-size:12px">sunba@co.com</span></td><td>市场部</td><td><span class="pill blue">内容运营</span></td><td>0</td><td><span class="pill red">已停用</span></td><td><button class="btn sm">编辑</button><button class="btn sm">重置密码</button><button class="btn sm">启用</button><button class="btn sm danger" onclick="toast('s-users','删除成功')">删除</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="muted" style="margin-top:10px; font-size:12px; display:flex; justify-content:flex-end; gap:12px">本部门 3 / 18 人 <button class="btn sm">上一页</button><button class="btn sm">下一页</button></div>
+          </div>
+        </div>
+
+        <div class="overlay" id="dlg-user">
+          <div class="dialog">
+            <div class="dhead">新建用户 <button class="x" onclick="closeDlg('dlg-user')">✕</button></div>
+            <div class="dbody">
+              <div class="field"><label>姓名</label><input class="input" placeholder="如：王五"></div>
+              <div class="field"><label>账号（登录邮箱）</label><input class="input" placeholder="wangwu@company.com"></div>
+              <div class="field"><label>初始密码</label><input class="input" value="••••••••"><div class="muted" style="font-size:11.5px; margin-top:3px">首次登录强制修改</div></div>
+              <div class="field"><label>所属部门（唯一）</label>
+                <div class="tree" style="border:1px solid var(--input-border); border-radius:8px; padding:8px; max-height:150px; overflow:auto">
+                  <div class="node open"><span class="chev">▶</span>🏢 集团总部
+                    <div class="kids">
+                      <div class="node on"><span class="chev"></span>📁 市场部</div>
+                      <div class="node"><span class="chev"></span>📁 销售部</div>
+                      <div class="node"><span class="chev"></span>📁 财务部</div>
+                    </div>
+                  </div>
+                  <div class="node"><span class="chev">▶</span>🏢 子公司A
+                    <div class="kids"><div class="node"><span class="chev"></span>📁 研发部</div><div class="node"><span class="chev"></span>📁 行政部</div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="field"><label>角色（可不选，无角色 = 无任何功能权限）</label>
+                <select class="select"><option>不分配角色</option><option>内容运营</option><option>知识库管理员</option><option>只读访客</option></select>
+              </div>
+            </div>
+            <div class="dfoot"><button class="btn" onclick="closeDlg('dlg-user')">取消</button><button class="btn primary" onclick="closeDlg('dlg-user');toast('s-users','用户创建成功')">创建</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- S-C 系统管理 / 角色管理 -->
+      <section class="screen" id="scr-roles">
+        <div class="crumb">
+          <h2>角色管理</h2><span class="count">3 个角色 · 67 名用户已分配</span>
+          <div class="actions"><button class="btn primary">＋ 新建角色</button></div>
+        </div>
+        <div class="role-layout">
+          <div class="org-panel role-list">
+            <div class="tree">
+              <div class="node on"><span class="chev"></span>🛡 内容运营 <span class="cnt">18 人</span></div>
+              <div class="node"><span class="chev"></span>🛡 知识库管理员 <span class="cnt">3 人</span></div>
+              <div class="node"><span class="chev"></span>🛡 只读访客 <span class="cnt">46 人</span></div>
+            </div>
+            <div class="callout" style="position:static; margin-top:14px; max-width:none">超级管理员不走角色体系：内置唯一账号（admin），不显示在此列表、不可删除</div>
+          </div>
+          <div>
+            <div class="crumb" style="margin-bottom:8px">
+              <h2 style="font-size:15px">内容运营</h2><span class="pill gray">18 名用户持有</span>
+              <div class="actions"><button class="btn sm danger">删除角色</button></div>
+            </div>
+            <div class="muted" style="font-size:12.5px; margin-bottom:8px">描述：负责知识库内容建设与维护 · 权限粒度为按钮级，保存后对持有用户即时生效</div>
+            <div class="card" style="padding:14px 18px">
+              <div class="perm-tree">
+                <div class="grp">知识库</div>
+                <div class="leaf"><input type="checkbox" checked><span>创建知识库</span><code>kb.create</code><span class="desc">无权限时不显示「新建知识库」按钮</span></div>
+                <div class="leaf"><input type="checkbox" checked><span>浏览可见知识库</span><code>kb.view</code></div>
+                <div class="grp">文档</div>
+                <div class="leaf"><input type="checkbox" checked><span>上传文档</span><code>doc.upload</code></div>
+                <div class="leaf"><input type="checkbox" checked><span>删除文档</span><code>doc.delete</code></div>
+                <div class="leaf"><input type="checkbox"><span>重新解析文档</span><code>doc.reparse</code></div>
+                <div class="grp">对话</div>
+                <div class="leaf"><input type="checkbox" checked><span>创建对话助手</span><code>chat.create</code></div>
+                <div class="grp">Agent</div>
+                <div class="leaf"><input type="checkbox"><span>创建 Agent</span><code>agent.create</code></div>
+              </div>
+            </div>
+            <div style="margin-top:12px; display:flex; justify-content:flex-end"><button class="btn primary" onclick="toast('s-roles','权限已保存，对 18 名用户即时生效')">保存</button></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<div class="notes">
+  <h3>交互说明（本仿真界面）</h3>
+  <ul>
+    <li><b>侧栏</b>：一级菜单与现有系统完全一致（首页 / 知识库 / 对话 / Agent / 文件管理 / 团队 / 集成），末尾新增<b>用户管理</b>与<b>角色管理</b>两个一级菜单（2026-11-22 确认去掉「系统管理」父级层级），仅超级管理员可见；知识库菜单位置不动。</li>
+    <li><b>用户管理</b>：左侧组织架构树可直接管理（悬停行出现 ＋ 子部门 / ✎ 重命名 / 🗑 删除，删除有三重校验阻断提示）；右侧为该部门用户列表，含「新建用户」弹窗（部门树单选 + 角色单选）。</li>
+    <li><b>角色管理</b>：左侧角色列表，右侧按钮级权限点勾选树（code 与后端 seed 对应）；超管账号独立于角色体系并有固定说明。</li>
+    <li>样式全部取自现有设计 token（<code>--bg-list</code> / <code>--text-secondary</code> / <code>--accent-primary</code> 等），落地时可直接映射为 Tailwind 类（<code>bg-bg-base</code>、<code>bg-bg-card</code>、<code>text-text-secondary</code> 等）。</li>
+    <li>实现入口：导航注册于 <code>web/src/layouts/components/app-sidebar/navigation.ts</code>（NavItems 新增 superuserOnly 两项），路由加在 <code>web/src/routes.tsx</code>，页面代码在 <code>web/src/pages/enterprise/</code>。</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+  // 侧栏页面切换
+  document.querySelectorAll('[data-nav]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('[data-nav]').forEach(function(b){ b.classList.remove('on'); });
+      btn.classList.add('on');
+      document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+      document.getElementById('scr-' + btn.dataset.nav).classList.add('active');
+    });
+  });
+  var integ = document.querySelector('.nav-item:nth-of-type(6)');
+  if (integ) integ.addEventListener('click', function(e){
+    integ.classList.toggle('open');
+    var c = integ.nextElementSibling;
+    if (c && c.classList.contains('nav-children')) c.classList.toggle('show');
+  });
+  // toast
+  function toast(a, b){
+    var t = document.getElementById('toast');
+    t.textContent = b || a;
+    t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, 2800);
+  }
+  // 树展开 / 选中
+  document.addEventListener('click', function(e){
+    var node = e.target.closest('.tree .node');
+    if (!node || e.target.closest('.rowtools') || e.target.closest('input')) return;
+    if (node.querySelector(':scope > .kids')) node.classList.toggle('open');
+    var tree = node.closest('.tree');
+    tree.querySelectorAll('.node').forEach(function(n){ n.classList.remove('on'); });
+    node.classList.add('on');
+  });
+  // 弹窗
+  function showDlg(id){ document.getElementById(id).classList.add('show'); }
+  function closeDlg(id){ document.getElementById(id).classList.remove('show'); }
+  // 点击弹窗外关闭
+  document.querySelectorAll('.overlay').forEach(function(o){
+    o.addEventListener('click', function(e){ if (e.target === o) o.classList.remove('show'); });
+  });
+</script>
+</body>
+</html>

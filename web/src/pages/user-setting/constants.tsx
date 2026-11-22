@@ -64,9 +64,3 @@ export enum TenantMembershipStatus {
   Invited = '2',
   Left = '0',
 }
-
-export enum TenantRole {
-  Owner = 'owner',
-  Invite = 'invite',
-  Normal = 'normal',
-}

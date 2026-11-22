@@ -72,7 +72,7 @@ type documentServiceIface interface {
 	GetDocumentMetadataByIDs(ctx context.Context, kbID string, docIDs []string) (map[string]map[string]interface{}, error)
 	GetDocumentArtifact(ctx context.Context, filename string) (*document.ArtifactResponse, error)
 	GetDocumentPreview(ctx context.Context, docID string) (*document.DocumentPreview, error)
-	UploadLocalDocuments(ctx context.Context, kb *entity.Knowledgebase, files []*multipart.FileHeader, parentPath string, parserConfigOverride map[string]interface{}) ([]map[string]interface{}, []string)
+	UploadLocalDocuments(ctx context.Context, kb *entity.Knowledgebase, files []*multipart.FileHeader, parentPath string, parserConfigOverride map[string]interface{}, folderID ...string) ([]map[string]interface{}, []string)
 	UploadWebDocument(ctx context.Context, kb *entity.Knowledgebase, name, url string) (map[string]interface{}, common.ErrorCode, error)
 	UploadEmptyDocument(ctx context.Context, kb *entity.Knowledgebase, name string) (map[string]interface{}, common.ErrorCode, error)
 	DownloadDocument(ctx context.Context, datasetID, docID string) (*document.DownloadDocumentResp, error)
@@ -444,6 +444,10 @@ func (h *DocumentHandler) DeleteDocuments(c *gin.Context) {
 	common.StartOperationLog(c, "delete_dataset_documents")
 	defer common.FinishOperationLog(c)
 
+	if !requireFeatureCode(c, entity.PermissionDocDelete) {
+		return
+	}
+
 	_, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
 		common.RespondError(c, errorCode, errorMessage)
@@ -739,6 +743,12 @@ func parseDocumentListOptions(c *gin.Context, datasetID string) (dao.DocumentLis
 		Suffixes: queryValues(c, "suffix"),
 		Types:    queryValues(c, "types"),
 	}
+	// Directory scoping: folder_id="" lists the unfiled root, folder_id absent
+	// lists the whole knowledge base.
+	if raw, present := c.GetQuery("folder_id"); present {
+		opts.FolderID = strings.TrimSpace(raw)
+		opts.FolderFilterApplied = true
+	}
 
 	opts.RunStatuses = normalizeRunStatusFilter(queryValues(c, "run", "run_status", "ingestion_status"))
 	if len(queryValues(c, "run", "run_status", "ingestion_status")) > 0 && len(opts.RunStatuses) == 0 {
@@ -1005,6 +1015,10 @@ func (h *DocumentHandler) UploadDocuments(c *gin.Context) {
 	common.StartOperationLog(c, "upload_dataset_documents")
 	defer common.FinishOperationLog(c)
 
+	if !requireFeatureCode(c, entity.PermissionDocUpload) {
+		return
+	}
+
 	ctx := c.Request.Context()
 	userID := permission.UserIDFromContext(ctx)
 	if userID == "" {
@@ -1087,7 +1101,9 @@ func (h *DocumentHandler) uploadLocalDocuments(c *gin.Context, kb *entity.Knowle
 		}
 	}
 	ctx := c.Request.Context()
-	data, errMsgs := h.documentService.UploadLocalDocuments(ctx, kb, files, c.PostForm("parent_path"), override)
+	// Optional target directory from the upload dialog.
+	folderID := strings.TrimSpace(c.PostForm("folder_id"))
+	data, errMsgs := h.documentService.UploadLocalDocuments(ctx, kb, files, c.PostForm("parent_path"), override, folderID)
 	if len(data) == 0 {
 		if len(errMsgs) > 0 {
 			common.RespondError(c, common.CodeServerError, strings.Join(errMsgs, "\n"))
@@ -1449,6 +1465,10 @@ type StartParseDocumentsRequest struct {
 func (h *DocumentHandler) StartIngestionTask(c *gin.Context) {
 	common.StartOperationLog(c, "start_ingestion_task")
 	defer common.FinishOperationLog(c)
+
+	if !requireFeatureCode(c, entity.PermissionDocReparse) {
+		return
+	}
 
 	datasetID := c.Param("dataset_id")
 

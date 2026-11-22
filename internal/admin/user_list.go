@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"ragflow/internal/dao"
+	"ragflow/internal/entity"
 )
 
 var errInvalidUserListQuery = errors.New("invalid user list query")
@@ -41,15 +42,28 @@ func (s *Service) ListUsers(ctx context.Context, pageIndex, pageSize int, name, 
 
 	result := make([]map[string]interface{}, 0, len(users))
 	for _, user := range users {
-		result = append(result, map[string]interface{}{
+		row := map[string]interface{}{
 			"email":        user.Email,
 			"nickname":     user.Nickname,
 			"create_date":  user.CreateTime,
 			"is_active":    user.IsActive,
 			"is_superuser": user.IsSuperuser,
-		})
+		}
+		if !isSuperuser(user) {
+			// The private pointer enriches department/role names below; it is
+			// stripped from the response by EnrichUserListWithEnterprise.
+			row["_user"] = user
+		}
+		result = append(result, row)
+	}
+	if err := s.EnrichUserListWithEnterprise(ctx, result); err != nil {
+		return nil, 0, err
 	}
 	return result, total, nil
+}
+
+func isSuperuser(user *entity.User) bool {
+	return user.IsSuperuser != nil && *user.IsSuperuser
 }
 
 func parseUserListOptions(page, pageSize int, keyword, status, direction, field string) (dao.UserListOptions, error) {

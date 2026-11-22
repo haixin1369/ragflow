@@ -140,10 +140,15 @@ export const useUploadDocument = () => {
   } = useMutation<
     ResponseType<IDocumentInfo[]>,
     Error,
-    { fileList: File[]; parserConfig?: Record<string, any> }
+    {
+      fileList: File[];
+      parserConfig?: Record<string, any>;
+      // Upload target folder; '' files under the unfiled root.
+      folderId?: string;
+    }
   >({
     mutationKey: [DocumentApiAction.UploadDocument],
-    mutationFn: async ({ fileList, parserConfig }) => {
+    mutationFn: async ({ fileList, parserConfig, folderId }) => {
       if (!id) {
         return { code: 500, message: 'Dataset ID is required' };
       }
@@ -153,6 +158,9 @@ export const useUploadDocument = () => {
       });
       if (parserConfig) {
         formData.append('parser_config', JSON.stringify(parserConfig));
+      }
+      if (folderId !== undefined) {
+        formData.append('folder_id', folderId);
       }
 
       try {
@@ -180,15 +188,15 @@ export const useUploadDocument = () => {
   });
 
   const upload = useCallback(
-    (fileList: File[], parserConfig?: Record<string, any>) =>
-      mutateAsync({ fileList, parserConfig }),
+    (fileList: File[], parserConfig?: Record<string, any>, folderId?: string) =>
+      mutateAsync({ fileList, parserConfig, folderId }),
     [mutateAsync],
   );
 
   return { uploadDocument: upload, loading, data };
 };
 
-export const useFetchDocumentList = (loop = true) => {
+export const useFetchDocumentList = (loop = true, folderId?: string) => {
   const { knowledgeId } = useGetKnowledgeSearchParams();
   const { searchString, handleInputChange } = useHandleSearchChange();
   const { pagination, setPagination } = useGetPaginationWithRouter();
@@ -212,6 +220,7 @@ export const useFetchDocumentList = (loop = true) => {
       debouncedSearchString,
       pagination,
       filterValue,
+      folderId,
     ),
     initialData: { docs: [], total: 0, has_active_tasks: false },
     refetchInterval: (query) => {
@@ -258,6 +267,7 @@ export const useFetchDocumentList = (loop = true) => {
           run_status: adaptDocumentRunStatusFilter(run as string[] | undefined),
           return_empty_metadata: returnEmptyMetadata,
           metadata: filterValue.metadata as Record<string, string[]>,
+          folder_id: folderId,
         },
       );
       if (ret.data.code === 0) {

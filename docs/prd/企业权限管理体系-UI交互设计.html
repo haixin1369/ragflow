@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAGFlow 企业权限管理体系 · UI 交互设计（交互原型）</title>
+<style>
+  :root {
+    --ink:#1f2329; --muted:#6b7280; --line:#e5e7eb; --brand:#1a56db; --brand-soft:#eff4ff;
+    --bg:#f8fafc; --card:#fff; --danger:#dc2626; --danger-soft:#fef2f2; --ok:#047857; --ok-soft:#ecfdf5;
+    --warn:#b45309; --warn-soft:#fffbeb; --sidebar:#f1f5f9;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; color:var(--ink); background:#eef1f5; font-size:14px; }
+  .app { display:flex; min-height:100vh; }
+
+  /* ===== 左侧屏导航 ===== */
+  .nav { width:250px; background:#0f172a; color:#cbd5e1; padding:20px 14px; flex-shrink:0; }
+  .nav h1 { font-size:15px; color:#fff; margin:0 0 4px; }
+  .nav .sub { font-size:12px; color:#64748b; margin-bottom:18px; }
+  .nav-item { display:block; width:100%; text-align:left; background:none; border:0; color:#cbd5e1; padding:9px 12px; border-radius:8px; cursor:pointer; font-size:13.5px; margin-bottom:3px; font-family:inherit; }
+  .nav-item:hover { background:#1e293b; }
+  .nav-item.active { background:var(--brand); color:#fff; }
+  .nav-item .fr { display:inline-block; font-size:10px; background:#1e293b; border-radius:4px; padding:0 5px; margin-left:6px; color:#94a3b8; }
+  .nav-item.active .fr { background:#3b6ce7; color:#dbeafe; }
+  .nav .tip { font-size:11.5px; color:#64748b; line-height:1.7; margin-top:22px; border-top:1px solid #1e293b; padding-top:14px; }
+
+  /* ===== 主区 ===== */
+  main { flex:1; padding:26px 30px 60px; max-width:1200px; }
+  .screen-head h2 { margin:0; font-size:20px; }
+  .screen-head .desc { color:var(--muted); margin:6px 0 14px; max-width:820px; }
+  .tag { display:inline-block; font-size:11px; background:var(--brand-soft); color:var(--brand); border:1px solid #bcd0f7; border-radius:4px; padding:1px 7px; margin-right:6px; vertical-align:2px; }
+
+  .frame { background:#dbe2ea; border-radius:12px; padding:34px 34px 8px; box-shadow:0 8px 24px rgba(15,23,42,.12); position:relative; }
+  .chrome { background:#cbd5e1; border-radius:10px 10px 0 0; display:flex; align-items:center; gap:8px; padding:9px 14px; }
+  .chrome .dot { width:11px; height:11px; border-radius:50%; }
+  .chrome .url { flex:1; background:#f1f5f9; color:#64748b; border-radius:6px; font-size:12px; padding:4px 12px; font-family:Consolas,monospace; }
+  .viewport { background:var(--card); border-radius:0 0 10px 10px; min-height:620px; position:relative; overflow:hidden; }
+
+  .notes { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--brand); border-radius:8px; padding:14px 20px; margin-top:16px; }
+  .notes h3 { margin:0 0 8px; font-size:14px; color:var(--brand); }
+  .notes ul { margin:0; padding-left:20px; }
+  .notes li { margin:4px 0; font-size:13.5px; }
+  .notes b { color:var(--ink); }
+
+  .screen { display:none; }
+  .screen.active { display:block; }
+
+  /* ===== 通用 UI 组件（模拟 shadcn 风格） ===== */
+  .btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:8px; padding:6px 14px; font-size:13px; cursor:pointer; font-family:inherit; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .btn.danger { color:var(--danger); border-color:#fecaca; background:var(--danger-soft); }
+  .btn.sm { padding:3px 9px; font-size:12px; border-radius:6px; }
+  .btn.icon { padding:4px 7px; }
+  .input { border:1px solid var(--line); border-radius:8px; padding:6px 12px; font-size:13px; font-family:inherit; background:#fff; color:var(--ink); }
+  .select { border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:13px; background:#fff; font-family:inherit; color:var(--ink); }
+  table.ui { width:100%; border-collapse:collapse; font-size:13px; }
+  table.ui th { text-align:left; color:var(--muted); font-weight:600; padding:9px 12px; border-bottom:1px solid var(--line); background:var(--bg); white-space:nowrap; }
+  table.ui td { padding:9px 12px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+  table.ui tr:hover td { background:#f8fafc; }
+  .pill { display:inline-block; font-size:11px; border-radius:999px; padding:1px 9px; }
+  .pill.blue { background:var(--brand-soft); color:var(--brand); }
+  .pill.gray { background:#f1f5f9; color:#475569; }
+  .pill.green { background:var(--ok-soft); color:var(--ok); }
+  .pill.red { background:var(--danger-soft); color:var(--danger); }
+  .pill.amber { background:var(--warn-soft); color:var(--warn); }
+  .avatar { width:24px; height:24px; border-radius:50%; background:#dbeafe; color:#1e40af; font-size:11px; display:inline-flex; align-items:center; justify-content:center; font-weight:600; }
+  .avatar.lg { width:30px; height:30px; font-size:12px; }
+
+  /* 应用顶栏 */
+  .topbar { display:flex; align-items:center; gap:18px; padding:0 20px; height:52px; border-bottom:1px solid var(--line); background:#fff; }
+  .topbar .logo { font-weight:700; font-size:15px; color:var(--brand); }
+  .topbar .mi { font-size:13px; color:var(--muted); padding:6px 10px; border-radius:6px; cursor:pointer; }
+  .topbar .mi.on { color:var(--brand); background:var(--brand-soft); font-weight:600; }
+  .topbar .right { margin-left:auto; display:flex; align-items:center; gap:12px; }
+  .pagebody { padding:18px 22px; }
+
+  /* 目录树 */
+  .tree { font-size:13px; user-select:none; }
+  .tree .node { display:flex; align-items:center; gap:5px; padding:5px 8px; border-radius:6px; cursor:pointer; white-space:nowrap; }
+  .tree .node:hover { background:var(--bg); }
+  .tree .node.on { background:var(--brand-soft); color:var(--brand); font-weight:600; }
+  .tree .chev { width:14px; text-align:center; color:var(--muted); font-size:10px; transition:transform .15s; }
+  .tree .kids { display:none; padding-left:18px; }
+  .tree .node.open > .kids { display:block; }
+  .tree .node.open > .chev { transform:rotate(90deg); }
+  .tree .rowtools { margin-left:auto; display:none; gap:2px; }
+  .tree .node:hover .rowtools { display:inline-flex; }
+  .tree .rowtools button { border:0; background:none; cursor:pointer; font-size:12px; padding:1px 4px; border-radius:4px; color:var(--muted); }
+  .tree .rowtools button:hover { background:#e2e8f0; color:var(--ink); }
+
+  /* 弹窗 */
+  .overlay { position:absolute; inset:0; background:rgba(15,23,42,.45); display:none; align-items:center; justify-content:center; z-index:30; }
+  .overlay.show { display:flex; }
+  .dialog { background:#fff; border-radius:12px; width:560px; max-width:92%; box-shadow:0 20px 50px rgba(0,0,0,.25); overflow:hidden; }
+  .dialog.wide { width:680px; }
+  .dialog .dhead { display:flex; align-items:center; padding:14px 20px; border-bottom:1px solid var(--line); font-weight:600; font-size:15px; }
+  .dialog .dhead .x { margin-left:auto; cursor:pointer; color:var(--muted); border:0; background:none; font-size:16px; }
+  .dialog .dbody { padding:18px 20px; max-height:420px; overflow:auto; }
+  .dialog .dfoot { padding:12px 20px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; }
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:12.5px; color:var(--muted); margin-bottom:5px; }
+  .field .input, .field .select { width:100%; }
+
+  /* toast */
+  .toast { position:absolute; top:14px; left:50%; transform:translateX(-50%); background:#111827; color:#f9fafb; padding:9px 18px; border-radius:8px; font-size:13px; z-index:50; display:none; box-shadow:0 8px 20px rgba(0,0,0,.3); }
+  .toast.show { display:block; animation:pop .2s; }
+  @keyframes pop { from { opacity:0; transform:translate(-50%,-8px);} to { opacity:1; transform:translate(-50%,0);} }
+
+  /* 演示视角切换器 */
+  .persp { position:absolute; right:16px; top:64px; z-index:40; background:#111827; color:#e5e7eb; border-radius:10px; padding:10px 12px; font-size:12px; box-shadow:0 8px 20px rgba(0,0,0,.3); }
+  .persp .t { color:#9ca3af; margin-bottom:6px; font-size:11px; }
+  .persp label { display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer; }
+  .callout { position:absolute; z-index:20; background:#fbbf24; color:#78350f; font-size:11.5px; line-height:1.5; padding:7px 10px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,.18); max-width:190px; }
+  .callout::before { content:""; position:absolute; border:6px solid transparent; }
+  .hidden-by-perm { display:none !important; }
+
+  .card { border:1px solid var(--line); border-radius:10px; background:#fff; }
+  .muted { color:var(--muted); }
+  .flexrow { display:flex; align-items:center; gap:10px; }
+  .grid-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .kcard { border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:#fff; cursor:pointer; }
+  .kcard:hover { border-color:#bcd0f7; box-shadow:0 3px 10px rgba(26,86,219,.08); }
+  .kcard .nm { font-weight:600; margin-bottom:6px; }
+  .kcard .meta { font-size:12px; color:var(--muted); display:flex; gap:10px; flex-wrap:wrap; }
+  .empty { text-align:center; color:var(--muted); padding:46px 0; }
+  .member-row { display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid #f1f5f9; }
+  .perm-tabs { display:flex; gap:4px; background:var(--bg); border-radius:8px; padding:4px; margin-bottom:12px; }
+  .perm-tabs button { flex:1; border:0; background:none; padding:6px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:13px; color:var(--muted); }
+  .perm-tabs button.on { background:#fff; color:var(--ink); font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,.1); }
+  .adm-layout { display:flex; height:568px; }
+  .adm-side { width:230px; border-right:1px solid var(--line); padding:14px; overflow:auto; background:var(--sidebar); }
+  .adm-main { flex:1; padding:16px 20px; overflow:auto; }
+  .perm-tree .grp { font-weight:600; font-size:13px; margin:12px 0 4px; color:var(--ink); }
+  .perm-tree .leaf { display:flex; align-items:center; gap:8px; padding:5px 0 5px 18px; font-size:13px; }
+  .perm-tree .leaf code { font-size:11px; background:var(--bg); padding:1px 6px; border-radius:4px; color:var(--muted); }
+  .switch { position:relative; width:34px; height:18px; background:#cbd5e1; border-radius:999px; cursor:pointer; flex-shrink:0; }
+  .switch::after { content:""; position:absolute; width:14px; height:14px; border-radius:50%; background:#fff; top:2px; left:2px; transition:left .15s; }
+  .switch.on { background:var(--brand); }
+  .switch.on::after { left:18px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="nav">
+  <h1>企业权限体系 · UI 交互设计</h1>
+  <div class="sub">交互原型 v0.1 · 2026-11-21 · 点击左侧切换屏幕</div>
+  <button class="nav-item active" data-s="s1">① 知识库列表页 <span class="fr">FR-04/06</span></button>
+  <button class="nav-item" data-s="s2">② 知识库详情 · 目录树 <span class="fr">FR-08</span></button>
+  <button class="nav-item" data-s="s3">③ 成员管理弹窗 <span class="fr">FR-05</span></button>
+  <button class="nav-item" data-s="s4">④ 超管 · 知识库管理 <span class="fr">FR-07</span></button>
+  <button class="nav-item" data-s="s5">⑤ 超管 · 组织架构 <span class="fr">FR-01</span></button>
+  <button class="nav-item" data-s="s6">⑥ 超管 · 用户管理 <span class="fr">FR-02</span></button>
+  <button class="nav-item" data-s="s7">⑦ 超管 · 角色管理 <span class="fr">FR-03</span></button>
+  <div class="tip">
+    ② ⑥ 屏右上角有<b>「演示视角」切换器</b>，可切换 所有者 / 可编辑 / 可查看 / 无权限 四种身份，直观演示按钮级权限的显示与隐藏。<br><br>
+    黄色便签为交互标注，评审后随界面一并落地。
+  </div>
+</aside>
+
+<main>
+
+<!-- ============ S1 知识库列表 ============ -->
+<section class="screen active" id="s1">
+  <div class="screen-head">
+    <h2>① 知识库列表页 <span class="tag">FR-04</span><span class="tag">FR-06</span></h2>
+    <p class="desc">默认拒绝原则的第一触点：用户只能看到被授权的知识库；"新建知识库"按钮由 <code>kb.create</code> 功能权限控制。右上有演示视角切换器。</p>
+  </div>
+  <div class="frame">
+    <div class="chrome"><span class="dot" style="background:#f87171"></span><span class="dot" style="background:#fbbf24"></span><span class="dot" style="background:#34d399"></span><span class="url">http://localhost:9222/datasets</span></div>
+    <div class="viewport" data-persp-scope>
+      <div class="topbar">
+        <span class="logo">RAGFlow</span>
+        <span class="mi on">知识库</span><span class="mi">对话</span><span class="mi">Agent</span><span class="mi">文件管理</span>
+        <div class="right"><span class="avatar lg">张</span><span style="font-size:13px">张三 · 市场部</span></div>
+      </div>
+      <div class="pagebody">
+        <div class="flexrow" style="margin-bottom:14px">
+          <input class="input" style="width:260px" placeholder="搜索我可见的知识库…">
+          <select class="select"><option>全部归属部门</option><option>市场部</option><option>财务部</option></select>
+          <div style="margin-left:auto" class="flexrow">
+            <button class="btn primary perm" data-need="kb.create">＋ 新建知识库</button>
+          </div>
+        </div>
+        <div class="grid-cards">
+          <div class="kcard">
+            <div class="nm">产品宣传资料库 <span class="pill blue">所有者</span></div>
+            <div class="meta"><span>市场部</span><span>128 文档</span><span>8 目录</span></div>
+          </div>
+          <div class="kcard">
+            <div class="nm">行业研究报告 <span class="pill green">可编辑</span></div>
+            <div class="meta"><span>战略部</span><span>356 文档</span></div>
+          </div>
+          <div class="kcard">
+            <div class="nm">集团财务制度 <span class="pill gray">可查看</span></div>
+            <div class="meta"><span>财务部</span><span>89 文档</span></div>
+          </div>
+        </div>
+        <div class="empty" style="margin-top:26px">共 3 个可见知识库 · 未授权的知识库不会出现在任何列表与搜索中</div>
+      </div>
+      <div class="persp" data-persp>
+        <div class="t">演示视角（当前登录身份）</div>
+        <label><input type="radio" name="p1" checked> 所有者（有 kb.create）</label>
+        <label><input type="radio" name="p1"> 可编辑人员（无 kb.create）</label>
+        <label><input type="radio" name="p1"> 可查看人员</label>
+      </div>
+      <div class="callout" style="right:230px; top:120px">无 <b>kb.create</b> 权限 → 新建按钮不渲染（按钮级权限 FR-03）</div>
+    </div>
+  </div>
+  <div class="notes">
+    <h3>交互说明</h3>
+    <ul>
+      <li><b>可见范围</b>：列表只返回所有者/查看/编辑成员的知识库，后端 SQL 下推过滤（技术方案 4.2）。</li>
+      <li><b>权限角标</b>：每张卡片标注当前用户在该库的身份（所有者/可编辑/可查看），替代原 team/me 语义。</li>
+      <li><b>新建按钮</b>：由 <code>kb.create</code> 控制渲染；点击进入创建表单，创建后自动成为所有者并归属所在部门。</li>
+      <li>切换演示视角到"可编辑人员"可看到新建按钮消失——即按钮级权限效果。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ S2 知识库详情 ============ -->
+<section class="screen" id="s2">
+  <div class="screen-head">
+    <h2>② 知识库详情页 · 目录结构管理 <span class="tag">FR-08</span></h2>
+    <p class="desc">左侧多级目录树（懒加载）+ 右侧文档列表。目录管理按钮仅所有者与可编辑人员可见；"成员"入口仅所有者与超管可见。</p>
+  </div>
+  <div class="frame">
+    <div class="chrome"><span class="dot" style="background:#f87171"></span><span class="dot" style="background:#fbbf24"></span><span class="dot" style="background:#34d399"></span><span class="url">http://localhost:9222/dataset/产品宣传资料库/documents</span></div>
+    <div class="viewport" data-persp-scope>
+      <div class="topbar">
+        <span class="logo">RAGFlow</span><span class="mi on">知识库</span><span class="mi">对话</span><span class="mi">Agent</span>
+        <div class="right"><button class="btn sm owner-only" id="open-members">👥 成员</button><span class="avatar lg">张</span></div>
+      </div>
+      <div style="display:flex; height:568px">
+        <div style="width:240px; border-right:1px solid var(--line); padding:12px; background:var(--sidebar); overflow:auto">
+          <div class="flexrow" style="margin-bottom:10px">
+            <b style="font-size:13px">目录</b>
+            <button class="btn sm icon perm" data-need="kb.edit" title="新建目录" style="margin-left:auto">＋</button>
+          </div>
+          <div class="tree">
+            <div class="node on"><span class="chev"></span>📁 全部文档（128）</div>
+            <div class="node open"><span class="chev">▶</span>📁 品牌物料
+              <span class="rowtools"><button title="新建子目录">＋</button><button title="重命名">✎</button><button title="删除" onclick="toast('s2','该目录下仍有 23 份文档与 2 个子目录，无法删除')">🗑</button></span>
+              <div class="kids">
+                <div class="node"><span class="chev"></span>📁 产品海报 <span class="rowtools"><button>＋</button><button>✎</button><button onclick="toast('s2','该目录下仍有 12 份文档，无法删除')">🗑</button></span></div>
+                <div class="node"><span class="chev"></span>📁 展会素材</div>
+                <div class="node"><span class="chev"></span>📁 视频脚本</div>
+              </div>
+            </div>
+            <div class="node"><span class="chev">▶</span>📁 市场分析 <span class="rowtools"><button>＋</button><button>✎</button><button onclick="toast('s2','删除成功（空目录）')">🗑</button></span></div>
+            <div class="node"><span class="chev"></span>📁 客户案例</div>
+          </div>
+        </div>
+        <div style="flex:1; padding:14px 18px; overflow:auto">
+          <div class="flexrow" style="margin-bottom:10px">
+            <span style="font-size:13px" class="muted">品牌物料 / 产品海报</span>
+            <div style="margin-left:auto" class="flexrow">
+              <input class="input" style="width:200px" placeholder="库内全局搜索（标注目录路径）">
+              <button class="btn sm perm" data-need="kb.edit">移动到…</button>
+              <button class="btn sm primary perm" data-need="kb.edit">⬆ 上传到此目录</button>
+            </div>
+          </div>
+          <table class="ui">
+            <thead><tr><th><input type="checkbox"></th><th>文档名称</th><th>大小</th><th>解析状态</th><th>更新时间</th><th style="width:150px">操作</th></tr></thead>
+            <tbody>
+              <tr><td><input type="checkbox"></td><td>2026春季发布会方案.pdf</td><td>4.2 MB</td><td><span class="pill green">已解析</span></td><td>11-20 14:32</td><td><span class="perm" data-need="kb.edit"><button class="btn sm icon">✎</button><button class="btn sm icon">♻</button><button class="btn sm icon">🗑</button></span></td></tr>
+              <tr><td><input type="checkbox"></td><td>产品海报-旗舰机A.docx</td><td>1.1 MB</td><td><span class="pill amber">解析中</span></td><td>11-20 10:05</td><td><span class="perm" data-need="kb.edit"><button class="btn sm icon">✎</button><button class="btn sm icon">♻</button><button class="btn sm icon">🗑</button></span></td></tr>
+              <tr><td><input type="checkbox"></td><td>渠道培训手册.pptx</td><td>8.7 MB</td><td><span class="pill green">已解析</span></td><td>11-18 09:40</td><td><span class="perm" data-need="kb.edit"><button class="btn sm icon">✎</button><button class="btn sm icon">♻</button><button class="btn sm icon">🗑</button></span></td></tr>
+            </tbody>
+          </table>
+          <div class="flexrow" style="margin-top:12px; justify-content:flex-end"><span class="muted" style="font-size:12px">本目录 12 / 23 份文档</span><button class="btn sm">上一页</button><button class="btn sm">下一页</button></div>
+        </div>
+      </div>
+      <div class="persp" data-persp>
+        <div class="t">演示视角（当前身份）</div>
+        <label><input type="radio" name="p2" checked> 所有者</label>
+        <label><input type="radio" name="p2"> 可编辑人员</label>
+        <label><input type="radio" name="p2"> 可查看人员</label>
+        <label><input type="radio" name="p2"> 超级管理员</label>
+      </div>
+      <div class="callout" style="right:250px; top:110px">目录行悬停出现 ＋ / ✎ / 🗑；删除非空目录被<b>阻断</b>并提示原因</div>
+      <div class="callout" style="right:60px; top:26px">「成员」按钮仅所有者与超管可见；<b>可编辑人员不能配置权限</b>（FR-05 关键差异）</div>
+      <div class="toast" data-toast></div>
+
+      <!-- 成员管理弹窗（也在 S3 独立展示，此处可交互打开） -->
+      <div class="overlay" id="dlg-members">
+        <div class="dialog wide">
+          <div class="dhead">成员管理 · 产品宣传资料库 <button class="x" onclick="closeDlg('dlg-members')">✕</button></div>
+          <div class="dbody">
+            <div class="perm-tabs">
+              <button class="on" onclick="mtab(this,'view')">可查看人员（6）</button>
+              <button onclick="mtab(this,'edit')">可编辑人员（3）</button>
+            </div>
+            <div data-mp="view">
+              <div class="member-row"><span class="avatar">李</span>李四 <span class="pill gray">销售部</span><button class="btn sm icon" style="margin-left:auto" title="升级为可编辑">↑</button><button class="btn sm danger">移除</button></div>
+              <div class="member-row"><span class="avatar">王</span>王五 <span class="pill gray">市场部</span><button class="btn sm icon" style="margin-left:auto" title="升级为可编辑">↑</button><button class="btn sm danger">移除</button></div>
+              <div class="member-row"><span class="avatar">赵</span>赵六 <span class="pill gray">子公司A · 研发部</span><button class="btn sm icon" style="margin-left:auto" title="升级为可编辑">↑</button><button class="btn sm danger">移除</button></div>
+              <div class="empty" style="padding:14px 0">… 其余 3 人</div>
+            </div>
+            <div data-mp="edit" style="display:none">
+              <div class="member-row"><span class="avatar">钱</span>钱七 <span class="pill gray">市场部</span><button class="btn sm icon" style="margin-left:auto" title="降级为可查看">↓</button><button class="btn sm danger">移除</button></div>
+              <div class="member-row"><span class="avatar">孙</span>孙八 <span class="pill gray">市场部</span><button class="btn sm icon" style="margin-left:auto" title="降级为可查看">↓</button><button class="btn sm danger">移除</button></div>
+              <div class="member-row"><span class="avatar">周</span>周九 <span class="pill gray">战略部</span><button class="btn sm icon" style="margin-left:auto" title="降级为可查看">↓</button><button class="btn sm danger">移除</button></div>
+            </div>
+          </div>
+          <div class="dfoot">
+            <button class="btn" onclick="closeDlg('dlg-members')">关闭</button>
+            <button class="btn primary" onclick="closeDlg('dlg-members'); toast('s2','已保存成员变更，即时生效')">保存变更</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h3>交互说明</h3>
+    <ul>
+      <li><b>目录树懒加载</b>：展开节点时才拉取子层（技术方案 3.4），上万目录不卡顿；根目录固定为"全部文档"。</li>
+      <li><b>目录操作</b>：悬停行尾出现 新建子目录 / 重命名 / 删除；删除非空目录返回阻断提示，需先清空（PRD FR-08 约束）。</li>
+      <li><b>上传默认当前目录</b>；支持勾选多份文档后「移动到…」选择目标目录。</li>
+      <li><b>全局搜索</b>：结果列表标注所属目录路径（如 品牌物料/产品海报）。</li>
+      <li><b>视角演示</b>：切到"可查看人员"——目录工具条、上传、移动、文档操作按钮全部消失，仅剩浏览；切到"可编辑人员"——有编辑能力但无「成员」按钮。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ S3 成员管理弹窗（独立讲解） ============ -->
+<section class="screen" id="s3">
+  <div class="screen-head">
+    <h2>③ 成员管理弹窗（含按部门批量添加） <span class="tag">FR-05</span></h2>
+    <p class="desc">所有者自主授权入口。授权对象为个人用户；支持按部门整批导入，落地为逐人授权；查看↔编辑一键升降级，同一用户仅持一种权限。</p>
+  </div>
+  <div class="frame">
+    <div class="chrome"><span class="dot" style="background:#f87171"></span><span class="dot" style="background:#fbbf24"></span><span class="dot" style="background:#34d399"></span><span class="url">（弹窗层）</span></div>
+    <div class="viewport" style="background:#e2e8f0">
+      <div class="overlay show" style="position:relative; inset:auto; min-height:620px">
+        <div class="dialog wide">
+          <div class="dhead">成员管理 · 产品宣传资料库 <button class="x">✕</button></div>
+          <div class="dbody">
+            <div class="flexrow" style="margin-bottom:12px">
+              <button class="btn primary sm" onclick="showEl('add-panel')">＋ 添加成员</button>
+              <button class="btn sm" onclick="showEl('add-panel')">⬇ 按部门批量添加</button>
+              <span class="muted" style="margin-left:auto; font-size:12px">可查看 6 · 可编辑 3</span>
+            </div>
+            <div id="add-panel" style="display:none; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px">
+              <div class="perm-tabs" style="margin-bottom:10px">
+                <button class="on" onclick="atab(this,'search')">按人员搜索</button>
+                <button onclick="atab(this,'dept')">按部门导入</button>
+              </div>
+              <div data-ap="search">
+                <input class="input" style="width:100%" placeholder="搜索姓名 / 账号（全部用户，含跨部门）…">
+                <div style="margin-top:8px; font-size:12.5px" class="muted">
+                  <div class="member-row"><input type="checkbox"><span class="avatar">吴</span>吴十 <span class="pill gray">财务部</span></div>
+                  <div class="member-row"><input type="checkbox"><span class="avatar">郑</span>郑一 <span class="pill gray">子公司B · 行政部</span></div>
+                  <div class="member-row"><input type="checkbox" disabled><span class="avatar">钱</span>钱七（已是可编辑成员）</div>
+                </div>
+                <div class="flexrow" style="margin-top:10px">
+                  <select class="select"><option>授予：可查看</option><option>授予：可编辑</option></select>
+                  <button class="btn primary sm" style="margin-left:auto">添加所选（2）</button>
+                </div>
+              </div>
+              <div data-ap="dept" style="display:none">
+                <div class="tree" style="background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px">
+                  <div class="node open"><span class="chev">▶</span>☐ 🏢 集团总部</div>
+                  <div class="kids">
+                    <div class="node"><span class="chev"></span>☐ 📁 市场部（18 人）</div>
+                    <div class="node"><span class="chev"></span>☐ 📁 销售部（32 人）</div>
+                  </div>
+                  <div class="node"><span class="chev">▶</span>☐ 🏢 子公司A</div>
+                  <div class="node"><span class="chev">▶</span>☐ 🏢 子公司B</div>
+                </div>
+                <div class="flexrow" style="margin-top:10px">
+                  <span class="muted" style="font-size:12px">勾选部门 = 导入其全部在岗成员，逐人生成个人授权；后续部门人员变动<b>不会自动同步</b></span>
+                  <button class="btn primary sm" style="margin-left:auto">导入（50 人）</button>
+                </div>
+              </div>
+            </div>
+            <div class="member-row"><span class="avatar">钱</span>钱七 <span class="pill gray">市场部</span><span class="pill green">可编辑</span><button class="btn sm icon" style="margin-left:auto" title="降级为可查看">↓</button><button class="btn sm danger">移除</button></div>
+            <div class="member-row"><span class="avatar">李</span>李四 <span class="pill gray">销售部</span><span class="pill gray">可查看</span><button class="btn sm icon" style="margin-left:auto" title="升级为可编辑">↑</button><button class="btn sm danger">移除</button></div>
+            <div class="member-row"><span class="avatar">赵</span>赵六 <span class="pill gray">子公司A · 研发部</span><span class="pill gray">可查看</span><span class="pill amber" style="margin-left:4px">跨部门</span><button class="btn sm icon" style="margin-left:2px" title="升级为可编辑">↑</button><button class="btn sm danger">移除</button></div>
+          </div>
+          <div class="dfoot">
+            <button class="btn">关闭</button>
+            <button class="btn primary">保存变更（即时生效）</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h3>交互说明</h3>
+    <ul>
+      <li><b>两个名单</b>：可查看 / 可编辑分页签维护；同一用户只出现在一个名单，↑↓ 一键升降级（移动而非重复授权）。</li>
+      <li><b>按人员搜索</b>：可检索全量用户（含跨部门/跨子公司），已授权用户置灰防重复；添加前选择授予层级。</li>
+      <li><b>按部门导入</b>：勾选部门即整批导入全部在岗成员；明确提示"不自动同步后续人事变动"。</li>
+      <li>所有者本人不出现在名单中，也不能移除自己的所有者身份（所有权变更只走超管的强制转移）。</li>
+      <li>保存后即时生效；被移除成员的下一次请求即被拒绝（技术方案假设 A2）。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ S4 超管知识库管理 ============ -->
+<section class="screen" id="s4">
+  <div class="screen-head">
+    <h2>④ 超管 · 全量知识库管理 <span class="tag">FR-07</span></h2>
+    <p class="desc">超管可见全部知识库（含无授权的），支持按部门 / 所有者筛选；行内可修改成员、强制转移所有权。</p>
+  </div>
+  <div class="frame">
+    <div class="chrome"><span class="dot" style="background:#f87171"></span><span class="dot" style="background:#fbbf24"></span><span class="dot" style="background:#34d399"></span><span class="url">http://localhost:9381/admin/kb-admin</span></div>
+    <div class="viewport">
+      <div class="topbar">
+        <span class="logo">RAGFlow Admin</span>
+        <span class="mi">用户</span><span class="mi on">知识库管理</span><span class="mi">角色</span><span class="mi">组织架构</span><span class="mi">服务</span>
+        <div class="right"><span class="pill red">超级管理员</span><span class="avatar lg">管</span></div>
+      </div>
+      <div class="pagebody">
+        <div class="flexrow" style="margin-bottom:12px">
+          <select class="select"><option>全部部门</option><option>市场部</option><option>子公司A</option></select>
+          <select class="select"><option>全部所有者</option><option>张三</option><option>李四</option></select>
+          <input class="input" style="width:220px" placeholder="搜索知识库名称…">
+          <span class="muted" style="margin-left:auto; font-size:12.5px">共 47 个知识库 · 12 个部门 · 31 位所有者</span>
+        </div>
+        <div class="card" style="overflow:hidden">
+          <table class="ui">
+            <thead><tr><th>知识库</th><th>归属部门</th><th>所有者</th><th>文档数</th><th>成员（查看/编辑）</th><th style="width:190px">操作</th></tr></thead>
+            <tbody>
+              <tr><td><b>产品宣传资料库</b></td><td><span class="pill blue">市场部</span></td><td><span class="avatar">张</span> 张三</td><td>128</td><td>6 / 3</td><td><button class="btn sm" onclick="showDlg('dlg-transfer')">转移所有权</button><button class="btn sm">修改成员</button></td></tr>
+              <tr><td><b>行业研究报告</b></td><td><span class="pill blue">战略部</span></td><td><span class="avatar">周</span> 周九</td><td>356</td><td>14 / 2</td><td><button class="btn sm" onclick="showDlg('dlg-transfer')">转移所有权</button><button class="btn sm">修改成员</button></td></tr>
+              <tr><td><b>研发工艺文档</b></td><td><span class="pill blue">子公司A · 研发部</span></td><td><span class="avatar">赵</span> 赵六</td><td>2043</td><td>0 / 0 <span class="pill amber">仅所有者可见</span></td><td><button class="btn sm" onclick="showDlg('dlg-transfer')">转移所有权</button><button class="btn sm">修改成员</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="callout" style="right:40px; top:120px">「仅所有者可见」角标帮助超管快速识别<b>未共享</b>的知识库</div>
+
+      <div class="overlay" id="dlg-transfer">
+        <div class="dialog">
+          <div class="dhead">强制转移所有权 · 研发工艺文档 <button class="x" onclick="closeDlg('dlg-transfer')">✕</button></div>
+          <div class="dbody">
+            <div class="field"><label>当前所有者</label><div class="flexrow"><span class="avatar lg">赵</span>赵六（子公司A · 研发部）</div></div>
+            <div class="field"><label>新所有者（搜索在岗用户）</label><input class="input" value="钱七（市场部）"></div>
+            <div class="field">
+              <label>转移后变化</label>
+              <div style="font-size:13px; line-height:1.9; background:var(--warn-soft); border:1px solid #fde68a; border-radius:8px; padding:10px 14px">
+                · 新所有者 <b>钱七</b> 立即获得全部权限（含成员配置权）<br>
+                · 知识库归属部门：子公司A · 研发部 → <b>市场部</b><br>
+                · 原所有者 <b>赵六</b> 降为 <b>可查看人员</b>（PRD 已确认）
+              </div>
+            </div>
+            <div class="field flexrow"><input type="checkbox" id="tk"> <label for="tk" style="margin:0; color:var(--ink)">我已知晓此操作即时生效且影响归属部门，确认执行</label></div>
+          </div>
+          <div class="dfoot">
+            <button class="btn" onclick="closeDlg('dlg-transfer')">取消</button>
+            <button class="btn primary" onclick="if(document.getElementById('tk').checked){closeDlg('dlg-transfer');toast('s4','所有权已转移至 钱七，归属部门更新为 市场部')}else{toast('s4','请先勾选确认')}">确认转移</button>
+          </div>
+        </div>
+      </div>
+      <div class="toast" data-toast></div>
+    </div>
+  </div>
+  <div class="notes">
+    <h3>交互说明</h3>
+    <ul>
+      <li><b>全量可见</b>：不经过 kb_member 判定，直接返回全部知识库并支持部门/所有者筛选（超管特权入口）。</li>
+      <li><b>强制转移</b>：对话框明示三项变化（新所有者权限、归属部门更新、原所有者降为可查看），勾选确认后才可执行；失败整体回滚。</li>
+      <li>「修改成员」复用 S3 的成员管理弹窗，超管对任意知识库生效。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ S5 组织架构 ============ -->
+<section class="screen" id="s5">
+  <div class="screen-head">
+    <h2>⑤ 超管 · 组织架构管理 <span class="tag">FR-01</span></h2>
+    <p class="desc">树形部门/子公司维护；删除受"无子部门、无用户、无归属知识库"三重约束阻断。</p>
+  </div>
+  <div class="frame">
+    <div class="chrome"><span class="dot" style="background:#f87171"></span><span class="dot" style="background:#fbbf24"></span><span class="dot" style="background:#34d399"></span><span class="url">http://localhost:9381/admin/departments</span></div>
+    <div class="viewport">
+      <div class="topbar">
+        <span class="logo">RAGFlow Admin</span>
+        <span class="mi">用户</span><span class="mi">知识库管理</span><span class="mi">角色</span><span class="mi on">组织架构</span>
+        <div class="right"><span class="pill red">超级管理员</span><span class="avatar lg">管</span></div>
+      </div>
+      <div class="adm-layout">
+        <div class="adm-side">
+          <div class="flexrow" style="margin-bottom:10px"><b style="font-size:13px">组织树</b><button class="btn sm icon" style="margin-left:auto" title="新增根部门">＋</button></div>
+          <div class="tree">
+            <div class="node open"><span class="chev">▶</span>🏢 集团总部
+              <div class="kids">
+                <div class="node on"><span class="chev"></span>📁 市场部 <span class="rowtools"><button title="新增子部门">＋</button><button title="重命名">✎</button><button onclick="toast('s5','无法删除：该部门下仍有 18 名用户、5 个归属知识库')">🗑</button></span></div>
+                <div class="node"><span class="chev">▶</span>📁 销售部 <span class="rowtools"><button>＋</button><button>✎</button><button onclick="toast('s5','无法删除：该部门下仍有 32 名用户')">🗑</button></span>
+                  <div class="kids"><div class="node"><span class="chev"></span>📁 大客户组</div><div class="node"><span class="chev"></span>📁 渠道组</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="node"><span class="chev">▶</span>🏢 子公司A <span class="rowtools"><button>＋</button><button>✎</button><button onclick="toast('s5','删除成功（空部门）')">🗑</button></span></div>
+            <div class="node"><span class="chev">▶</span>🏢 子公司B</div>
+          </div>
+        </div>
+        <div class="adm-main">
+          <div class="flexrow" style="margin-bottom:12px">
+            <b style="font-size:15px">市场部</b><span class="pill blue">集团总部 / 市场部</span>
+            <div style="margin-left:auto" class="flexrow"><button class="btn sm">重命名</button><button class="btn sm primary">＋ 新增子部门</button></div>
+          </div>
+          <div class="perm-tabs" style="max-width:320px">
+            <button class="on">成员（18）</button><button>归属知识库（5）</button>
+          </div>
+          <table class="ui">
+            <thead><tr><th>姓名</th><th>角色</th><th>名下知识库</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr><td><span class="avatar">张</span> 张三</td><td><span class="pill blue">内容运营</span></td><td>1</td><td><span class="pill green">在岗</span></td></tr>
+              <tr><td><span class="avatar">钱</span> 钱七</td><td><span class="pill gray">无角色</span></td><td>0</td><td><span class="pill green">在岗</span></td></tr>
+              <tr><td><span class="avatar">孙</span> 孙八</td><td><span class="pill blue">内容运营</span></td><td>0</td><td><span class="pill red">已停用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="toast" data-toast></div>
+    </div>
+  </div>
+  <div class="notes">
+    <h3>交互说明</h3>
+    <ul>
+      <li><b>树形维护</b>：新增根部门/子部门、重命名、删除；删除前三重校验（子部门 / 用户 / 归属知识库），阻断并列出原因（演示点击删除按钮）。</li>
+      <li><b>右侧详情</b>：部门成员与归属知识库两个页签；知识库由"所有者所在部门"实时推导，不需要单独维护。</li>
+      <li>部门仅为组织与筛选维度，不自动产生知识库可见性（PRD 已确认）。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ S6 用户管理 ============ -->
+<section class="screen" id="s6">
+  <div class="screen-head">
+    <h2>⑥ 超管 · 用户管理 <span class="tag">FR-02</span></h2>
+    <p class="desc">账号全生命周期由超管维护：部门唯一归属 + 单一角色；删除账号受"名下知识库须先转移"阻断。</p>
+  </div>
+  <div class="frame">
+    <div class="chrome"><span class="dot" style="background:#f87171"></span><span class="dot" style="background:#fbbf24"></span><span class="dot" style="background:#34d399"></span><span class="url">http://localhost:9381/admin/users</span></div>
+    <div class="viewport">
+      <div class="topbar">
+        <span class="logo">RAGFlow Admin</span>
+        <span class="mi on">用户</span><span class="mi">知识库管理</span><span class="mi">角色</span><span class="mi">组织架构</span>
+        <div class="right"><span class="pill red">超级管理员</span><span class="avatar lg">管</span></div>
+      </div>
+      <div class="pagebody">
+        <div class="flexrow" style="margin-bottom:12px">
+          <input class="input" style="width:220px" placeholder="搜索姓名 / 账号…">
+          <select class="select"><option>全部部门</option><option>市场部</option><option>子公司A</option></select>
+          <select class="select"><option>全部角色</option><option>内容运营</option><option>只读访客</option></select>
+          <button class="btn primary" style="margin-left:auto" onclick="showDlg('dlg-user')">＋ 新建用户</button>
+        </div>
+        <div class="card" style="overflow:hidden">
+          <table class="ui">
+            <thead><tr><th>姓名 / 账号</th><th>所属部门</th><th>角色</th><th>名下知识库</th><th>状态</th><th style="width:230px">操作</th></tr></thead>
+            <tbody>
+              <tr><td><span class="avatar">张</span> 张三 <span class="muted" style="font-size:12px">zhangsan</span></td><td>市场部</td><td><span class="pill blue">内容运营</span></td><td>1</td><td><span class="pill green">在岗</span></td><td><button class="btn sm">编辑</button><button class="btn sm">重置密码</button><button class="btn sm">停用</button><button class="btn sm danger" onclick="toast('s6','无法删除：张三名下仍有 1 个知识库（产品宣传资料库），请先转移所有权')">删除</button></td></tr>
+              <tr><td><span class="avatar">钱</span> 钱七 <span class="muted" style="font-size:12px">qianqi</span></td><td>市场部</td><td><span class="pill gray">无角色</span></td><td>0</td><td><span class="pill green">在岗</span></td><td><button class="btn sm">编辑</button><button class="btn sm">重置密码</button><button class="btn sm">停用</button><button class="btn sm danger" onclick="toast('s6','删除成功（无名下知识库）')">删除</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="overlay" id="dlg-user">
+        <div class="dialog">
+          <div class="dhead">新建用户 <button class="x" onclick="closeDlg('dlg-user')">✕</button></div>
+          <div class="dbody">
+            <div class="field"><label>姓名</label><input class="input" placeholder="如：王五"></div>
+            <div class="field"><label>账号（登录邮箱）</label><input class="input" placeholder="wangwu@company.com"></div>
+            <div class="field"><label>初始密码</label><input class="input" value="••••••••"><div class="muted" style="font-size:11.5px; margin-top:3px">首次登录强制修改</div></div>
+            <div class="field"><label>所属部门（唯一）</label>
+              <select class="select"><option>请选择部门…</option><option>集团总部 / 市场部</option><option>子公司A / 研发部</option></select>
+            </div>
+            <div class="field"><label>角色（可不选，无角色 = 无任何功能权限）</label>
+              <select class="select"><option>不分配角色</option><option>内容运营</option><option>只读访客</option></select>
+            </div>
+          </div>
+          <div class="dfoot"><button class="btn" onclick="closeDlg('dlg-user')">取消</button><button class="btn primary" onclick="closeDlg('dlg-user');toast('s6','用户创建成功')">创建</button></div>
+        </div>
+      </div>
+      <div class="toast" data-toast></div>
+    </div>
+  </div>
+  <div class="notes">
+    <h3>交互说明</h3>
+    <ul>
+      <li><b>删除阻断</b>：名下有知识库时删除被拒绝，错误信息直接点名待转移的知识库，引导跳转「知识库管理」按所有者筛选后强制转移（技术方案 4.2）。</li>
+      <li><b>停用 vs 删除</b>：停用仅禁登录、保留知识库；删除则要求先转移，账号随后自动移出所有成员名单。</li>
+      <li>内置超管账号在列表中标注且不提供停用/删除入口（全系统仅一个）。</li>
+      <li>部门树单选、角色下拉单选（D1：一人一角色）。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ S7 角色管理 ============ -->
+<section class="screen" id="s7">
+  <div class="screen-head">
+    <h2>⑦ 超管 · 角色管理（按钮级权限点配置） <span class="tag">FR-03</span></h2>
+    <p class="desc">功能权限的唯一配置入口。权限点按功能域分组、按钮级粒度；保存后对持该角色的用户即时生效。</p>
+  </div>
+  <div class="frame">
+    <div class="chrome"><span class="dot" style="background:#f87171"></span><span class="dot" style="background:#fbbf24"></span><span class="dot" style="background:#34d399"></span><span class="url">http://localhost:9381/admin/roles</span></div>
+    <div class="viewport">
+      <div class="topbar">
+        <span class="logo">RAGFlow Admin</span>
+        <span class="mi">用户</span><span class="mi">知识库管理</span><span class="mi on">角色</span><span class="mi">组织架构</span>
+        <div class="right"><span class="pill red">超级管理员</span><span class="avatar lg">管</span></div>
+      </div>
+      <div class="adm-layout">
+        <div class="adm-side" style="background:#fff">
+          <button class="btn primary sm" style="width:100%; margin-bottom:10px">＋ 新建角色</button>
+          <div class="tree">
+            <div class="node on"><span class="chev"></span>🛡 内容运营 <span class="pill gray" style="margin-left:auto">18 人</span></div>
+            <div class="node"><span class="chev"></span>🛡 只读访客 <span class="pill gray" style="margin-left:auto">46 人</span></div>
+            <div class="node"><span class="chev"></span>🛡 知识库管理员 <span class="pill gray" style="margin-left:auto">3 人</span></div>
+          </div>
+          <div class="callout" style="left:12px; bottom:60px; position:absolute">超级管理员不走角色体系：<br>内置唯一账号，不显示在此列表</div>
+        </div>
+        <div class="adm-main">
+          <div class="flexrow" style="margin-bottom:6px"><b style="font-size:15px">内容运营</b><span class="pill gray">18 名用户持有</span><button class="btn sm" style="margin-left:auto">删除角色</button></div>
+          <div class="muted" style="font-size:12.5px; margin-bottom:10px">描述：负责知识库内容建设与维护</div>
+          <div class="card" style="padding:14px 18px">
+            <div class="perm-tree">
+              <div class="grp">知识库</div>
+              <div class="leaf"><input type="checkbox" checked><span>创建知识库</span><code>kb.create</code></div>
+              <div class="leaf"><input type="checkbox" checked><span>浏览可见知识库</span><code>kb.view</code></div>
+              <div class="grp">文档</div>
+              <div class="leaf"><input type="checkbox" checked><span>上传文档</span><code>doc.upload</code></div>
+              <div class="leaf"><input type="checkbox" checked><span>删除文档</span><code>doc.delete</code></div>
+              <div class="leaf"><input type="checkbox"><span>重新解析文档</span><code>doc.reparse</code></div>
+              <div class="grp">对话</div>
+              <div class="leaf"><input type="checkbox" checked><span>创建对话助手</span><code>chat.create</code></div>
+              <div class="grp">Agent</div>
+              <div class="leaf"><input type="checkbox"><span>创建 Agent</span><code>agent.create</code></div>
+            </div>
+          </div>
+          <div class="flexrow" style="margin-top:12px; justify-content:flex-end"><button class="btn primary">保存（对 18 名用户即时生效）</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h3>交互说明</h3>
+    <ul>
+      <li><b>按钮级粒度</b>：每个权限点对应一个具体操作（code 与后端 seed 一一对应）；保存后前端按钮即时隐藏、服务端同步拦截。</li>
+      <li><b>权限点清单</b>：初始为 M6 阶段与现有功能菜单逐一对齐后的完整清单（技术方案 3.1），此处为示例分组。</li>
+      <li>角色删除前校验引用（有用户持有则阻断）；<b>超管账号不在此列</b>，独立于角色体系（D1/Q5 确认）。</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+  // 屏幕切换
+  document.querySelectorAll('.nav-item').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+      var s = document.getElementById(btn.dataset.s);
+      s.classList.add('active');
+      if (btn.dataset.s === 's3') { /* 成员弹窗屏无需额外动作 */ }
+    });
+  });
+
+  // toast
+  function toast(scope, msg){
+    var v = document.getElementById(scope).querySelector('[data-toast]');
+    if (!v) return;
+    v.textContent = msg;
+    v.classList.remove('show');
+    void v.offsetWidth;
+    v.classList.add('show');
+    clearTimeout(v._t);
+    v._t = setTimeout(function(){ v.classList.remove('show'); }, 2600);
+  }
+  // 弹窗
+  function showDlg(id){ document.getElementById(id).classList.add('show'); }
+  function closeDlg(id){ document.getElementById(id).classList.remove('show'); }
+  function showEl(id){ document.getElementById(id).style.display = 'block'; }
+  // 成员弹窗页签
+  function mtab(btn, key){
+    var dbody = btn.closest('.dbody');
+    dbody.querySelectorAll('.perm-tabs button').forEach(function(b){ b.classList.remove('on'); });
+    btn.classList.add('on');
+    dbody.querySelectorAll('[data-mp]').forEach(function(p){ p.style.display = p.dataset.mp === key ? '' : 'none'; });
+  }
+  // 添加成员页签
+  function atab(btn, key){
+    var panel = document.getElementById('add-panel');
+    panel.querySelectorAll('.perm-tabs button').forEach(function(b){ b.classList.remove('on'); });
+    btn.classList.add('on');
+    panel.querySelectorAll('[data-ap]').forEach(function(p){ p.style.display = p.dataset.ap === key ? '' : 'none'; });
+  }
+
+  // 树节点展开
+  document.addEventListener('click', function(e){
+    var node = e.target.closest('.tree .node');
+    if (!node || e.target.closest('.rowtools') || e.target.closest('input')) return;
+    if (node.querySelector('.chev') && node.querySelector('.kids')) node.classList.toggle('open');
+    var tree = node.closest('.tree');
+    tree.querySelectorAll('.node').forEach(function(n){ n.classList.remove('on'); });
+    node.classList.add('on');
+  });
+
+  // 演示视角切换：控制 perm / owner-only 元素显隐
+  function applyPersp(scope, role){
+    scope.querySelectorAll('.perm').forEach(function(el){
+      var need = el.dataset.need || 'kb.edit';
+      var allow;
+      if (role === 'owner') allow = true;
+      else if (role === 'admin') allow = true;
+      else if (role === 'editor') allow = need === 'kb.edit';   // 可编辑：仅编辑类操作
+      else allow = false;                                        // viewer / none：全部隐藏
+      el.classList.toggle('hidden-by-perm', !allow);
+    });
+    scope.querySelectorAll('.owner-only').forEach(function(el){
+      el.classList.toggle('hidden-by-perm', !(role === 'owner' || role === 'admin'));
+    });
+  }
+  document.querySelectorAll('[data-persp-scope]').forEach(function(scope){
+    scope.querySelectorAll('[data-persp] input[type=radio]').forEach(function(r){
+      r.addEventListener('change', function(){
+        var role = {0:'owner',1:'editor',2:'viewer'}[Array.from(scope.querySelectorAll('[data-persp] input')).indexOf(r)];
+        if (role === undefined) role = 'admin';
+        applyPersp(scope, role);
+        toast(scope.closest('.screen').id, '已切换演示视角：' + r.parentElement.textContent.trim());
+      });
+    });
+    applyPersp(scope, 'owner');
+  });
+</script>
+</body>
+</html>

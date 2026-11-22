@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAGFlow 企业权限管理体系 · 技术方案设计（v0.1）</title>
+<style>
+  :root {
+    --ink: #1f2329; --muted: #6b7280; --line: #e5e7eb;
+    --brand: #1a56db; --brand-soft: #eff4ff;
+    --warn-bg: #fff7ed; --warn-line: #fdba74;
+    --ok: #047857; --no: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; color: var(--ink); background: #f8fafc; line-height: 1.75; font-size: 15px; }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  header.doc { border-bottom: 3px solid var(--ink); padding-bottom: 20px; margin-bottom: 36px; }
+  header.doc h1 { margin: 0 0 8px; font-size: 26px; }
+  header.doc .meta { color: var(--muted); font-size: 13px; display: flex; gap: 24px; flex-wrap: wrap; }
+  h2 { font-size: 20px; margin: 44px 0 14px; padding-left: 10px; border-left: 4px solid var(--brand); }
+  h3 { font-size: 16.5px; margin: 26px 0 8px; }
+  p { margin: 8px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 22px; font-size: 14px; background: #fff; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--brand-soft); font-weight: 600; }
+  tbody tr:nth-child(even) { background: #fafbfc; }
+  code { background: #f1f3f5; border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; font-size: 13px; font-family: Consolas, "JetBrains Mono", monospace; }
+  pre { background: #16181d; color: #d6deeb; border-radius: 8px; padding: 16px 20px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+  pre code { background: none; border: none; color: inherit; padding: 0; }
+  .decision { background: var(--brand-soft); border: 1px solid #bcd0f7; border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 14px; }
+  .decision b { color: var(--brand); }
+  .warn { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 14px; }
+  .warn b { color: #c2410c; }
+  ul { margin: 6px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  footer { margin-top: 56px; border-top: 1px solid var(--line); padding-top: 16px; color: var(--muted); font-size: 13px; }
+  .path { color: var(--muted); font-size: 13px; font-family: Consolas, monospace; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="doc">
+  <h1>RAGFlow 企业权限管理体系 · 技术方案设计</h1>
+  <div class="meta">
+    <span>版本：v0.1（待评审）</span>
+    <span>日期：2026-11-21</span>
+    <span>依据：《企业权限管理体系-功能需求文档》v0.3（已定稿）</span>
+    <span>技术栈：Go 后端（internal/）+ React/TS 前端（web/）</span>
+  </div>
+</header>
+
+<h2>1. 设计原则</h2>
+<ul>
+  <li><b>Go-only</b>：所有改动落在 <code>internal/</code> 与 <code>web/</code>，不触碰 <code>api/</code>、<code>rag/</code> 等 Python 遗留目录。</li>
+  <li><b>复用现有 seam</b>：优先扩展已有的 <code>internal/permission</code>、<code>internal/admin</code>、迁移机制与管理前端，不另起炉灶。</li>
+  <li><b>默认拒绝</b>：知识库可见性从"默认可见 / team 共享"切换为"显式授权才可见"，一次性切换，不做双轨兼容开关（本仓库为二次开发自有产品基线）。</li>
+  <li><b>校验在服务端</b>：前端按钮级隐藏只是展示层优化，所有权限判定以服务端为准，API 层同样强制校验。</li>
+</ul>
+
+<h2>2. 现状盘点（复用与改造点）</h2>
+<table>
+  <thead><tr><th>现有机制</th><th>位置</th><th>本方案处置</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>用户模型与超管标记</td>
+      <td class="path">internal/entity/user.go</td>
+      <td>已有 <code>is_superuser</code>、<code>is_active</code>（停用）。复用：<code>is_superuser</code> 即唯一内置超管；<code>is_active</code> 即停用语义。新增 <code>department_id</code>、<code>role_id</code> 两列。</td>
+    </tr>
+    <tr>
+      <td>知识库归属</td>
+      <td class="path">internal/entity/dataset.go</td>
+      <td>已有 <code>user_id</code>/<code>tenant_id</code>（创建者）——即"所有者"语义，直接复用，不新增 owner 列；归属部门由所有者实时推导（join user），不冗余存储。</td>
+    </tr>
+    <tr>
+      <td>既有团队共享机制</td>
+      <td class="path">internal/permission/policy.go<br>internal/permission/database_source.go</td>
+      <td>现有 <code>user_tenant</code> 团队机制（owner/admin/normal）与 <code>knowledgebase.permission</code>（me/team）决定文档可见性。<b>改造</b>：知识库与文档的企业可见性改由新的 <code>kb_member</code> 判定，原 team 判定路径在知识库/文档链路停用；<code>user_tenant</code> 保留给其他既有功能，不删。</td>
+    </tr>
+    <tr>
+      <td>管理端路由与认证</td>
+      <td class="path">internal/admin/router.go<br>internal/handler/auth.go</td>
+      <td>已有 <code>/api/v1/admin</code> + <code>AuthMiddleware</code> + 用户 CRUD/启停/授权管理员。复用该路由组新增组织架构、角色管理端点；前端 <code>web/src/pages/admin/</code> 已有 users/roles 页面骨架，对接真实后端。</td>
+    </tr>
+    <tr>
+      <td>数据库迁移机制</td>
+      <td class="path">internal/dao/migration.go</td>
+      <td>版本门控 + 启动自动迁移。新增一个迁移步骤（建 6 张表 + 2 列），同步更新 <code>docs/administrator/upgrade_and_migration/database_change_log.md</code>。</td>
+    </tr>
+    <tr>
+      <td>前端权限 seam</td>
+      <td class="path">web/src/ee-stub/utils/permission-util.ts<br>web/src/ee-stub/constants/team.ts</td>
+      <td>ee-stub 是上游 OSS/EE 隔离层，<b>不改动</b>。按钮级权限走新建的 <code>use-permission</code> hook + 权限组件（第 7 章），二者并存不冲突。</td>
+    </tr>
+    <tr>
+      <td>知识库导航树</td>
+      <td class="path">internal/handler/dataset_artifact.go<br>web/src/services/dataset-nav-service.ts</td>
+      <td>现有 navigation 是知识图谱导航簇（按 name 字符串组织），<b>不是文档目录</b>，不复用。目录树为独立新模块 <code>kb_folder</code>。</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. 数据模型设计</h2>
+<p>全部为新增表 / 新增列，不修改既有列语义。GORM 模型放 <code>internal/entity/</code>，遵循现有命名与索引约定（Go 侧索引名 <code>idx_&lt;table&gt;_&lt;column&gt;</code>；唯一约束用命名 <code>uniqueIndex:</code>，不用裸 <code>unique</code>——避免 <code>namedIndexMigrator</code> 幻影删除问题）。</p>
+
+<h3>3.1 组织与角色</h3>
+<pre><code>-- 部门 / 子公司（树形）
+department(
+  id          bigint PK,
+  name        varchar(64)  NOT NULL,
+  parent_id   bigint       NOT NULL DEFAULT 0,   -- 0 = 根
+  path        varchar(512) NOT NULL DEFAULT '',   -- 物化路径 /1/5/12/，用于子树筛选
+  create_time datetime, update_time datetime,
+  INDEX idx_department_parent (parent_id)
+)
+
+-- 角色（超管自定义；无内置行，超管不走 role 体系）
+role(id, name varchar(64), description varchar(255),
+     create_time, update_time, UNIQUE uni_role_name (name))
+
+-- 功能权限点（按钮级，代码内置 seed，启动时 upsert）
+function_permission(
+  code  varchar(64) PK,      -- 如 kb.create / doc.upload / chat.create / agent.create
+  name  varchar(64), description varchar(255)
+)
+
+-- 角色-权限点关联
+role_permission(role_id bigint, permission_code varchar(64),
+  PRIMARY KEY (role_id, permission_code))</code></pre>
+<table>
+  <thead><tr><th>权限点 code（初始清单，实施时与功能菜单逐一对齐）</th><th>语义</th></tr></thead>
+  <tbody>
+    <tr><td><code>kb.create</code></td><td>创建知识库（P0）</td></tr>
+    <tr><td><code>kb.view</code> / <code>doc.upload</code> / <code>doc.delete</code> / <code>doc.reparse</code></td><td>知识库与文档操作粒度示例</td></tr>
+    <tr><td><code>chat.create</code> / <code>agent.create</code> / <code>file.manage</code></td><td>其他功能域，按现有菜单逐项确认后注册</td></tr>
+  </tbody>
+</table>
+
+<h3>3.2 用户扩展</h3>
+<pre><code>ALTER TABLE user ADD COLUMN department_id bigint NOT NULL DEFAULT 0;  -- 0 = 未分配
+ALTER TABLE user ADD COLUMN role_id      bigint NOT NULL DEFAULT 0;   -- 0 = 无角色（无功能权限）
+INDEX idx_user_department (department_id), INDEX idx_user_role (role_id)</code></pre>
+<div class="decision"><b>决策 D1</b>：一个用户一个角色（PRD 已确认），故用列而非关联表；角色删除前校验 <code>user.role_id</code> 引用（阻断式）。</div>
+
+<h3>3.3 知识库成员授权</h3>
+<pre><code>-- 知识库成员：permission ∈ {view, edit}；所有者与超管不入本表
+kb_member(
+  id bigint PK, kb_id bigint NOT NULL, user_id bigint NOT NULL,
+  permission varchar(8) NOT NULL,           -- 'view' | 'edit'
+  create_time datetime,
+  UNIQUE uni_kb_member (kb_id, user_id),    -- 一人一库一种权限（升级=改行）
+  INDEX idx_kb_member_user (user_id)        -- "我可见的知识库"反查
+)</code></pre>
+<p>知识库可见性判定（所有 KB/文档查询的统一前置条件，唯一实现点 <code>internal/permission/kb_access.go</code>）：</p>
+<pre><code>可见 ⇔ user.is_superuser = 1
+    OR knowledgebase.user_id = user.id          -- 所有者
+    OR EXISTS (SELECT 1 FROM kb_member m
+               WHERE m.kb_id = kb.id AND m.user_id = user.id)</code></pre>
+<div class="decision"><b>决策 D2</b>：部门归属不冗余进 knowledgebase，超管按部门筛选知识库通过 <code>JOIN user</code> 实现；<b>决策 D3</b>：可见性切换后，存量知识库除所有者与超管外一律不可见（breaking change，符合 PRD 默认拒绝原则）。原 <code>knowledgebase.permission</code>（me/team）字段保留存储但企业链路不再用它做跨用户放行。</div>
+
+<h3>3.4 知识库目录</h3>
+<pre><code>kb_folder(
+  id bigint PK, kb_id bigint NOT NULL,
+  parent_id bigint NOT NULL DEFAULT 0,        -- 0 = 根（未分类）
+  name varchar(128) NOT NULL,
+  path varchar(1024) NOT NULL DEFAULT '',     -- 物化路径，面包屑与子树校验用
+  create_time datetime, update_time datetime,
+  UNIQUE uni_kb_folder (kb_id, parent_id, name),  -- 同父级不重名
+  INDEX idx_kb_folder_parent (kb_id, parent_id)   -- 懒加载查询
+)
+ALTER TABLE document ADD COLUMN folder_id bigint NOT NULL DEFAULT 0;  -- 0 = 根目录
+INDEX idx_document_folder (kb_id, folder_id)</code></pre>
+<p>规模设计：目录树接口按 <code>parent_id</code> 逐层懒加载；文档列表按 <code>(kb_id, folder_id)</code> 过滤 + 分页（复用现有文档分页模式）；库内全文搜索走现有 ES/Infinity 检索链路，命中结果回查 <code>folder_id → folder.path</code> 拼目录路径展示。同一父目录重名由唯一索引兜底，应用层先查后插并给出友好错误。</p>
+
+<h2>4. 服务端权限校验设计</h2>
+<h3>4.1 两级校验</h3>
+<table>
+  <thead><tr><th>层级</th><th>判定依据</th><th>实现</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>功能权限（按钮级）</td>
+      <td>user.role_id → role_permission 集合</td>
+      <td>登录 / 会话建立时将 <code>permissions []string</code> 写入认证上下文；新增 <code>internal/permission/feature.go</code> 提供 <code>RequireFeature(c, "kb.create")</code> gin 校验 helper，供功能端点挂载。</td>
+    </tr>
+    <tr>
+      <td>资源权限（知识库级）</td>
+      <td>3.3 可见性判定 + kb_member.permission</td>
+      <td><code>internal/permission/kb_access.go</code> 提供 <code>RequireKB(c, kbID, level)</code>（level ∈ view/edit/owner），从路由参数取 kb_id，先查知识库存在性（不存在与无权限统一返回"不存在或无权限"，防探测），再按矩阵放行。文档操作端点先取 document.kb_id 再走同一入口。</td>
+    </tr>
+  </tbody>
+</table>
+<h3>4.2 关键流程</h3>
+<ul>
+  <li><b>知识库列表</b>：DAO 层列表查询统一带可见性条件（3.3 的 OR 组合），一次 SQL 完成，不做内存过滤——上万知识库也不退化。</li>
+  <li><b>删除账号前置校验</b>：<code>DELETE /api/v1/admin/users/:username</code> 增加检查 <code>knowledgebase.user_id = 该用户</code> 计数，非零返回明确错误（列出待转移知识库数量），前端引导先转移。</li>
+  <li><b>强制转移所有权</b>：事务内更新 <code>knowledgebase.user_id/tenant_id</code> → 若原所有者不在成员表则插入 <code>kb_member(permission='view')</code> → 若新所有者残留在 kb_member 则删除该行。失败整体回滚。</li>
+  <li><b>批量按部门添加成员</b>：接口入参 <code>{kb_id, permission, user_ids[], department_ids[]}</code>，服务端展开部门成员后逐人 upsert <code>kb_member</code>（单事务），返回成功/跳过（已存在同权限）明细。</li>
+</ul>
+
+<h2>5. API 设计</h2>
+<h3>5.1 管理端（/api/v1/admin，挂 AuthMiddleware + 仅超管可访问）</h3>
+<table>
+  <thead><tr><th>分组</th><th>端点</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="3">组织架构</td><td><code>GET/POST /departments</code>、<code>PUT/DELETE /departments/:id</code></td><td>树形 CRUD；删除时校验无子部门、无用户、无归属知识库</td></tr>
+    <tr><td><code>GET /departments/:id/users</code></td><td>部门成员列表</td></tr>
+    <tr><td><code>GET /departments/tree</code></td><td>整树（缓存于内存，变更失效）</td></tr>
+    <tr><td rowspan="2">用户</td><td>既有 users 端点扩展</td><td>创建/编辑增加 <code>department_id</code>、<code>role_id</code> 字段；删除增加"名下有知识库"前置校验</td></tr>
+    <tr><td><code>GET /users/:username/kb-ownership</code></td><td>名下知识库清单（转移引导）</td></tr>
+    <tr><td rowspan="3">角色</td><td><code>GET/POST /roles</code>、<code>PUT/DELETE /roles/:id</code></td><td>角色 CRUD；删除校验无用户引用</td></tr>
+    <tr><td><code>GET /permissions</code></td><td>功能权限点全量清单（前端勾选树数据源）</td></tr>
+    <tr><td><code>GET/PUT /roles/:id/permissions</code></td><td>读取/整体保存角色权限点集合</td></tr>
+    <tr><td>超管知识库</td><td><code>GET /kb-admin</code>、<code>PUT /kb-admin/:id/members</code>、<code>PUT /kb-admin/:id/owner</code></td><td>全量知识库（按部门/所有者筛选）、改成员、强制转移所有权（二次确认由前端承担）</td></tr>
+  </tbody>
+</table>
+<h3>5.2 用户端（/api/v1，挂现有认证中间件）</h3>
+<table>
+  <thead><tr><th>分组</th><th>端点</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>我的权限</td><td><code>GET /user/permissions</code></td><td>返回 <code>{ department, role, permissions[] }</code>（按钮级 code 列表），前端登录后拉取</td></tr>
+    <tr><td>成员授权</td><td><code>GET/PUT/DELETE /kb/:id/members</code>、<code>POST /kb/:id/members/batch</code></td><td>仅 owner / 超管（RequireKB owner）；batch 支持部门整批</td></tr>
+    <tr><td>可选授权人</td><td><code>GET /users/search?q=</code>、<code>GET /departments/brief</code></td><td>成员选择器数据源（返回全量用户摘要，供搜索）</td></tr>
+    <tr><td rowspan="3">目录</td><td><code>GET /kb/:id/folders?parent_id=</code></td><td>懒加载子层；带 <code>keywords</code> 时全库目录搜索</td></tr>
+    <tr><td><code>POST/PUT/DELETE /kb/:id/folders(/:fid)</code>、<code>PUT /kb/:id/folders/:fid/move</code></td><td>目录 CRUD 与移动；删除校验非空（递归含子目录与文档）</td></tr>
+    <tr><td>文档端点扩展</td><td>列表/上传增加 <code>folder_id</code> 参数与字段；<code>POST /kb/:id/documents/move</code> 批量移动文档到目标目录</td></tr>
+  </tbody>
+</table>
+
+<h2>6. 数据迁移方案</h2>
+<ul>
+  <li>在 <code>internal/dao/migration.go</code> 注册一个新版本门控迁移步骤：建 <code>department / role / function_permission / role_permission / kb_member / kb_folder</code> 六表 + <code>user</code> 两列 + <code>document.folder_id</code> 列；<code>function_permission</code> 以代码内置清单 seed upsert。</li>
+  <li>同步更新 <code>docs/administrator/upgrade_and_migration/database_change_log.md</code>：新增版本常量、InitDB 启动顺序表与"Version overview"表格行。</li>
+  <li>存量数据默认值：<code>department_id=0</code>（未分配，超管后续指派）、<code>role_id=0</code>（无功能权限，超管指派）、<code>folder_id=0</code>（根目录）、<code>kb_member</code> 为空（仅所有者可见）。</li>
+  <li>唯一内置超管：沿用现有 <code>is_superuser</code> 初始化逻辑（<code>cmd/ragflow_server.go</code> 的 superuser 初始化），补充约束：管理端"授权管理员"接口改为仅当目标已是唯一超管时的降级保护——全系统最多一个 <code>is_superuser=1</code>，降级唯一超管的请求拒绝。</li>
+</ul>
+<div class="warn"><b>风险提示</b>：可见性切换是 breaking change——升级后非所有者用户将看不到原本可见的知识库。发布说明中需明确告知：请超管先通过批量授权完成存量知识库的成员分配。</div>
+
+<h2>7. 前端设计</h2>
+<h3>7.1 按钮级权限控制</h3>
+<ul>
+  <li>新增 <code>src/hooks/use-permission.ts</code>：基于 TanStack Query 拉取 <code>/user/permissions</code>，Zustand 缓存（登录会话生命周期）；提供 <code>hasPermission('kb.create')</code>。</li>
+  <li>新增 <code>src/components/permission-gate.tsx</code>：声明式包裹按钮/操作区，无权限时不渲染（<code>&lt;PermissionGate code="doc.upload"&gt;&lt;/PermissionGate&gt;</code>），接入点示例：知识库创建按钮、[dataset-action-cell.tsx](file:///f:/trae_project/ragflow/web/src/pages/dataset/dataset/dataset-action-cell.tsx) 的文档操作按钮组、上传入口。</li>
+  <li>权限点 code 与后端 <code>function_permission.code</code> 共用同一枚举定义（前端常量文件 + 后端 seed 同名，评审时逐一对齐）。</li>
+  <li>服务端 403 响应统一提示，不做静默失败。</li>
+</ul>
+<h3>7.2 目录树 UI</h3>
+<ul>
+  <li>知识库详情页改造为<b>左侧目录树 + 右侧文档列表</b>：树组件懒加载（展开时拉子层），右键/工具条提供新建、重命名、移动、删除（删除带非空校验提示 + 二次确认）；文档列表随选中目录过滤分页，上传弹窗默认选中当前目录。</li>
+  <li>目录树遵循 web/AGENTS.md：shadcn/ui 组件、query key factory（<code>DatasetKeys</code> 家族扩展）、三层请求分层（hooks → services → next-request）、i18n 只加 zh/en。</li>
+</ul>
+<h3>7.3 管理端页面（web/src/pages/admin/）</h3>
+<ul>
+  <li>新增<b>组织架构页</b>（部门树 CRUD + 成员查看）；<b>用户页</b>表单增加部门/角色字段与"名下知识库转移"引导；<b>角色页</b>对接第 5.1 真实端点（现有 roles.tsx 骨架 + role-form.tsx 表单复用）；新增<b>知识库管理页</b>（全量列表、按部门/所有者筛选、成员编辑弹窗、强制转移所有权对话框）。</li>
+  <li>知识库前台页新增<b>成员管理弹窗</b>（owner 可见）：人员搜索选择器 + 部门整批导入 + 查看/编辑名单维护。</li>
+</ul>
+
+<h2>8. 测试策略</h2>
+<table>
+  <thead><tr><th>层级</th><th>内容</th><th>运行方式</th></tr></thead>
+  <tbody>
+    <tr><td>单元测试</td><td>kb_access 可见性判定（所有者/查看/编辑/无权限/超管/停用用户全组合）；部门删除约束；角色删除引用校验；迁移 SQL 用 <code>Session(DryRun)</code> 探针验证生成的 WHERE 与索引名；kb_folder 重名/非空删除校验</td><td><code>bash build.sh --test ./internal/permission/... ./internal/dao/... ./internal/handler/...</code></td></tr>
+    <tr><td>集成测试（<code>integration</code> tag）</td><td>真实 MySQL：权限矩阵端到端（列表可见性 SQL 在真实数据量下验证）、强制转移所有权事务回滚、按部门批量授权、目录懒加载与移动</td><td><code>bash build.sh --test-integration ./internal/...</code></td></tr>
+    <tr><td>前端</td><td>permission-gate 渲染逻辑、目录树 hooks 的 query key 一致性</td><td><code>cd web && npm run test / npm run lint / npm run type-check</code></td></tr>
+  </tbody>
+</table>
+
+<h2>9. 实施阶段</h2>
+<table>
+  <thead><tr><th>阶段</th><th>交付物</th><th>依赖</th></tr></thead>
+  <tbody>
+    <tr><td><b>M1 数据底座</b></td><td>6 表 + 2 列迁移、entity/dao 模型、迁移文档更新、权限点 seed</td><td>—</td></tr>
+    <tr><td><b>M2 权限内核</b></td><td><code>kb_access.go</code> / <code>feature.go</code> 判定与 helper、知识库与文档全部端点接入可见性校验、单元测试</td><td>M1</td></tr>
+    <tr><td><b>M3 管理端</b></td><td>组织/角色/用户扩展/超管知识库管理 API + admin 前端页面（组织架构、角色、用户表单、知识库管理）</td><td>M1</td></tr>
+    <tr><td><b>M4 成员授权</b></td><td>成员管理 API（含部门批量）、前台成员管理弹窗、所有权转移全链路（含删除账号前置校验）</td><td>M2、M3</td></tr>
+    <tr><td><b>M5 目录结构</b></td><td>kb_folder API、文档 folder_id 全链路（上传/列表/移动/搜索标注路径）、目录树 UI</td><td>M2</td></tr>
+    <tr><td><b>M6 按钮级控制</b></td><td>use-permission / PermissionGate、全部按钮接入、权限点清单与功能菜单逐一对齐收口</td><td>M3</td></tr>
+  </tbody>
+</table>
+<p>每阶段完成即跑对应层级测试；M2 与 M4/M5 可由不同人并行（接口契约以本文档为准）。</p>
+
+<h2>10. 待评审确认点</h2>
+<div class="decision"><b>D1</b>　用户-角色用单列（一人一角色）而非关联表，是否符合长期规划？</div>
+<div class="decision"><b>D2</b>　知识库归属部门不冗余存储、实时 join 推导；若未来部门筛选成为高频重查询，再引入冗余列。</div>
+<div class="decision"><b>D3</b>　可见性切换为 breaking change（存量知识库升级后仅所有者与超管可见），不做兼容开关。</div>
+<div class="decision"><b>D4</b>　ee-stub 权限 seam 保持不动，按钮级权限走独立新模块；若未来要对齐上游 EE 形态再收敛。</div>
+
+<footer>
+  本方案基于 2026-11-21 代码探查（internal/permission、internal/admin、internal/dao、web/ 现状）编写；评审通过后按 M1→M6 实施。
+</footer>
+
+</div>
+</body>
+</html>

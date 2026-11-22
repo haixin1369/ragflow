@@ -39,7 +39,13 @@ type adminTestResponse struct {
 	Total *int64          `json:"total"`
 }
 
-var adminUserDetailTestModels = []any{&entity.User{}}
+var adminUserDetailTestModels = []any{
+	&entity.User{},
+	&entity.Department{},
+	&entity.Role{},
+	&entity.RolePermission{},
+	&entity.FunctionPermission{},
+}
 
 func TestListUsersReturnsTotalForEachPage(t *testing.T) {
 	handler := setupAdminUserDetailTest(t)

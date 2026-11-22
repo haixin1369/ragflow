@@ -6,9 +6,11 @@ import { useAgentSidebarCollapse } from '@/hooks/use-agent-sidebar-collapse';
 import { useChatSidebarCollapse } from '@/hooks/use-chat-sidebar-collapse';
 import { useCompilationTemplateSidebarCollapse } from '@/hooks/use-compilation-template-sidebar-collapse';
 import { useDatasetSidebarCollapse } from '@/hooks/use-dataset-sidebar-collapse';
+import { useFetchUserInfo } from '@/hooks/use-user-setting-request';
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
 import { LucideChevronRight, LucidePanelLeftOpen } from 'lucide-react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
 import { IntegrationsNavGroup, NavItemLink } from './nav-item';
@@ -36,6 +38,15 @@ function AppSidebarContent() {
     toggleCollapsed: toggleCompilationTemplateSidebar,
   } = useCompilationTemplateSidebarCollapse();
   const { pathname } = useLocation();
+  const {
+    data: { is_superuser: isSuperuser },
+  } = useFetchUserInfo();
+
+  const visibleNavItems = useMemo(
+    () =>
+      NavItems.filter((item) => !item.superuserOnly || Boolean(isSuperuser)),
+    [isSuperuser],
+  );
 
   const activeSecondarySidebar = [
     {
@@ -120,7 +131,7 @@ function AppSidebarContent() {
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-3 md:px-3">
         <ul className="flex flex-col gap-1">
-          {NavItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <li key={item.key}>
               <NavItemLink item={item} />
             </li>

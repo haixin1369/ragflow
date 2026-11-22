@@ -43,6 +43,96 @@ func NewLockingDatabaseChecker(tx *gorm.DB) *Checker {
 	return NewChecker(&databaseSource{db: tx, lockRows: true})
 }
 
+// userIsSuperuser reports whether the user row carries the built-in
+// superuser flag. Unknown users are never superusers.
+func (s *databaseSource) userIsSuperuser(ctx context.Context, userID string) bool {
+	if s == nil || s.db == nil || strings.TrimSpace(userID) == "" {
+		return false
+	}
+	var count int64
+	if err := s.db.WithContext(ctx).Model(&entity.User{}).
+		Where("id = ? AND is_superuser = ?", userID, true).
+		Count(&count).Error; err != nil {
+		return false
+	}
+	return count > 0
+}
+
+// userPermissionCodes resolves the function permission codes the user's role
+// grants. A user without a role holds no codes; the superuser is answered by
+// userIsSuperuser and never reaches this query.
+func (s *databaseSource) userPermissionCodes(ctx context.Context, userID string) (map[string]bool, error) {
+	codes := make(map[string]bool)
+	if s == nil || s.db == nil {
+		return codes, ErrSourceUnavailable
+	}
+	var roleID string
+	err := s.db.WithContext(ctx).Model(&entity.User{}).
+		Select("role_id").
+		Where("id = ?", userID).
+		Take(&roleID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return codes, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(roleID) == "" {
+		return codes, nil
+	}
+	var granted []string
+	if err := s.db.WithContext(ctx).Model(&entity.RolePermission{}).
+		Where("role_id = ?", strings.TrimSpace(roleID)).
+		Pluck("permission_code", &granted).Error; err != nil {
+		return nil, err
+	}
+	for _, code := range granted {
+		codes[code] = true
+	}
+	return codes, nil
+}
+
+// kbMemberGrants loads the knowledge base member grants for the given dataset
+// ids, split into view and edit user lists.
+func (s *databaseSource) kbMemberGrants(ctx context.Context, datasetIDs []string) (map[string]kbMembers, error) {
+	grants := make(map[string]kbMembers)
+	if s == nil || s.db == nil || len(datasetIDs) == 0 {
+		return grants, nil
+	}
+	var members []entity.KBMember
+	if err := s.db.WithContext(ctx).
+		Select("kb_id", "user_id", "permission").
+		Where("kb_id IN ?", datasetIDs).
+		Find(&members).Error; err != nil {
+		return nil, err
+	}
+	for _, member := range members {
+		switch member.Permission {
+		case entity.KBMemberPermissionEdit:
+			grants[member.KbID] = grants[member.KbID].withEdit(member.UserID)
+		case entity.KBMemberPermissionView:
+			grants[member.KbID] = grants[member.KbID].withView(member.UserID)
+		}
+	}
+	return grants, nil
+}
+
+// kbMembers carries one dataset's kb_member grant lists.
+type kbMembers struct {
+	viewUserIDs []string
+	editUserIDs []string
+}
+
+func (m kbMembers) withView(userID string) kbMembers {
+	m.viewUserIDs = append(m.viewUserIDs, userID)
+	return m
+}
+
+func (m kbMembers) withEdit(userID string) kbMembers {
+	m.editUserIDs = append(m.editUserIDs, userID)
+	return m
+}
+
 func (s *databaseSource) GetMembership(ctx context.Context, userID, tenantID string) (*Membership, error) {
 	if s == nil || s.db == nil {
 		return nil, ErrSourceUnavailable
@@ -213,10 +303,10 @@ func (s *databaseSource) GetResources(ctx context.Context, refs []ResourceRef) (
 	}
 	datasetIDs = uniqueStringValues(datasetIDs)
 	var datasetsByID map[string]*entity.Knowledgebase
-	var ownerIDsByTenant map[string]string
+	var datasetGrants map[string]kbMembers
 	if len(datasetIDs) > 0 {
 		var err error
-		datasetsByID, ownerIDsByTenant, err = s.loadDatasets(ctx, datasetIDs)
+		datasetsByID, _, datasetGrants, err = s.loadDatasets(ctx, datasetIDs)
 		if err != nil {
 			return nil, err
 		}
@@ -242,7 +332,7 @@ func (s *databaseSource) GetResources(ctx context.Context, refs []ResourceRef) (
 		linkedDatasetIDs = append(linkedDatasetIDs, ids...)
 	}
 	linkedDatasetIDs = uniqueStringValues(linkedDatasetIDs)
-	linkedDatasetsByID, linkedOwnerIDsByTenant, err := s.loadDatasets(ctx, linkedDatasetIDs)
+	linkedDatasetsByID, linkedOwnerIDsByTenant, linkedDatasetGrants, err := s.loadDatasets(ctx, linkedDatasetIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -338,12 +428,12 @@ func (s *databaseSource) GetResources(ctx context.Context, refs []ResourceRef) (
 		switch ref.Kind {
 		case ResourceKindDataset:
 			if dataset, ok := datasetsByID[ref.ID]; ok {
-				resources = append(resources, datasetResource(dataset, ownerIDsByTenant))
+				resources = append(resources, datasetResource(dataset, datasetGrants[ref.ID]))
 			}
 		case ResourceKindDocument:
 			if document, documentExists := documentsByID[ref.ID]; documentExists {
 				if dataset, datasetExists := datasetsByID[document.KbID]; datasetExists {
-					resources = append(resources, documentResource(document, dataset, ownerIDsByTenant))
+					resources = append(resources, documentResource(document, dataset, datasetGrants[document.KbID]))
 				}
 			}
 		case ResourceKindCanvas:
@@ -369,7 +459,7 @@ func (s *databaseSource) GetResources(ctx context.Context, refs []ResourceRef) (
 			if !ok || (ref.Kind == ResourceKindFolder) != (file.Type == "folder") {
 				continue
 			}
-			resources = append(resources, fileResource(ref.Kind, file, fileDatasetIDs[ref.ID], linkedDatasetsByID, linkedOwnerIDsByTenant))
+			resources = append(resources, fileResource(ref.Kind, file, fileDatasetIDs[ref.ID], linkedDatasetsByID, linkedOwnerIDsByTenant, linkedDatasetGrants))
 		case ResourceKindSearchApp:
 			if searchApp, ok := searchAppsByID[ref.ID]; ok {
 				resources = append(resources, searchAppResource(searchApp))
@@ -484,18 +574,26 @@ func (s *databaseSource) ListResourceRefs(ctx context.Context, kind ResourceKind
 		if parent.ID != "" || parent.Kind != "" {
 			return nil, fmt.Errorf("%w: datasets cannot have a parent scope", ErrInvalidPermission)
 		}
-		var tenantIDs []string
-		if err := s.db.WithContext(ctx).Model(&entity.UserTenant{}).
-			Distinct("tenant_id").
-			Where("user_id = ? AND status = ?", userID, string(entity.StatusValid)).
-			Pluck("tenant_id", &tenantIDs).Error; err != nil {
-			return nil, err
+		if s.userIsSuperuser(ctx, userID) {
+			err := s.db.WithContext(ctx).Model(&entity.Knowledgebase{}).
+				Where("status = ?", string(entity.StatusValid)).
+				Pluck("id", &ids).Error
+			if err != nil {
+				return nil, err
+			}
+			break
 		}
-		if len(tenantIDs) == 0 {
-			return []ResourceRef{}, nil
-		}
+		// Default-deny visibility: the caller lists only datasets it owns or
+		// holds a kb_member grant on.
 		err := s.db.WithContext(ctx).Model(&entity.Knowledgebase{}).
-			Where("tenant_id IN ? AND status = ?", tenantIDs, string(entity.StatusValid)).
+			Where("status = ?", string(entity.StatusValid)).
+			Where(
+				"COALESCE(NULLIF(TRIM(knowledgebase.user_id), ''), knowledgebase.created_by) = ? OR EXISTS (?)",
+				userID,
+				s.db.WithContext(ctx).Model(&entity.KBMember{}).
+					Select("1").
+					Where("kb_member.kb_id = knowledgebase.id AND kb_member.user_id = ?", userID),
+			).
 			Pluck("id", &ids).Error
 		if err != nil {
 			return nil, err
@@ -1012,10 +1110,10 @@ func (s *databaseSource) loadDocuments(ctx context.Context, ids []string) (map[s
 	return documentsByID, nil
 }
 
-func (s *databaseSource) loadDatasets(ctx context.Context, ids []string) (map[string]*entity.Knowledgebase, map[string]string, error) {
+func (s *databaseSource) loadDatasets(ctx context.Context, ids []string) (map[string]*entity.Knowledgebase, map[string]string, map[string]kbMembers, error) {
 	datasetsByID := make(map[string]*entity.Knowledgebase)
 	if len(ids) == 0 {
-		return datasetsByID, nil, nil
+		return datasetsByID, nil, nil, nil
 	}
 	query := s.db.WithContext(ctx).Model(&entity.Knowledgebase{}).Where("id IN ? AND status = ?", ids, string(entity.StatusValid))
 	if s.lockRows {
@@ -1023,7 +1121,7 @@ func (s *databaseSource) loadDatasets(ctx context.Context, ids []string) (map[st
 	}
 	var datasets []*entity.Knowledgebase
 	if err := query.Find(&datasets).Error; err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	tenantIDs := make([]string, 0, len(datasets))
 	seenTenantIDs := make(map[string]struct{}, len(datasets))
@@ -1037,60 +1135,74 @@ func (s *databaseSource) loadDatasets(ctx context.Context, ids []string) (map[st
 
 	ownerIDsByTenant, err := s.loadTenantOwnerIDs(ctx, tenantIDs)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
+	}
+	grants, err := s.kbMemberGrants(ctx, ids)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 	for _, dataset := range datasets {
 		ownerUserID := ownerIDsByTenant[dataset.TenantID]
 		if ownerUserID == "" {
-			return nil, nil, fmt.Errorf("%w: tenant %q has no active owner", ErrInvalidPermission, dataset.TenantID)
+			return nil, nil, nil, fmt.Errorf("%w: tenant %q has no active owner", ErrInvalidPermission, dataset.TenantID)
 		}
 		datasetsByID[dataset.ID] = dataset
 	}
-	return datasetsByID, ownerIDsByTenant, nil
+	return datasetsByID, ownerIDsByTenant, grants, nil
 }
 
-func datasetResource(dataset *entity.Knowledgebase, _ map[string]string) Resource {
+func datasetResource(dataset *entity.Knowledgebase, members kbMembers) Resource {
 	ownerUserID := strings.TrimSpace(dataset.UserID)
 	if ownerUserID == "" {
 		ownerUserID = strings.TrimSpace(dataset.CreatedBy)
 	}
-	visibility := VisibilityPrivate
-	switch dataset.Permission {
-	case string(entity.TenantPermissionMe):
-		visibility = VisibilityPrivate
-	case string(entity.TenantPermissionTeam):
-		visibility = VisibilityTenant
-	}
+	// Enterprise visibility is default-deny: only the owner, the superuser,
+	// and explicit kb_member grants can reach the dataset. The stored
+	// knowledgebase.permission value no longer opens cross-user access.
 	return Resource{
-		Ref:               ResourceRef{Kind: ResourceKindDataset, ID: dataset.ID},
-		TenantID:          dataset.TenantID,
-		CreatedBy:         dataset.CreatedBy,
-		OwnerUserID:       ownerUserID,
-		Visibility:        visibility,
-		TenantRequirement: TenantNormalMember,
-		OwnerOperations:   []Operation{OperationRead, OperationCreate, OperationUpdate, OperationDelete, OperationDeleteContent, OperationShare, OperationRun, OperationUse},
-		TenantOperations:  []Operation{OperationRead, OperationUpdate, OperationDeleteContent, OperationRun, OperationUse},
-		Active:            dataset.Status != nil && *dataset.Status == string(entity.StatusValid),
+		Ref:                  ResourceRef{Kind: ResourceKindDataset, ID: dataset.ID},
+		TenantID:             dataset.TenantID,
+		CreatedBy:            dataset.CreatedBy,
+		OwnerUserID:          ownerUserID,
+		Visibility:           VisibilityShared,
+		TenantRequirement:    TenantNormalMember,
+		OwnerOperations:      []Operation{OperationRead, OperationCreate, OperationUpdate, OperationDelete, OperationDeleteContent, OperationShare, OperationRun, OperationUse},
+		SharedWithUserIDs:    uniqueStringValues(members.viewUserIDs),
+		SharedViewOperations: []Operation{OperationRead, OperationRun, OperationUse},
+		SharedEditUserIDs:    uniqueStringValues(members.editUserIDs),
+		SharedEditOperations: []Operation{OperationRead, OperationUpdate, OperationDeleteContent, OperationRun, OperationUse},
+		Active:               dataset.Status != nil && *dataset.Status == string(entity.StatusValid),
 	}
 }
 
-func documentResource(document *entity.Document, dataset *entity.Knowledgebase, ownerIDsByTenant map[string]string) Resource {
-	datasetAccess := datasetResource(dataset, ownerIDsByTenant)
+func documentResource(document *entity.Document, dataset *entity.Knowledgebase, members kbMembers) Resource {
+	datasetAccess := datasetResource(dataset, members)
 	ownerUserID := strings.TrimSpace(document.UserID)
 	if ownerUserID == "" {
 		ownerUserID = strings.TrimSpace(document.CreatedBy)
 	}
+	// The knowledge base owner keeps owner-level control of every document in
+	// the knowledge base, even one uploaded by an edit-level member.
+	delegates := datasetAccess.OwnerDelegateUserIDs
+	if ownerUserID != datasetAccess.OwnerUserID {
+		delegates = append(delegates, datasetAccess.OwnerUserID)
+	}
 	return Resource{
-		Ref:               ResourceRef{Kind: ResourceKindDocument, ID: document.ID},
-		TenantID:          datasetAccess.TenantID,
-		CreatedBy:         document.CreatedBy,
-		OwnerUserID:       ownerUserID,
-		Visibility:        datasetAccess.Visibility,
-		TenantRequirement: datasetAccess.TenantRequirement,
-		OwnerOperations:   datasetAccess.OwnerOperations,
-		TenantOperations:  datasetAccess.TenantOperations,
-		CreatorOperations: datasetAccess.CreatorOperations,
-		Active:            datasetAccess.Active,
+		Ref:                  ResourceRef{Kind: ResourceKindDocument, ID: document.ID},
+		TenantID:             datasetAccess.TenantID,
+		CreatedBy:            document.CreatedBy,
+		OwnerUserID:          ownerUserID,
+		OwnerDelegateUserIDs: delegates,
+		Visibility:           datasetAccess.Visibility,
+		TenantRequirement:    datasetAccess.TenantRequirement,
+		OwnerOperations:      datasetAccess.OwnerOperations,
+		TenantOperations:     datasetAccess.TenantOperations,
+		CreatorOperations:    datasetAccess.CreatorOperations,
+		SharedWithUserIDs:    datasetAccess.SharedWithUserIDs,
+		SharedViewOperations: datasetAccess.SharedViewOperations,
+		SharedEditUserIDs:    datasetAccess.SharedEditUserIDs,
+		SharedEditOperations: datasetAccess.SharedEditOperations,
+		Active:               datasetAccess.Active,
 	}
 }
 
@@ -1247,24 +1359,28 @@ func syncTaskResource(task *entity.SyncLogs, connector *entity.Connector, linked
 	}
 }
 
-func fileResource(kind ResourceKind, file *entity.File, datasetIDs []string, datasetsByID map[string]*entity.Knowledgebase, ownerIDsByTenant map[string]string) Resource {
+func fileResource(kind ResourceKind, file *entity.File, datasetIDs []string, datasetsByID map[string]*entity.Knowledgebase, ownerIDsByTenant map[string]string, datasetGrants map[string]kbMembers) Resource {
 	sharedWithUserIDs := make([]string, 0, len(datasetIDs))
+	sharedEditUserIDs := make([]string, 0, len(datasetIDs))
 	sharedWithTenantIDs := make([]string, 0, len(datasetIDs))
 	for _, datasetID := range datasetIDs {
 		dataset, ok := datasetsByID[datasetID]
 		if !ok {
 			continue
 		}
-		datasetAccess := datasetResource(dataset, ownerIDsByTenant)
+		datasetAccess := datasetResource(dataset, datasetGrants[datasetID])
 		sharedWithUserIDs = append(sharedWithUserIDs, datasetAccess.OwnerUserID)
+		sharedWithUserIDs = append(sharedWithUserIDs, datasetAccess.SharedWithUserIDs...)
+		sharedEditUserIDs = append(sharedEditUserIDs, datasetAccess.SharedEditUserIDs...)
 		if datasetAccess.Visibility == VisibilityTenant {
 			sharedWithTenantIDs = append(sharedWithTenantIDs, datasetAccess.TenantID)
 		}
 	}
 	sharedWithUserIDs = uniqueStringValues(sharedWithUserIDs)
+	sharedEditUserIDs = uniqueStringValues(sharedEditUserIDs)
 	sharedWithTenantIDs = uniqueStringValues(sharedWithTenantIDs)
 	visibility := VisibilityPrivate
-	if len(sharedWithUserIDs) > 0 || len(sharedWithTenantIDs) > 0 {
+	if len(sharedWithUserIDs) > 0 || len(sharedEditUserIDs) > 0 || len(sharedWithTenantIDs) > 0 {
 		visibility = VisibilityShared
 	}
 	ownerUserID := strings.TrimSpace(file.CreatedBy)
@@ -1288,15 +1404,18 @@ func fileResource(kind ResourceKind, file *entity.File, datasetIDs []string, dat
 		}
 	}
 	return Resource{
-		Ref:                 ResourceRef{Kind: kind, ID: file.ID},
-		TenantID:            file.TenantID,
-		CreatedBy:           file.CreatedBy,
-		OwnerUserID:         ownerUserID,
-		Visibility:          visibility,
-		OwnerOperations:     []Operation{OperationRead, OperationCreate, OperationUpdate, OperationDelete, OperationShare, OperationRun, OperationUse},
-		SharedWithUserIDs:   sharedWithUserIDs,
-		SharedWithTenantIDs: sharedWithTenantIDs,
-		Active:              true,
+		Ref:                  ResourceRef{Kind: kind, ID: file.ID},
+		TenantID:             file.TenantID,
+		CreatedBy:            file.CreatedBy,
+		OwnerUserID:          ownerUserID,
+		Visibility:           visibility,
+		OwnerOperations:      []Operation{OperationRead, OperationCreate, OperationUpdate, OperationDelete, OperationShare, OperationRun, OperationUse},
+		SharedWithUserIDs:    sharedWithUserIDs,
+		SharedEditUserIDs:    sharedEditUserIDs,
+		SharedWithTenantIDs:  sharedWithTenantIDs,
+		SharedViewOperations: []Operation{OperationRead, OperationRun, OperationUse},
+		SharedEditOperations: []Operation{OperationRead, OperationUpdate, OperationDeleteContent, OperationRun, OperationUse},
+		Active:               true,
 	}
 }
 

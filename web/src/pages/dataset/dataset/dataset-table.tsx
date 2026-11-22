@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table';
 import { UseRowSelectionType } from '@/hooks/logic-hooks/use-row-selection';
 import { useFetchDocumentList } from '@/hooks/use-document-request';
+import { IDocumentInfo } from '@/interfaces/database/document';
 import { t } from 'i18next';
 import { pick } from 'lodash';
 import { useMemo } from 'react';
@@ -47,6 +48,7 @@ export type DatasetTableProps = Pick<
 > &
   Pick<UseRowSelectionType, 'rowSelection' | 'setRowSelection'> & {
     showManageMetadataModal: (config: ShowManageMetadataModalProps) => void;
+    showMoveToFolderModal: (record: IDocumentInfo) => void;
   };
 
 export function DatasetTable({
@@ -56,6 +58,7 @@ export function DatasetTable({
   rowSelection,
   setRowSelection,
   showManageMetadataModal,
+  showMoveToFolderModal,
 }: DatasetTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -91,6 +94,7 @@ export function DatasetTable({
     showChangeParserModal,
     showRenameModal,
     showManageMetadataModal,
+    showMoveToFolderModal,
     showLog,
     setRowSelection,
   });

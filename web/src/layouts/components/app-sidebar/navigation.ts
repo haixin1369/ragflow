@@ -1,12 +1,13 @@
 import { Routes } from '@/routes';
 import {
   LucideBoxes,
+  LucideBuilding2,
   LucideHome,
   LucideLibrary,
   LucideMessagesSquare,
   LucidePlug,
+  LucideShieldCheck,
   LucideSparkles,
-  LucideUsers,
   type LucideIcon,
 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -25,7 +26,8 @@ export enum NavItemKey {
   Studio = 'studio',
   Library = 'library',
   Integrations = 'integrations',
-  Team = 'team',
+  UserManagement = 'userManagement',
+  RoleManagement = 'roleManagement',
 }
 
 export interface NavItem {
@@ -36,6 +38,8 @@ export interface NavItem {
   // Path prefixes (besides the destination itself) that keep this item
   // highlighted, e.g. detail pages living outside the list route.
   activeAliases: string[];
+  // Rendered only for superusers (e.g. the enterprise permission pages).
+  superuserOnly?: boolean;
 }
 
 export const NavItems: NavItem[] = [
@@ -81,11 +85,20 @@ export const NavItems: NavItem[] = [
     activeAliases: [],
   },
   {
-    key: NavItemKey.Team,
-    path: Routes.Team,
-    labelKey: 'sidebar.team',
-    icon: LucideUsers,
+    key: NavItemKey.UserManagement,
+    path: Routes.UserManagement,
+    labelKey: 'sidebar.userManagement',
+    icon: LucideBuilding2,
     activeAliases: [],
+    superuserOnly: true,
+  },
+  {
+    key: NavItemKey.RoleManagement,
+    path: Routes.RoleManagement,
+    labelKey: 'sidebar.roleManagement',
+    icon: LucideShieldCheck,
+    activeAliases: [],
+    superuserOnly: true,
   },
 ];
 

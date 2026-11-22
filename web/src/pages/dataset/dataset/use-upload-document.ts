@@ -15,7 +15,11 @@ import { buildUploadGapModalContent } from './parser-gap-content';
 import { useParserGapValidation } from './use-parser-gap-validation';
 import { hasUnsupportedTypeGap } from './utils';
 
-export const useHandleUploadDocument = (pipelineId?: string) => {
+export const useHandleUploadDocument = (
+  pipelineId?: string,
+  // Upload target folder; undefined keeps documents unfiled.
+  folderId?: string,
+) => {
   const { t } = useTranslation();
   const {
     visible: documentUploadVisible,
@@ -65,7 +69,11 @@ export const useHandleUploadDocument = (pipelineId?: string) => {
         };
       }
 
-      const ret = await uploadDocument(fileList as File[], parserConfig);
+      const ret = await uploadDocument(
+        fileList as File[],
+        parserConfig,
+        folderId,
+      );
 
       // Check for success (code === 0) or partial success (code === 500 with some files)
       const isSuccess = ret?.code === 0;
@@ -115,6 +123,7 @@ export const useHandleUploadDocument = (pipelineId?: string) => {
       runDocumentByIds,
       findDocumentParseGaps,
       hideDocumentUploadModal,
+      folderId,
     ],
   );
 

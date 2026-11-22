@@ -57,10 +57,10 @@ describe('useNavigatePage', () => {
     const { result } = renderNavigatePage('/datasets');
 
     act(() => {
-      result.current.navigation.navigateToUserSetting('/team');
+      result.current.navigation.navigateToUserSetting('/api');
     });
 
-    expect(result.current.location.pathname).toBe('/user-setting/team');
+    expect(result.current.location.pathname).toBe('/user-setting/api');
     expect(result.current.location.state).toEqual({ returnTo: '/datasets' });
   });
 

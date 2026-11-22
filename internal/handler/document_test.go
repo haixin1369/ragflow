@@ -373,7 +373,7 @@ func (f *fakeDocumentService) GetDocumentMetadataByIDs(ctx context.Context, kbID
 	f.metadataByIDsDocIDs = append([]string(nil), docIDs...)
 	return f.metadataByIDsResult, f.metadataByIDsErr
 }
-func (f *fakeDocumentService) UploadLocalDocuments(ctx context.Context, kb *entity.Knowledgebase, files []*multipart.FileHeader, parentPath string, parserConfigOverride map[string]interface{}) ([]map[string]interface{}, []string) {
+func (f *fakeDocumentService) UploadLocalDocuments(ctx context.Context, kb *entity.Knowledgebase, files []*multipart.FileHeader, parentPath string, parserConfigOverride map[string]interface{}, folderID ...string) ([]map[string]interface{}, []string) {
 	f.uploadLocalKB = kb
 	f.uploadLocalPath = parentPath
 	f.uploadOverride = parserConfigOverride

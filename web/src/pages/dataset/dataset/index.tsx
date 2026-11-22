@@ -23,9 +23,13 @@ import {
   useSelectedIds,
 } from '@/hooks/logic-hooks/use-row-selection';
 import { useFetchDocumentList } from '@/hooks/use-document-request';
+import { useMoveDocumentToFolder } from '@/hooks/use-kb-folder-request';
+import { FunctionPermissionCode } from '@/services/user-permission-service';
+import { PermissionGate } from '@/components/permission-gate';
 import { LucidePlus } from 'lucide-react';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { IDocumentInfo } from '@/interfaces/database/document';
 import { MetadataType } from '../components/metedata/constant';
 import { DatasetPageFrame } from '../components/dataset-page-frame';
 import { useManageMetadata } from '../components/metedata/hooks/use-manage-modal';
@@ -33,6 +37,8 @@ import { ManageMetadataModal } from '../components/metedata/manage-modal';
 import { useKnowledgeBaseContext } from '../contexts/knowledge-base-context';
 import { CancelParsingDropdown } from './cancel-parsing-dropdown';
 import { DatasetTable } from './dataset-table';
+import { FolderTreePanel } from './folder-tree-panel';
+import { MoveToFolderDialog } from './move-to-folder-dialog';
 import { useBulkOperateDataset } from './use-bulk-operate-dataset';
 import { useCreateEmptyDocument } from './use-create-empty-document';
 import { useSelectDatasetFilters } from './use-select-filters';
@@ -47,13 +53,19 @@ export default function Dataset() {
 
   const { t } = useTranslation();
   const { knowledgeBase } = useKnowledgeBaseContext();
+  // undefined = every document, '' = the unfiled root, an id = one folder.
+  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(
+    undefined,
+  );
+  const [moveFolderTarget, setMoveFolderTarget] =
+    useState<IDocumentInfo | null>(null);
   const {
     documentUploadVisible,
     hideDocumentUploadModal,
     showDocumentUploadModal,
     onDocumentUploadOk,
     documentUploadLoading,
-  } = useHandleUploadDocument(knowledgeBase?.pipeline_id);
+  } = useHandleUploadDocument(knowledgeBase?.pipeline_id, selectedFolderId);
   const {
     searchString,
     documents,
@@ -64,7 +76,47 @@ export default function Dataset() {
     handleFilterSubmit,
     loading,
     checkValue,
-  } = useFetchDocumentList();
+  } = useFetchDocumentList(true, selectedFolderId);
+
+  const moveDocumentMutation = useMoveDocumentToFolder();
+
+  const handleSelectFolder = useCallback(
+    (folderId: string | undefined) => {
+      setSelectedFolderId(folderId);
+      setPagination({ page: 1 });
+    },
+    [setPagination],
+  );
+
+  const showMoveToFolderModal = useCallback((record: IDocumentInfo) => {
+    setMoveFolderTarget(record);
+  }, []);
+
+  const hideMoveToFolderModal = useCallback(() => {
+    setMoveFolderTarget(null);
+  }, []);
+
+  const handleMoveToFolderOk = useCallback(
+    (folderId: string) => {
+      if (!moveFolderTarget) {
+        return;
+      }
+      moveDocumentMutation.mutate(
+        {
+          datasetId: moveFolderTarget.dataset_id || knowledgeBase?.id || '',
+          documentId: moveFolderTarget.id,
+          folderId,
+        },
+        { onSuccess: hideMoveToFolderModal },
+      );
+    },
+    [
+      moveFolderTarget,
+      moveDocumentMutation,
+      knowledgeBase?.id,
+      hideMoveToFolderModal,
+    ],
+  );
 
   useGoToPreviousPageOnEmpty(documents?.length, loading);
 
@@ -185,22 +237,24 @@ export default function Dataset() {
         >
           <div className="flex items-center gap-4">
             <CancelParsingDropdown />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="default" disabled={datasetEditButtonDisabled}>
-                  <LucidePlus />
-                  {t('knowledgeDetails.addFile')}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-auto min-w-40" align="end">
-                <DropdownMenuItem onClick={showDocumentUploadModal}>
-                  {t('fileManager.uploadFile')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={showCreateModal}>
-                  {t('knowledgeDetails.emptyFiles')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <PermissionGate code={FunctionPermissionCode.DocUpload}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="default" disabled={datasetEditButtonDisabled}>
+                    <LucidePlus />
+                    {t('knowledgeDetails.addFile')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-auto min-w-40" align="end">
+                  <DropdownMenuItem onClick={showDocumentUploadModal}>
+                    {t('fileManager.uploadFile')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={showCreateModal}>
+                    {t('knowledgeDetails.emptyFiles')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </PermissionGate>
           </div>
         </ListFilterBar>
 
@@ -214,17 +268,30 @@ export default function Dataset() {
       </CardHeader>
 
       <CardContent className="px-5 py-0 flex-1 min-h-0 flex flex-col">
-        <ShowPrivilegeModalContext.Provider value={{ handShowPrivilegeModal }}>
-          <DatasetTable
-            documents={documents}
-            pagination={pagination}
-            setPagination={setPagination}
-            rowSelection={rowSelection}
-            setRowSelection={setRowSelection}
-            showManageMetadataModal={showManageMetadataModal}
-            loading={loading}
-          ></DatasetTable>
-        </ShowPrivilegeModalContext.Provider>
+        <div className="flex-1 min-h-0 flex gap-4">
+          <FolderTreePanel
+            datasetId={knowledgeBase?.id ?? ''}
+            selectedFolderId={selectedFolderId}
+            onSelect={handleSelectFolder}
+            className="hidden lg:flex"
+          />
+          <div className="flex-1 min-w-0 flex flex-col">
+            <ShowPrivilegeModalContext.Provider
+              value={{ handShowPrivilegeModal }}
+            >
+              <DatasetTable
+                documents={documents}
+                pagination={pagination}
+                setPagination={setPagination}
+                rowSelection={rowSelection}
+                setRowSelection={setRowSelection}
+                showManageMetadataModal={showManageMetadataModal}
+                showMoveToFolderModal={showMoveToFolderModal}
+                loading={loading}
+              ></DatasetTable>
+            </ShowPrivilegeModalContext.Provider>
+          </div>
+        </div>
 
         {documentUploadVisible && (
           <FileUploadDialog
@@ -282,6 +349,15 @@ export default function Dataset() {
           hideModal={hidePrivilegeModal}
           initialValues={recordWithSourceType}
         ></PrivilegeManagementDialog>
+      )}
+      {moveFolderTarget && (
+        <MoveToFolderDialog
+          datasetId={moveFolderTarget.dataset_id || knowledgeBase?.id || ''}
+          documentName={moveFolderTarget.name}
+          loading={moveDocumentMutation.isPending}
+          hideModal={hideMoveToFolderModal}
+          onOk={handleMoveToFolderOk}
+        ></MoveToFolderDialog>
       )}
       {/* </> */}
     </DatasetPageFrame>

@@ -31,10 +31,6 @@ export interface ILoginRequestBody {
   password: string;
 }
 
-export interface IRegisterRequestBody extends ILoginRequestBody {
-  nickname: string;
-}
-
 export const useLogin = () => {
   const { saveSetting } = useSaveSetting(true);
   const {
@@ -69,38 +65,6 @@ export const useLogin = () => {
   });
 
   return { data, loading, login: mutateAsync };
-};
-
-export const useRegister = () => {
-  const { t } = useTranslation();
-
-  const {
-    data,
-    isPending: loading,
-    mutateAsync,
-  } = useMutation({
-    mutationKey: ['register'],
-    mutationFn: async (params: {
-      email: string;
-      password: string;
-      nickname: string;
-    }) => {
-      const { data = {} } = await userService.register(params);
-      if (data.code === 0) {
-        message.success(t('message.registered'));
-      } else if (
-        data.message &&
-        data.message.includes('registration is disabled')
-      ) {
-        message.error(
-          t('message.registerDisabled') || 'User registration is disabled',
-        );
-      }
-      return data.code;
-    },
-  });
-
-  return { data, loading, register: mutateAsync };
 };
 
 export const useLogout = () => {

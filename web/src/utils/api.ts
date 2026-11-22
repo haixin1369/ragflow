@@ -26,19 +26,12 @@ const apiEndpoints = {
   // user
   login: `${restAPIv1}/auth/login`,
   logout: `${restAPIv1}/auth/logout`,
-  register: `${restAPIv1}/users`,
   setting: `${restAPIv1}/users/me`,
   userInfo: `${restAPIv1}/users/me`,
   tenantInfo: `${restAPIv1}/users/me/models`,
 
   // team
-  addTenantUser: (tenantId: string) => `${restAPIv1}/tenants/${tenantId}/users`,
-  listTenantUser: (tenantId: string) =>
-    `${restAPIv1}/tenants/${tenantId}/users`,
-  deleteTenantUser: (tenantId: string) =>
-    `${restAPIv1}/tenants/${tenantId}/users`,
   listTenant: `${restAPIv1}/tenants`,
-  agreeTenant: (tenantId: string) => `${restAPIv1}/tenants/${tenantId}`,
 
   // llm model
   listAllAddedModels: `${restAPIv1}/models`,

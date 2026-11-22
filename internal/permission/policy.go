@@ -41,6 +41,9 @@ type evaluation struct {
 	memberships map[string]membershipResult
 	resources   map[ResourceRef]Resource
 	resourceErr map[ResourceRef]error
+	// superuser caches the caller's superuser flag for the lifetime of one
+	// evaluation; nil means it has not been loaded yet.
+	superuser *bool
 }
 
 func newPolicy(source Source) policy {
@@ -51,14 +54,54 @@ func newPolicy(source Source) policy {
 }
 
 func (p *communityPolicy) CheckFeature(ctx context.Context, feature Feature, action Action) error {
-	if strings.TrimSpace(UserIDFromContext(ctx)) == "" {
+	userID := strings.TrimSpace(UserIDFromContext(ctx))
+	if userID == "" {
 		return ErrUnauthenticated
 	}
 	if strings.TrimSpace(string(feature)) == "" || !validAction(action) {
 		return ErrInvalidPermission
 	}
-	// Community edition has no role-based feature restrictions.
-	return nil
+	// Feature codes map (feature, action) pairs onto the seeded function
+	// permission catalogue. Pairs without a registered code keep the community
+	// behaviour of staying open until their menu is aligned with the catalogue.
+	source, ok := p.source.(*databaseSource)
+	if !ok || source.db == nil {
+		return nil
+	}
+	if source.userIsSuperuser(ctx, userID) {
+		return nil
+	}
+	code, registered := featurePermissionCode(feature, action)
+	if !registered {
+		return nil
+	}
+	granted, err := source.userPermissionCodes(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if granted[code] {
+		return nil
+	}
+	return ErrPermissionDenied
+}
+
+// featurePermissionCode maps a feature gate call site onto its function
+// permission code. Registering a pair here makes the gate role-enforced: a
+// user whose role lacks the code is denied.
+func featurePermissionCode(feature Feature, action Action) (string, bool) {
+	if action != ActionWrite {
+		return "", false
+	}
+	switch feature {
+	case "dataset":
+		return entity.PermissionKbCreate, true
+	case "chat":
+		return entity.PermissionChatCreate, true
+	case "file":
+		return entity.PermissionFileManage, true
+	default:
+		return "", false
+	}
 }
 
 func (p *communityPolicy) CheckTenant(ctx context.Context, tenantID string, requirement TenantRequirement) error {
@@ -179,21 +222,15 @@ func (p *communityPolicy) QueryScope(ctx context.Context, query ScopeQuery) (Que
 		if !ok || source.db == nil {
 			return QueryScope{}, false, nil
 		}
+		// Reaching the document list already proves the caller can read the
+		// dataset: enterprise visibility is decided at the knowledge base
+		// level, so every document inside a visible dataset is readable.
 		if err := p.CheckResource(ctx, query.Parent, OperationRead); err != nil {
 			return QueryScope{}, true, err
 		}
 		parentID := query.Parent.ID
-		userID := strings.TrimSpace(UserIDFromContext(ctx))
 		return QueryScope{apply: func(query *gorm.DB) *gorm.DB {
-			db := source.db.WithContext(ctx)
-			teamMember := db.Model(&entity.Knowledgebase{}).
-				Select("1").
-				Joins("JOIN user_tenant ON user_tenant.tenant_id = knowledgebase.tenant_id").
-				Where("knowledgebase.id = document.kb_id AND knowledgebase.permission = ?", string(entity.TenantPermissionTeam)).
-				Where("user_tenant.user_id = ? AND user_tenant.role = ? AND user_tenant.status = ?", userID, string(RoleNormal), string(entity.StatusValid))
-			return query.
-				Where("document.kb_id = ?", parentID).
-				Where("(COALESCE(NULLIF(TRIM(document.user_id), ''), NULLIF(TRIM(document.created_by), '')) = ? OR EXISTS (?))", userID, teamMember)
+			return query.Where("document.kb_id = ?", parentID)
 		}}, true, nil
 	}
 	if query.Kind == ResourceKindMCPServer && query.Operation == OperationRead && query.Parent.ID == "" && query.Parent.Kind == "" && query.Entry == nil {
@@ -213,30 +250,22 @@ func (p *communityPolicy) QueryScope(ctx context.Context, query ScopeQuery) (Que
 	if !ok || source.db == nil {
 		return QueryScope{}, false, nil
 	}
-	if err := source.validateDatasetTenants(ctx, userID); err != nil {
-		return QueryScope{}, true, err
-	}
-	// Enterprise tenant roles are stored as numeric IDs. The generic SQL fast
-	// path cannot resolve those IDs safely, so let the normal resource checks
-	// evaluate candidate IDs through databaseSource.GetMembership instead.
-	if tenantRoleMembershipEnabled(source.db) {
-		return QueryScope{}, false, nil
-	}
 
+	// Enterprise visibility is default-deny: the superuser sees everything,
+	// everyone else only the datasets they own or hold a kb_member grant on.
+	if source.userIsSuperuser(ctx, userID) {
+		return QueryScope{apply: func(query *gorm.DB) *gorm.DB {
+			return query.Where("knowledgebase.status = ?", string(entity.StatusValid))
+		}}, true, nil
+	}
 	return QueryScope{apply: func(query *gorm.DB) *gorm.DB {
 		db := source.db.WithContext(ctx)
-		activeOwner := db.Model(&entity.UserTenant{}).
+		kbMember := db.Model(&entity.KBMember{}).
 			Select("1").
-			Where("user_tenant.tenant_id = knowledgebase.tenant_id AND user_tenant.role = ? AND user_tenant.status = ?", string(RoleOwner), string(entity.StatusValid))
-		callerIsMember := db.Model(&entity.UserTenant{}).
-			Select("1").
-			Where("user_tenant.tenant_id = knowledgebase.tenant_id AND user_tenant.user_id = ? AND user_tenant.role = ? AND user_tenant.status = ?", userID, string(RoleNormal), string(entity.StatusValid))
-		accessibleDatasets := db.Model(&entity.Knowledgebase{}).
-			Select("knowledgebase.id").
+			Where("kb_member.kb_id = knowledgebase.id AND kb_member.user_id = ?", userID)
+		return query.
 			Where("knowledgebase.status = ?", string(entity.StatusValid)).
-			Where("EXISTS (?)", activeOwner).
-			Where("(COALESCE(NULLIF(TRIM(knowledgebase.user_id), ''), NULLIF(TRIM(knowledgebase.created_by), '')) = ? OR (knowledgebase.permission = ? AND EXISTS (?)))", userID, string(entity.TenantPermissionTeam), callerIsMember)
-		return query.Where("knowledgebase.id IN (?)", accessibleDatasets)
+			Where("(COALESCE(NULLIF(TRIM(knowledgebase.user_id), ''), knowledgebase.created_by) = ? OR EXISTS (?))", userID, kbMember)
 	}}, true, nil
 }
 
@@ -392,21 +421,15 @@ func (p *communityPolicy) fileReadQueryScope(ctx context.Context, query ScopeQue
 			Select("1").
 			Where("knowledgebase.id = document.kb_id").
 			Where("COALESCE(NULLIF(TRIM(knowledgebase.user_id), ''), NULLIF(TRIM(knowledgebase.created_by), '')) = ?", userID)
-		datasetMember := db.Model(&entity.UserTenant{}).
+		datasetMember := db.Model(&entity.KBMember{}).
 			Select("1").
-			Joins("JOIN knowledgebase ON knowledgebase.tenant_id = user_tenant.tenant_id").
-			Where("knowledgebase.id = document.kb_id AND knowledgebase.permission = ?", string(entity.TenantPermissionTeam)).
-			Where("user_tenant.user_id = ? AND user_tenant.role = ? AND user_tenant.status = ?", userID, string(RoleNormal), string(entity.StatusValid))
-		activeDatasetOwner := db.Model(&entity.UserTenant{}).
-			Select("1").
-			Where("user_tenant.tenant_id = knowledgebase.tenant_id AND user_tenant.role = ? AND user_tenant.status = ?", string(RoleOwner), string(entity.StatusValid))
+			Where("kb_member.kb_id = document.kb_id AND kb_member.user_id = ?", userID)
 		sharedDataset := db.Table("file2document AS f2d").
 			Select("1").
 			Joins("JOIN document ON document.id = f2d.document_id").
 			Joins("JOIN knowledgebase ON knowledgebase.id = document.kb_id").
 			Where("f2d.file_id = file.id AND knowledgebase.status = ?", string(entity.StatusValid)).
-			Where("EXISTS (?)", activeDatasetOwner).
-			Where("(EXISTS (?) OR (knowledgebase.permission = ? AND EXISTS (?)))", datasetOwner, string(entity.TenantPermissionTeam), datasetMember)
+			Where("(EXISTS (?) OR EXISTS (?))", datasetOwner, datasetMember)
 
 		return query.
 			Where("file.tenant_id = (?)", parent).
@@ -414,20 +437,6 @@ func (p *communityPolicy) fileReadQueryScope(ctx context.Context, query ScopeQue
 				userID, fileOwner, userID, anyFileOwner, rootMember,
 				userID, fileOwner, userID, anyFileOwner, sharedDataset)
 	}}, true, nil
-}
-
-func (s *databaseSource) validateDatasetTenants(ctx context.Context, userID string) error {
-	var tenantIDs []string
-	err := s.db.WithContext(ctx).Model(&entity.Knowledgebase{}).
-		Joins("JOIN user_tenant member ON member.tenant_id = knowledgebase.tenant_id").
-		Where("knowledgebase.status = ? AND member.user_id = ? AND member.status = ?", string(entity.StatusValid), userID, string(entity.StatusValid)).
-		Distinct("knowledgebase.tenant_id").
-		Pluck("knowledgebase.tenant_id", &tenantIDs).Error
-	if err != nil {
-		return err
-	}
-	_, err = s.loadTenantOwnerIDs(ctx, tenantIDs)
-	return err
 }
 
 func (p *communityPolicy) FilterResources(ctx context.Context, refs []ResourceRef, operation Operation) ([]ResourceRef, error) {
@@ -491,6 +500,21 @@ func newEvaluation(source Source) *evaluation {
 		resources:   make(map[ResourceRef]Resource),
 		resourceErr: make(map[ResourceRef]error),
 	}
+}
+
+// callerIsSuperuser reports whether the identity in ctx is the built-in
+// superuser. Only the database source can answer; other sources never grant
+// the bypass.
+func (e *evaluation) callerIsSuperuser(ctx context.Context) bool {
+	if e.superuser != nil {
+		return *e.superuser
+	}
+	value := false
+	if source, ok := e.source.(*databaseSource); ok && source.db != nil {
+		value = source.userIsSuperuser(ctx, strings.TrimSpace(UserIDFromContext(ctx)))
+	}
+	e.superuser = &value
+	return value
 }
 
 func (e *evaluation) checkTenant(ctx context.Context, tenantID string, requirement TenantRequirement) error {
@@ -589,6 +613,15 @@ func (e *evaluation) resolveAccess(ctx context.Context, ref ResourceRef) (Access
 	return e.resolveResource(ctx, resource)
 }
 
+// sharedOperations picks the grant-level operation list, falling back to the
+// resource owner's operations when the level declares none.
+func sharedOperations(levelOperations, ownerOperations []Operation) []Operation {
+	if len(levelOperations) > 0 {
+		return levelOperations
+	}
+	return ownerOperations
+}
+
 func (e *evaluation) resolveResource(ctx context.Context, resource Resource) (Access, error) {
 	userID := strings.TrimSpace(UserIDFromContext(ctx))
 	if userID == "" {
@@ -610,12 +643,17 @@ func (e *evaluation) resolveResourceForUser(ctx context.Context, userID string, 
 	if !validOperations(resource.TenantOperations) || !validOperations(resource.CreatorOperations) {
 		return Access{}, fmt.Errorf("%w: invalid delegated operations", ErrInvalidPermission)
 	}
+	// The superuser bypasses every resource boundary: it is the only system
+	// administration entry point and may manage any knowledge base.
+	if e.callerIsSuperuser(ctx) {
+		return resourceAccess(resource, AccessSourceOwner), nil
+	}
 	switch resource.Visibility {
 	case VisibilityPrivate, VisibilityTenant, VisibilityShared:
 	default:
 		return Access{}, fmt.Errorf("%w: unknown resource visibility %q", ErrInvalidPermission, resource.Visibility)
 	}
-	if userID == resource.OwnerUserID {
+	if userID == resource.OwnerUserID || slices.Contains(resource.OwnerDelegateUserIDs, userID) {
 		return resourceAccess(resource, AccessSourceOwner), nil
 	}
 
@@ -642,8 +680,11 @@ func (e *evaluation) resolveResourceForUser(ctx context.Context, userID string, 
 		}
 		return resourceAccessWithOperations(resource, AccessSourceTenant, operations), nil
 	case VisibilityShared:
+		if slices.Contains(resource.SharedEditUserIDs, userID) {
+			return resourceAccessWithOperations(resource, AccessSourceShared, sharedOperations(resource.SharedEditOperations, resource.OwnerOperations)), nil
+		}
 		if slices.Contains(resource.SharedWithUserIDs, userID) {
-			return resourceAccess(resource, AccessSourceShared), nil
+			return resourceAccessWithOperations(resource, AccessSourceShared, sharedOperations(resource.SharedViewOperations, resource.OwnerOperations)), nil
 		}
 		for _, tenantID := range resource.SharedWithTenantIDs {
 			if err := e.checkTenantForUser(ctx, userID, tenantID, TenantNormalMember); err != nil {

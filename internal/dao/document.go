@@ -128,6 +128,10 @@ type DocumentListOptions struct {
 	Name               string
 	DocIDs             []string
 	DocIDFilterApplied bool
+	// FolderID + FolderFilterApplied scope the list to one directory of the
+	// knowledge base tree; "" matches the unfiled root.
+	FolderID           string
+	FolderFilterApplied bool
 	AccessScope        *permission.QueryScope
 	CreateTimeFrom     int64
 	CreateTimeTo       int64
@@ -364,6 +368,10 @@ func applyDocumentListFilters(query *gorm.DB, opts DocumentListOptions, qualifie
 	}
 	if opts.Name != "" {
 		query = query.Where(column("name")+" = ?", opts.Name)
+	}
+	// FolderID "" matches documents filed in the unfiled root.
+	if opts.FolderFilterApplied {
+		query = query.Where(column("folder_id")+" = ?", opts.FolderID)
 	}
 	// The document ID clause is not gated on DocIDFilterApplied here: with the
 	// flag false and IDs present, applying them narrows the query instead of

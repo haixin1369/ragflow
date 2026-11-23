@@ -292,7 +292,7 @@ Beispiel: Eine 1 KB Nachricht mit 1024-dim Einbettung verwendet ~9 KB. Das Stand
       testSetting: 'Einstellung',
       retrievalTesting: 'Abruftest',
       retrievalTestingDescription:
-        'Führen Sie einen Abruftest durch, um zu prüfen, ob RAGFlow die beabsichtigten Inhalte für das LLM wiederherstellen kann.',
+        'Führen Sie einen Abruftest durch, um zu prüfen, ob OneRAG die beabsichtigten Inhalte für das LLM wiederherstellen kann.',
       Parse: 'Analysieren',
       dataset: 'Datensatz',
       testing: 'Abruftest',
@@ -326,10 +326,10 @@ Beispiel: Eine 1 KB Nachricht mit 1024-dim Einbettung verwendet ~9 KB. Das Stand
       noTestResultsForNotRuned:
         'Es wurde noch kein Test durchgeführt. Ergebnisse werden hier angezeigt.',
       testingDescription:
-        'Führen Sie einen Abruftest durch, um zu prüfen, ob RAGFlow die beabsichtigten Inhalte für das LLM wiederherstellen kann.',
+        'Führen Sie einen Abruftest durch, um zu prüfen, ob OneRAG die beabsichtigten Inhalte für das LLM wiederherstellen kann.',
       similarityThreshold: 'Ähnlichkeitsschwelle',
       similarityThresholdTip:
-        'RAGFlow verwendet beim Abruf entweder eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichteter Vektorkosinusähnlichkeit oder, wenn ein Reranker-Modell ausgewählt ist, eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichtetem Reranking-Score. Dieser Parameter legt den Schwellenwert für die Ähnlichkeit zwischen der Benutzeranfrage und den Chunks fest. Jeder Chunk mit einem Ähnlichkeitswert unter diesem Schwellenwert wird aus den Ergebnissen ausgeschlossen. Standardmäßig ist der Schwellenwert auf 20 festgelegt. Das bedeutet, dass nur Chunks mit einem hybriden Ähnlichkeitswert von 20 oder höher abgerufen werden. Wenn die Gewichtung der Vektorähnlichkeit auf 0 gesetzt ist, gilt dieser Schwellenwert nicht.',
+        'OneRAG verwendet beim Abruf entweder eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichteter Vektorkosinusähnlichkeit oder, wenn ein Reranker-Modell ausgewählt ist, eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichtetem Reranking-Score. Dieser Parameter legt den Schwellenwert für die Ähnlichkeit zwischen der Benutzeranfrage und den Chunks fest. Jeder Chunk mit einem Ähnlichkeitswert unter diesem Schwellenwert wird aus den Ergebnissen ausgeschlossen. Standardmäßig ist der Schwellenwert auf 20 festgelegt. Das bedeutet, dass nur Chunks mit einem hybriden Ähnlichkeitswert von 20 oder höher abgerufen werden. Wenn die Gewichtung der Vektorähnlichkeit auf 0 gesetzt ist, gilt dieser Schwellenwert nicht.',
       vectorSimilarityWeight: 'Schlüsselwortähnlichkeitsgewicht',
       vectorSimilarityWeightTip:
         'Damit wird die Gewichtung der Vektorähnlichkeit im kombinierten Ähnlichkeitswert festgelegt, entweder in Verbindung mit der Vektorkosinusähnlichkeit oder dem Reranking-Score. Die Summe der beiden Gewichtungen muss 1,0 ergeben.',
@@ -371,7 +371,7 @@ Beispiel: Eine 1 KB Nachricht mit 1024-dim Einbettung verwendet ~9 KB. Das Stand
       changeSpecificCategory: 'Spezifische Kategorie ändern',
       uploadTitle: 'Ziehen Sie Ihre Datei hierher, um sie hochzuladen',
       uploadDescription:
-        'RAGFlow unterstützt das Hochladen von Dateien einzeln oder in Batches. Für lokal bereitgestelltes RAGFlow: Die maximale Dateigröße pro Upload beträgt 1 GB, mit einem Batch-Upload-Limit von 32 Dateien. Es gibt keine Begrenzung der Gesamtanzahl an Dateien pro Konto. Für cloud.ragflow.io: Die maximale Dateigröße pro Upload beträgt 10 MB, wobei jede Datei nicht größer als 10 MB sein darf und maximal 128 Dateien pro Konto erlaubt sind.',
+        'OneRAG unterstützt das Hochladen von Dateien einzeln oder in Batches. Für lokal bereitgestelltes OneRAG: Die maximale Dateigröße pro Upload beträgt 1 GB, mit einem Batch-Upload-Limit von 32 Dateien. Es gibt keine Begrenzung der Gesamtanzahl an Dateien pro Konto. Für cloud.ragflow.io: Die maximale Dateigröße pro Upload beträgt 10 MB, wobei jede Datei nicht größer als 10 MB sein darf und maximal 128 Dateien pro Konto erlaubt sind.',
       chunk: 'Chunk',
       bulk: 'Masse',
       cancel: 'Abbrechen',
@@ -379,7 +379,7 @@ Beispiel: Eine 1 KB Nachricht mit 1024-dim Einbettung verwendet ~9 KB. Das Stand
       rerankModel: 'Rerank-modell',
       rerankPlaceholder: 'Bitte auswählen',
       rerankTip:
-        'Wenn leer gelassen, verwendet RAGFlow eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichteter Vektorkosinus-Ähnlichkeit; wenn ein Rerank-modell ausgewählt wird, ersetzt eine gewichtete Rerank-bewertung die gewichtete Vektorkosinus-Ähnlichkeit. Bitte beachten Sie, dass die Verwendung eines Rerank-modells die Antwortzeit des Systems erheblich erhöht.',
+        'Wenn leer gelassen, verwendet OneRAG eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichteter Vektorkosinus-Ähnlichkeit; wenn ein Rerank-modell ausgewählt wird, ersetzt eine gewichtete Rerank-bewertung die gewichtete Vektorkosinus-Ähnlichkeit. Bitte beachten Sie, dass die Verwendung eines Rerank-modells die Antwortzeit des Systems erheblich erhöht.',
       topK: 'Top-K',
       topKTip:
         'In Verbindung mit dem Rerank model wird mit dieser Einstellung die Anzahl der Textblöcke festgelegt, die an das angegebene reranking model gesendet werden.',
@@ -783,7 +783,7 @@ Diese Auto-Tag-Funktion verbessert den Abruf, indem sie eine weitere Schicht dom
         'Nicht alle Chunks mit einem Ähnlichkeitswert über dem "Ähnlichkeitsschwellenwert" werden an das LLM gesendet. Dies wählt die "Top N" Chunks aus den abgerufenen aus.',
       variable: 'Variable',
       variableTip:
-        'In Kombination mit den APIs zur Verwaltung von Chat-Assistenten von RAGFlow können Variablen dazu beitragen, flexiblere System-Prompt-Strategien zu entwickeln. Die definierten Variablen werden von „System-Prompt“ als Teil der Prompts für das LLM verwendet. {knowledge} ist eine spezielle reservierte Variable, die Teile darstellt, die aus den angegebenen Wissensbasen abgerufen werden, und alle Variablen sollten in geschweiften Klammern {} im „System-Prompt“ eingeschlossen werden. Weitere Informationen finden Sie unter https://ragflow.io/docs/chat_configuration#system-prompt.',
+        'In Kombination mit den APIs zur Verwaltung von Chat-Assistenten von OneRAG können Variablen dazu beitragen, flexiblere System-Prompt-Strategien zu entwickeln. Die definierten Variablen werden von „System-Prompt“ als Teil der Prompts für das LLM verwendet. {knowledge} ist eine spezielle reservierte Variable, die Teile darstellt, die aus den angegebenen Wissensbasen abgerufen werden, und alle Variablen sollten in geschweiften Klammern {} im „System-Prompt“ eingeschlossen werden. Weitere Informationen finden Sie unter https://ragflow.io/docs/chat_configuration#system-prompt.',
       add: 'Hinzufügen',
       key: 'Schlüssel',
       optional: 'Optional',
@@ -854,7 +854,7 @@ Diese Auto-Tag-Funktion verbessert den Abruf, indem sie eine weitere Schicht dom
       extensionTitle: 'Chrome-Erweiterung',
       tokenError: 'Bitte erstellen Sie zuerst einen API-SCHLÜSSEL.',
       betaError:
-        'Bitte erwerben Sie zuerst einen RAGFlow-API-SCHLÜSSEL auf der Systemeinstellungsseite.',
+        'Bitte erwerben Sie zuerst einen OneRAG-API-SCHLÜSSEL auf der Systemeinstellungsseite.',
       searching: 'Suche...',
       parsing: 'Analysiere',
       uploading: 'Hochladen',
@@ -1441,7 +1441,7 @@ Beispiel: Virtual Hosted Style`,
       directory: 'Verzeichnis',
       uploadTitle: 'Ziehen Sie Ihre Datei hierher, um sie hochzuladen',
       uploadDescription:
-        'RAGFlow unterstützt das Hochladen von Dateien einzeln oder in Batches. Für lokal bereitgestelltes RAGFlow: Die maximale Dateigröße pro Upload beträgt 1 GB, mit einem Batch-Upload-Limit von 32 Dateien. Es gibt keine Begrenzung der Gesamtanzahl an Dateien pro Konto. Für cloud.ragflow.io: Die maximale Dateigröße pro Upload beträgt 10 MB, wobei jede Datei nicht größer als 10 MB sein darf und maximal 128 Dateien pro Konto erlaubt sind.',
+        'OneRAG unterstützt das Hochladen von Dateien einzeln oder in Batches. Für lokal bereitgestelltes OneRAG: Die maximale Dateigröße pro Upload beträgt 1 GB, mit einem Batch-Upload-Limit von 32 Dateien. Es gibt keine Begrenzung der Gesamtanzahl an Dateien pro Konto. Für cloud.ragflow.io: Die maximale Dateigröße pro Upload beträgt 10 MB, wobei jede Datei nicht größer als 10 MB sein darf und maximal 128 Dateien pro Konto erlaubt sind.',
       local: 'Lokale Uploads',
       s3: 'S3-Uploads',
       preview: 'Vorschau',
@@ -2551,7 +2551,7 @@ Wichtige strukturierte Informationen können sein: Namen, Daten, Orte, Ereigniss
     },
     admin: {
       loginTitle: 'Admin-Konsole',
-      title: 'RAGFlow',
+      title: 'OneRAG',
       confirm: 'Bestätigen',
       close: 'Schließen',
       yes: 'Ja',

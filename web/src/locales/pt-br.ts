@@ -115,10 +115,10 @@ export default {
       processDuration: 'Duração',
       progressMsg: 'Progresso',
       testingDescription:
-        'Realize um teste de recuperação para verificar se o RAGFlow pode recuperar o conteúdo pretendido para o LLM. Por favor, note que as alterações feitas aqui não são salvas automaticamente. Se você ajustar as configurações padrão aqui, como o peso de similaridade de palavras-chave, certifique-se de atualizar as configurações relacionadas de forma sincronizada nas configurações do assistente de chat ou nas configurações do operador de recuperação.',
+        'Realize um teste de recuperação para verificar se o OneRAG pode recuperar o conteúdo pretendido para o LLM. Por favor, note que as alterações feitas aqui não são salvas automaticamente. Se você ajustar as configurações padrão aqui, como o peso de similaridade de palavras-chave, certifique-se de atualizar as configurações relacionadas de forma sincronizada nas configurações do assistente de chat ou nas configurações do operador de recuperação.',
       similarityThreshold: 'Limite de similaridade',
       similarityThresholdTip:
-        'Durante a recuperação, o RAGFlow usa uma combinação de similaridade ponderada de palavras-chave e similaridade de cosseno vetorial ponderada ou, quando um modelo de reranking é selecionado, uma combinação de similaridade ponderada de palavras-chave e pontuação de reranking ponderada. Este parâmetro define o limite de similaridade entre a consulta do usuário e os fragmentos. Qualquer fragmento com uma pontuação de similaridade abaixo desse limite será excluído dos resultados. Por padrão, o limite é definido como 20. Isso significa que apenas os fragmentos com uma pontuação de similaridade híbrida igual ou superior a 20 serão recuperados. Se o peso da similaridade vetorial for definido como 0, esse limite não se aplica.',
+        'Durante a recuperação, o OneRAG usa uma combinação de similaridade ponderada de palavras-chave e similaridade de cosseno vetorial ponderada ou, quando um modelo de reranking é selecionado, uma combinação de similaridade ponderada de palavras-chave e pontuação de reranking ponderada. Este parâmetro define o limite de similaridade entre a consulta do usuário e os fragmentos. Qualquer fragmento com uma pontuação de similaridade abaixo desse limite será excluído dos resultados. Por padrão, o limite é definido como 20. Isso significa que apenas os fragmentos com uma pontuação de similaridade híbrida igual ou superior a 20 serão recuperados. Se o peso da similaridade vetorial for definido como 0, esse limite não se aplica.',
       vectorSimilarityWeight: 'Peso da similaridade de palavras-chave',
       vectorSimilarityWeightTip:
         'Define o peso da similaridade vetorial na pontuação de similaridade combinada, usada com a similaridade de cosseno vetorial ou com a pontuação de reranking. O total dos dois pesos deve ser igual a 1.0.',
@@ -166,7 +166,7 @@ export default {
       rerankModel: 'Modelo de reranking',
       rerankPlaceholder: 'Por favor, selecione',
       rerankTip:
-        'Opcional. Se deixar em branco, o RAGFlow usará uma combinação de similaridade ponderada por palavra-chave e similaridade ponderada do cosseno vetorial; se um modelo de rerank for selecionado, uma pontuação ponderada de reranking substituirá a similaridade ponderada do cosseno vetorial. Esteja ciente de que usar um modelo de rerank aumentará significativamente o tempo de resposta do sistema.',
+        'Opcional. Se deixar em branco, o OneRAG usará uma combinação de similaridade ponderada por palavra-chave e similaridade ponderada do cosseno vetorial; se um modelo de rerank for selecionado, uma pontuação ponderada de reranking substituirá a similaridade ponderada do cosseno vetorial. Esteja ciente de que usar um modelo de rerank aumentará significativamente o tempo de resposta do sistema.',
       topK: 'Top-K',
       topKTip:
         'Usado em conjunto com o Rerank model, essa configuração define o número de trechos de texto a serem enviados ao modelo reranking especificado.',
@@ -384,7 +384,7 @@ export default {
       topN: 'Top N',
       topNTip: `Nem todos os fragmentos com pontuação de similaridade acima do 'limiar de similaridade' serão enviados ao LLM. Isso seleciona os 'Top N' fragmentos recuperados.`,
       variable: 'Variável',
-      variableTip: `Usados em conjunto com as APIs de gerenciamento de assistente de bate-papo do RAGFlow, as variáveis podem ajudar a desenvolver estratégias de prompt do sistema mais flexíveis. As variáveis definidas serão usadas pelo 'Prompt do sistema' como parte dos prompts para o LLM. {knowledge} é uma variável especial reservada que representa partes recuperadas de base(s) de conhecimento especificada(s), e todas as variáveis devem ser cercadas por chaves {} no 'Prompt do sistema'. Veja https://ragflow.io/docs/chat_configuration#system-prompt para mais detalhes.`,
+      variableTip: `Usados em conjunto com as APIs de gerenciamento de assistente de bate-papo do OneRAG, as variáveis podem ajudar a desenvolver estratégias de prompt do sistema mais flexíveis. As variáveis definidas serão usadas pelo 'Prompt do sistema' como parte dos prompts para o LLM. {knowledge} é uma variável especial reservada que representa partes recuperadas de base(s) de conhecimento especificada(s), e todas as variáveis devem ser cercadas por chaves {} no 'Prompt do sistema'. Veja https://ragflow.io/docs/chat_configuration#system-prompt para mais detalhes.`,
       add: 'Adicionar',
       key: 'Chave',
       optional: 'Opcional',
@@ -448,7 +448,7 @@ export default {
       extensionTitle: 'Extensão do Chrome',
       tokenError: 'Por favor, crie uma chave API primeiro.',
       betaError:
-        'Por favor, adquira uma chave API do RAGFlow na página Configurações do Sistema primeiro.',
+        'Por favor, adquira uma chave API do OneRAG na página Configurações do Sistema primeiro.',
       searching: 'Pesquisando...',
       parsing: 'Analisando',
       uploading: 'Carregando',
@@ -697,13 +697,13 @@ export default {
       uploadTitle:
         'Clique ou arraste o arquivo para esta área para fazer o upload',
       uploadDescription:
-        'O RAGFlow suporta o upload de arquivos de forma individual ou em lote. Para o RAGFlow implantado localmente: o limite total de tamanho de arquivo por upload é de 1GB, com um limite de upload em lote de 32 arquivos. Não há limite para o número total de arquivos por conta. Para o cloud.ragflow.io: o limite total de tamanho de arquivo por upload é de 10MB, com cada arquivo não excedendo 10MB e um máximo de 128 arquivos por conta.',
+        'O OneRAG suporta o upload de arquivos de forma individual ou em lote. Para o OneRAG implantado localmente: o limite total de tamanho de arquivo por upload é de 1GB, com um limite de upload em lote de 32 arquivos. Não há limite para o número total de arquivos por conta. Para o cloud.ragflow.io: o limite total de tamanho de arquivo por upload é de 10MB, com cada arquivo não excedendo 10MB e um máximo de 128 arquivos por conta.',
       local: 'Uploads locais',
       s3: 'Uploads S3',
       preview: 'Pré-visualização',
       fileError: 'Erro no arquivo',
       uploadLimit:
-        'O RAGFlow suporta o upload de arquivos de forma individual ou em lote. Para o RAGFlow implantado localmente: o limite total de tamanho de arquivo por upload é de 1GB, com um limite de upload em lote de 32 arquivos. Não há limite para o número total de arquivos por conta. Para o cloud.ragflow.io: o limite total de tamanho de arquivo por upload é de 10MB, com cada arquivo não excedendo 10MB e um máximo de 128 arquivos por conta.',
+        'O OneRAG suporta o upload de arquivos de forma individual ou em lote. Para o OneRAG implantado localmente: o limite total de tamanho de arquivo por upload é de 1GB, com um limite de upload em lote de 32 arquivos. Não há limite para o número total de arquivos por conta. Para o cloud.ragflow.io: o limite total de tamanho de arquivo por upload é de 10MB, com cada arquivo não excedendo 10MB e um máximo de 128 arquivos por conta.',
       destinationFolder: 'Pasta de destino',
     },
     flow: {

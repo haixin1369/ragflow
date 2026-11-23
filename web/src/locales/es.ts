@@ -107,10 +107,10 @@ export default {
       processDuration: 'Duración del proceso',
       progressMsg: 'Mensaje de progreso',
       testingDescription:
-        '¡Último paso! Después del éxito, deja el resto al AI de RAGFlow. Por favor, tenga en cuenta que los cambios realizados aquí no se guardan automáticamente. Si ajusta la configuración predeterminada aquí, como el peso de similitud de palabras clave, asegúrese de actualizar la configuración relacionada de manera sincronizada en la configuración del asistente de chat o en la configuración del operador de recuperación.',
+        '¡Último paso! Después del éxito, deja el resto al AI de OneRAG. Por favor, tenga en cuenta que los cambios realizados aquí no se guardan automáticamente. Si ajusta la configuración predeterminada aquí, como el peso de similitud de palabras clave, asegúrese de actualizar la configuración relacionada de manera sincronizada en la configuración del asistente de chat o en la configuración del operador de recuperación.',
       similarityThreshold: 'Umbral de similitud',
       similarityThresholdTip:
-        'Durante la recuperación, RAGFlow utiliza una combinación de similitud ponderada de palabras clave y similitud coseno vectorial ponderada o, cuando se selecciona un modelo de reordenamiento, una combinación de similitud ponderada de palabras clave y puntuación ponderada de reordenamiento. Este parámetro establece el umbral de similitud entre la consulta del usuario y los fragmentos. Los fragmentos con una puntuación de similitud inferior a este umbral se excluirán de los resultados. De forma predeterminada, el umbral se establece en 20. Esto significa que solo se recuperarán los fragmentos con una puntuación de similitud híbrida de 20 o superior. Si el peso de similitud vectorial se establece en 0, este umbral no se aplica.',
+        'Durante la recuperación, OneRAG utiliza una combinación de similitud ponderada de palabras clave y similitud coseno vectorial ponderada o, cuando se selecciona un modelo de reordenamiento, una combinación de similitud ponderada de palabras clave y puntuación ponderada de reordenamiento. Este parámetro establece el umbral de similitud entre la consulta del usuario y los fragmentos. Los fragmentos con una puntuación de similitud inferior a este umbral se excluirán de los resultados. De forma predeterminada, el umbral se establece en 20. Esto significa que solo se recuperarán los fragmentos con una puntuación de similitud híbrida de 20 o superior. Si el peso de similitud vectorial se establece en 0, este umbral no se aplica.',
       vectorSimilarityWeight: 'Peso de similitud de palabras clave',
       vectorSimilarityWeightTip:
         'Establece el peso de la similitud vectorial en la puntuación de similitud combinada, ya sea con la similitud coseno vectorial o con la puntuación de reordenamiento. La suma de ambos pesos debe ser igual a 1.0.',
@@ -156,7 +156,7 @@ export default {
       cancel: 'Cancelar',
       rerankModel: 'Modelo de reordenamiento',
       rerankPlaceholder: 'Por favor selecciona',
-      rerankTip: `Opcional. Si se deja vacío, RAGFlow utilizará una combinación de similitud ponderada de palabras clave y similitud ponderada del coseno vectorial; si se selecciona un modelo de reordenamiento, una puntuación ponderada de reordenamiento reemplazará la similitud ponderada del coseno vectorial. Tenga en cuenta que usar un modelo de reordenamiento aumentará significativamente el tiempo de respuesta del sistema.`,
+      rerankTip: `Opcional. Si se deja vacío, OneRAG utilizará una combinación de similitud ponderada de palabras clave y similitud ponderada del coseno vectorial; si se selecciona un modelo de reordenamiento, una puntuación ponderada de reordenamiento reemplazará la similitud ponderada del coseno vectorial. Tenga en cuenta que usar un modelo de reordenamiento aumentará significativamente el tiempo de respuesta del sistema.`,
       topK: 'Top-K',
       topKTip: `Utilizado junto con el Rerank model, esta configuración define el número de fragmentos de texto que se enviarán al modelo reranking especificado.`,
       delimiter: `Delimitadores para segmentación de texto`,
@@ -223,7 +223,7 @@ export default {
       topN: 'Top N',
       topNTip: `No todos los fragmentos cuya puntuación de similitud esté por encima del "umbral de similitud" serán enviados a los LLMs. Los LLMs solo pueden ver estos "Top N" fragmentos.`,
       variable: 'Variable',
-      variableTip: `Usados junto con las API de gestión de asistentes de chat de RAGFlow, las variables pueden ayudar a desarrollar estrategias de prompt del sistema más flexibles. Las variables definidas serán utilizadas por el 'Prompt del sistema' como parte de los prompts para el LLM. {knowledge} es una variable especial reservada que representa partes recuperadas de base(s) de conocimiento especificada(s), y todas las variables deben estar rodeadas por llaves {} en el 'Prompt del sistema'. Consulte https://ragflow.io/docs/chat_configuration#system-prompt para obtener más detalles.`,
+      variableTip: `Usados junto con las API de gestión de asistentes de chat de OneRAG, las variables pueden ayudar a desarrollar estrategias de prompt del sistema más flexibles. Las variables definidas serán utilizadas por el 'Prompt del sistema' como parte de los prompts para el LLM. {knowledge} es una variable especial reservada que representa partes recuperadas de base(s) de conocimiento especificada(s), y todas las variables deben estar rodeadas por llaves {} en el 'Prompt del sistema'. Consulte https://ragflow.io/docs/chat_configuration#system-prompt para obtener más detalles.`,
       add: 'Agregar',
       key: 'Clave',
       optional: 'Opcional',
@@ -536,13 +536,13 @@ export default {
       directory: 'Directorio',
       uploadTitle: 'Haz clic o arrastra el archivo a esta área para subir',
       uploadDescription:
-        'RAGFlow admite la carga de archivos de forma individual o por lotes. Para un RAGFlow desplegado localmente: el límite total de tamaño de archivo por carga es de 1 GB, con un límite de carga por lote de 32 archivos. No hay límite en el número total de archivos por cuenta. Para cloud.ragflow.io: el límite total de tamaño de archivo por carga es de 10 MB, con cada archivo no excediendo los 10 MB y un máximo de 128 archivos por cuenta.',
+        'OneRAG admite la carga de archivos de forma individual o por lotes. Para un OneRAG desplegado localmente: el límite total de tamaño de archivo por carga es de 1 GB, con un límite de carga por lote de 32 archivos. No hay límite en el número total de archivos por cuenta. Para cloud.ragflow.io: el límite total de tamaño de archivo por carga es de 10 MB, con cada archivo no excediendo los 10 MB y un máximo de 128 archivos por cuenta.',
       local: 'Subidas locales',
       s3: 'Subidas a S3',
       preview: 'Vista previa',
       fileError: 'Error en el archivo',
       uploadLimit:
-        'RAGFlow admite la carga de archivos de forma individual o por lotes. Para un RAGFlow desplegado localmente: el límite total de tamaño de archivo por carga es de 1 GB, con un límite de carga por lote de 32 archivos. No hay límite en el número total de archivos por cuenta. Para cloud.ragflow.io: el límite total de tamaño de archivo por carga es de 10 MB, con cada archivo no excediendo los 10 MB y un máximo de 128 archivos por cuenta.',
+        'OneRAG admite la carga de archivos de forma individual o por lotes. Para un OneRAG desplegado localmente: el límite total de tamaño de archivo por carga es de 1 GB, con un límite de carga por lote de 32 archivos. No hay límite en el número total de archivos por cuenta. Para cloud.ragflow.io: el límite total de tamaño de archivo por carga es de 10 MB, con cada archivo no excediendo los 10 MB y un máximo de 128 archivos por cuenta.',
       destinationFolder: 'Carpeta de destino',
     },
     flow: {

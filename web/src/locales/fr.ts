@@ -395,10 +395,10 @@ export default {
       processDuration: 'Durée',
       progressMsg: 'Progression',
       testingDescription:
-        'Effectuez un test de récupération pour vérifier si RAGFlow peut retrouver le contenu pertinent pour le LLM. Si vous avez modifié les paramètres par défaut, comme le poids de similarité ou le seuil de similarité, ces changements ne seront pas automatiquement sauvegardés. Vous devez les appliquer dans les paramètres de votre assistant de chat ou dans le composant agent de récupération.',
+        'Effectuez un test de récupération pour vérifier si OneRAG peut retrouver le contenu pertinent pour le LLM. Si vous avez modifié les paramètres par défaut, comme le poids de similarité ou le seuil de similarité, ces changements ne seront pas automatiquement sauvegardés. Vous devez les appliquer dans les paramètres de votre assistant de chat ou dans le composant agent de récupération.',
       similarityThreshold: 'Seuil de similarité',
       similarityThresholdTip:
-        'Lors de la récupération, RAGFlow utilise soit une combinaison de similarité pondérée par mots-clés et de similarité cosinus vectorielle pondérée, soit, lorsqu’un modèle de reranking est sélectionné, une combinaison de similarité pondérée par mots-clés et de score de reranking pondéré. Ce paramètre définit le seuil de similarité entre la requête de l’utilisateur et les segments. Tout segment dont le score de similarité est inférieur à ce seuil sera exclu des résultats. Par défaut, le seuil est défini sur 20. Cela signifie que seuls les segments dont le score de similarité hybride est supérieur ou égal à 20 seront récupérés. Si le poids de la similarité vectorielle est défini sur 0, ce seuil ne s’applique pas.',
+        'Lors de la récupération, OneRAG utilise soit une combinaison de similarité pondérée par mots-clés et de similarité cosinus vectorielle pondérée, soit, lorsqu’un modèle de reranking est sélectionné, une combinaison de similarité pondérée par mots-clés et de score de reranking pondéré. Ce paramètre définit le seuil de similarité entre la requête de l’utilisateur et les segments. Tout segment dont le score de similarité est inférieur à ce seuil sera exclu des résultats. Par défaut, le seuil est défini sur 20. Cela signifie que seuls les segments dont le score de similarité hybride est supérieur ou égal à 20 seront récupérés. Si le poids de la similarité vectorielle est défini sur 0, ce seuil ne s’applique pas.',
       vectorSimilarityWeight: 'Poids de similarité des mots-clés',
       vectorSimilarityWeightTip:
         "Définit le poids de la similarité vectorielle dans le score de similarité combiné, qu'elle soit utilisée avec la similarité cosinus vectorielle ou le score de réordonnancement. La somme des deux poids doit être égale à 1.0.",
@@ -437,13 +437,13 @@ export default {
       changeSpecificCategory: 'Changer de catégorie spécifique',
       uploadTitle: 'Glissez-déposez votre fichier ici pour le téléverser',
       uploadDescription:
-        "Prise en charge du téléversement unique ou en lot. Pour RAGFlow en local : 1 Go max par téléversement, jusqu'à 32 fichiers. Pour cloud.ragflow.io : 10 Mo max par fichier uploadDescription128 fichiers au total.",
+        "Prise en charge du téléversement unique ou en lot. Pour OneRAG en local : 1 Go max par téléversement, jusqu'à 32 fichiers. Pour cloud.ragflow.io : 10 Mo max par fichier uploadDescription128 fichiers au total.",
       chunk: 'Segment',
       bulk: 'En masse',
       cancel: 'Annuler',
       rerankModel: 'Modèle de réordonnancement',
       rerankPlaceholder: 'Veuillez sélectionner',
-      rerankTip: `Optionnel. Si vide, RAGFlow utilisera une combinaison de similarités pondérées. Un modèle de réordonnancement remplace la similarité vectorielle. Attention, cela augmente le temps de réponse.`,
+      rerankTip: `Optionnel. Si vide, OneRAG utilisera une combinaison de similarités pondérées. Un modèle de réordonnancement remplace la similarité vectorielle. Attention, cela augmente le temps de réponse.`,
       topK: 'Top-K',
       topKTip: 'Nombre de segments à envoyer au modèle de réordonnancement.',
       delimiter: 'Délimiteur de texte',
@@ -564,7 +564,7 @@ export default {
       testSetting: 'Paramètres',
       retrievalTesting: 'Test de récupération',
       retrievalTestingDescription:
-        'Effectuez un test de récupération pour vérifier si RAGFlow peut retrouver le contenu pertinent pour le LLM.',
+        'Effectuez un test de récupération pour vérifier si OneRAG peut retrouver le contenu pertinent pour le LLM.',
       Parse: 'Analyser',
       noTestResultsForRuned:
         "Aucun résultat pertinent trouvé. Essayez d'ajuster votre requête ou les paramètres.",
@@ -760,7 +760,7 @@ export default {
       tableColumnModeAuto: 'Auto',
       tableColumnModeManual: 'Manuel',
       tableColumnModeAutoDescription:
-        'Toutes les colonnes sont incluses dans le texte du segment et stockées comme métadonnées (par défaut RAGFlow).',
+        'Toutes les colonnes sont incluses dans le texte du segment et stockées comme métadonnées (par défaut OneRAG).',
       tableColumnRoles: 'Rôles des colonnes',
       tableColumnRolesTip:
         "Choisissez quelles colonnes inclure dans le texte du segment (indexé pour la recherche vectorielle et plein texte), dans les métadonnées uniquement (filtrable), ou les deux. Les modifications s'appliquent aux nouvelles analyses ; ré-analysez les documents existants pour appliquer les rôles.",
@@ -960,7 +960,7 @@ Applicable lorsque vous avez besoin que le LLM résume le document entier.
       topN: 'Top N',
       topNTip: `Tous les segments avec un score de similarité supérieur au 'seuil de similarité' ne seront pas forcément envoyés au LLM. Cela sélectionne les 'Top N' segments parmi ceux récupérés.`,
       variable: 'Variable',
-      variableTip: `Utilisé avec les API de gestion d'assistant de chat de RAGFlow, les variables aident à développer des stratégies de prompt système plus flexibles. Les variables définies seront utilisées dans le 'Prompt système' comme partie des prompts pour le LLM. {knowledge
+      variableTip: `Utilisé avec les API de gestion d'assistant de chat de OneRAG, les variables aident à développer des stratégies de prompt système plus flexibles. Les variables définies seront utilisées dans le 'Prompt système' comme partie des prompts pour le LLM. {knowledge
       } est une variable spéciale réservée représentant les segments récupérés des bases de connaissances spécifiées. Toutes les variables doivent être entourées d'accolades {} dans le 'Prompt système'. Voir https://ragflow.io/docs/chat_configuration#system-prompt pour plus de détails.`,
       add: 'Ajouter',
       key: 'Clé',
@@ -1030,7 +1030,7 @@ Applicable lorsque vous avez besoin que le LLM résume le document entier.
       extensionTitle: 'Extension Chrome',
       tokenError: "Veuillez d'abord créer une clé API.",
       betaError:
-        "Veuillez d'abord obtenir une clé API RAGFlow depuis la page Paramètres système.",
+        "Veuillez d'abord obtenir une clé API OneRAG depuis la page Paramètres système.",
       searching: 'Recherche en cours...',
       parsing: 'Analyse en cours',
       uploading: 'Téléversement en cours',
@@ -1510,7 +1510,7 @@ Exemple : Virtual Hosted Style`,
       sitemapUserAgentTip:
         'En-tête User-Agent envoyé avec chaque requête. Laissez vide pour utiliser RAGFlow-SitemapConnector/1.0.',
       sitemapBatchSizeTip:
-        'Nombre de pages récupérées et envoyées à RAGFlow par lot.',
+        'Nombre de pages récupérées et envoyées à OneRAG par lot.',
       azure_devopsDescription:
         'Connectez Azure DevOps pour synchroniser les fichiers du dépôt et les pull requests.',
       bitbucketDescription:
@@ -1896,7 +1896,7 @@ Exemple : Virtual Hosted Style`,
       directory: 'Répertoire',
       uploadTitle: 'Glissez-déposez votre fichier ici pour téléverser',
       uploadDescription:
-        "Prise en charge du téléversement de fichiers uniques ou en lot. Pour un déploiement local de RAGFlow : la taille totale des fichiers par téléversement est limitée à 1 Go, avec un maximum de 32 fichiers par lot. Il n'y a pas de limite sur le nombre total de fichiers par compte. Pour cloud.ragflow.io, la taille totale des fichiers par téléversement est limitée à 10 Mo, chaque fichier ne devant pas dépasser 10 Mo, avec un maximum de 128 fichiers par compte.",
+        "Prise en charge du téléversement de fichiers uniques ou en lot. Pour un déploiement local de OneRAG : la taille totale des fichiers par téléversement est limitée à 1 Go, avec un maximum de 32 fichiers par lot. Il n'y a pas de limite sur le nombre total de fichiers par compte. Pour cloud.ragflow.io, la taille totale des fichiers par téléversement est limitée à 10 Mo, chaque fichier ne devant pas dépasser 10 Mo, avec un maximum de 128 fichiers par compte.",
       local: 'Téléversements locaux',
       s3: 'Téléversements S3',
       preview: 'Aperçu',
@@ -3083,7 +3083,7 @@ Mémoire procédurale : compétences acquises, habitudes et procédures automati
     },
     admin: {
       loginTitle: "Console d'administration",
-      title: 'RAGFlow',
+      title: 'OneRAG',
       confirm: 'Confirmer',
       close: 'Fermer',
       yes: 'Oui',

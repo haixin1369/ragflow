@@ -27,6 +27,6 @@ describe('RootLayout sidebar providers', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: 'RAGFlow' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'OneRAG' })).toBeInTheDocument();
   });
 });

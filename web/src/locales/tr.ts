@@ -550,7 +550,7 @@ Prosedürel Bellek: Öğrenilen beceriler, alışkanlıklar ve otomatik prosedü
       testSetting: 'Ayar',
       retrievalTesting: 'Alım testi',
       retrievalTestingDescription:
-        "RAGFlow'nun LLM için hedeflenen içeriği alıp alamadığını kontrol etmek için bir alım testi yapın.",
+        "OneRAG'nun LLM için hedeflenen içeriği alıp alamadığını kontrol etmek için bir alım testi yapın.",
       Parse: 'Ayrıştır',
       dataset: 'Dataset',
       testing: 'Alım testi',
@@ -586,10 +586,10 @@ Prosedürel Bellek: Öğrenilen beceriler, alışkanlıklar ve otomatik prosedü
       noTestResultsForNotRuned:
         'Henüz test çalıştırılmadı. Sonuçlar burada görünecek.',
       testingDescription:
-        "RAGFlow'nun LLM için hedeflenen içeriği alıp alamadığını kontrol etmek için bir alım testi yapın.",
+        "OneRAG'nun LLM için hedeflenen içeriği alıp alamadığını kontrol etmek için bir alım testi yapın.",
       similarityThreshold: 'Benzerlik eşiği',
       similarityThresholdTip:
-        'RAGFlow, getirme sırasında ağırlıklı anahtar kelime benzerliği ile ağırlıklı vektör kosinüs benzerliğinin bir kombinasyonunu veya bir yeniden sıralayıcı model seçildiğinde ağırlıklı anahtar kelime benzerliği ile ağırlıklı yeniden sıralama puanının bir kombinasyonunu kullanır. Bu parametre, kullanıcı sorgusu ile parçalar arasındaki benzerlik eşiğini belirler. Benzerlik puanı bu eşiğin altında olan parçalar sonuçlardan çıkarılır. Varsayılan eşik 20 olarak ayarlanmıştır. Bu, yalnızca hibrit benzerlik puanı 20 veya daha yüksek olan parçaların getirileceği anlamına gelir. Vektör benzerliği ağırlığı 0 olarak ayarlanırsa bu eşik uygulanmaz.',
+        'OneRAG, getirme sırasında ağırlıklı anahtar kelime benzerliği ile ağırlıklı vektör kosinüs benzerliğinin bir kombinasyonunu veya bir yeniden sıralayıcı model seçildiğinde ağırlıklı anahtar kelime benzerliği ile ağırlıklı yeniden sıralama puanının bir kombinasyonunu kullanır. Bu parametre, kullanıcı sorgusu ile parçalar arasındaki benzerlik eşiğini belirler. Benzerlik puanı bu eşiğin altında olan parçalar sonuçlardan çıkarılır. Varsayılan eşik 20 olarak ayarlanmıştır. Bu, yalnızca hibrit benzerlik puanı 20 veya daha yüksek olan parçaların getirileceği anlamına gelir. Vektör benzerliği ağırlığı 0 olarak ayarlanırsa bu eşik uygulanmaz.',
       vectorSimilarityWeight: 'Vektör benzerlik ağırlığı',
       vectorSimilarityWeightTip:
         "Bu, vektör kosinüs benzerliği veya yeniden sıralama puanıyla kullanılan birleşik benzerlik puanındaki vektör benzerliğinin ağırlığını ayarlar. İki ağırlığın toplamı 1.0'a eşit olmalıdır.",
@@ -644,14 +644,14 @@ Prosedürel Bellek: Öğrenilen beceriler, alışkanlıklar ve otomatik prosedü
       changeSpecificCategory: 'Belirli kategoriyi değiştir',
       uploadTitle: 'Yüklemek için dosyanızı buraya sürükleyip bırakın',
       uploadDescription:
-        'Tekil veya toplu dosya yüklemeyi destekler. Yerel olarak dağıtılan RAGFlow için: yükleme başına toplam dosya boyutu sınırı 1GB, 32 dosyalık toplu yükleme sınırı vardır. Hesap başına toplam dosya sayısında sınır yoktur. cloud.ragflow.io için yükleme başına toplam dosya boyutu sınırı 10MB, her dosya en fazla 10MB ve hesap başına en fazla 128 dosya.',
+        'Tekil veya toplu dosya yüklemeyi destekler. Yerel olarak dağıtılan OneRAG için: yükleme başına toplam dosya boyutu sınırı 1GB, 32 dosyalık toplu yükleme sınırı vardır. Hesap başına toplam dosya sayısında sınır yoktur. cloud.ragflow.io için yükleme başına toplam dosya boyutu sınırı 10MB, her dosya en fazla 10MB ve hesap başına en fazla 128 dosya.',
       chunk: 'Parça',
       bulk: 'Toplu',
       cancel: 'İptal',
       close: 'Kapat',
       rerankModel: 'Yeniden sıralama modeli',
       rerankPlaceholder: 'Değer seçin',
-      rerankTip: `İsteğe bağlı. Boş bırakılırsa RAGFlow ağırlıklı anahtar kelime benzerliği ve ağırlıklı vektör kosinüs benzerliğinin kombinasyonunu kullanır; yeniden sıralama modeli seçilirse ağırlıklı yeniden sıralama puanı ağırlıklı vektör kosinüs benzerliğinin yerini alır. Yeniden sıralama modeli kullanmanın sistemin yanıt süresini önemli ölçüde artıracağını unutmayın.`,
+      rerankTip: `İsteğe bağlı. Boş bırakılırsa OneRAG ağırlıklı anahtar kelime benzerliği ve ağırlıklı vektör kosinüs benzerliğinin kombinasyonunu kullanır; yeniden sıralama modeli seçilirse ağırlıklı yeniden sıralama puanı ağırlıklı vektör kosinüs benzerliğinin yerini alır. Yeniden sıralama modeli kullanmanın sistemin yanıt süresini önemli ölçüde artıracağını unutmayın.`,
       topK: 'Top-K',
       topKTip: `Yeniden sıralama modeli ile birlikte kullanılır; bu ayar belirtilen yeniden sıralama modeline gönderilecek metin parçası sayısını tanımlar.`,
       delimiter: `Metin sınırlayıcısı`,
@@ -825,7 +825,7 @@ Prosedürel Bellek: Öğrenilen beceriler, alışkanlıklar ve otomatik prosedü
       tableColumnModeAuto: 'Otomatik',
       tableColumnModeManual: 'El ile',
       tableColumnModeAutoDescription:
-        'Tüm sütunlar parça metnine dahil edilir ve meta veri olarak saklanır (RAGFlow varsayılanı).',
+        'Tüm sütunlar parça metnine dahil edilir ve meta veri olarak saklanır (OneRAG varsayılanı).',
       tableColumnRoles: 'Sütun rolleri',
       tableColumnRolesTip:
         'Hangi sütunların parça metnine (vektör ve tam metin araması için dizinlenir), yalnızca meta veriye (filtrelenebilir) veya her ikisine dahil edileceğini seçin. Değişiklikler yeni ayrıştırmalarda geçerli olur; rollerin etkili olması için mevcut belgeleri yeniden ayrıştırın.',
@@ -1155,7 +1155,7 @@ Bu otomatik etiketleme özelliği, mevcut datasete alanına özgü bilgi katman�
         'Yeniden sıralama adayları, Top N değerinden büyük veya ona eşit olmalıdır.',
       variable: 'Değişken',
       variableTip:
-        "RAGFlow'nun sohbet asistanı yönetim API'leri ile birlikte kullanıldığında değişkenler, daha esnek sistem istemi stratejileri geliştirmeye yardımcı olur. Tanımlanan değişkenler, LLM'ye gönderilen istemlerin bir parçası olarak 'Sistem istemi' tarafından kullanılır. {knowledge}, belirtilen dataset'lerden getirilen parçaları temsil eden ayrılmış özel bir değişkendir ve tüm değişkenler 'Sistem istemi' içinde süslü parantez {} arasına alınmalıdır. Ayrıntılar için https://ragflow.io/docs/chat_configuration#system-prompt adresine bakın.",
+        "OneRAG'nun sohbet asistanı yönetim API'leri ile birlikte kullanıldığında değişkenler, daha esnek sistem istemi stratejileri geliştirmeye yardımcı olur. Tanımlanan değişkenler, LLM'ye gönderilen istemlerin bir parçası olarak 'Sistem istemi' tarafından kullanılır. {knowledge}, belirtilen dataset'lerden getirilen parçaları temsil eden ayrılmış özel bir değişkendir ve tüm değişkenler 'Sistem istemi' içinde süslü parantez {} arasına alınmalıdır. Ayrıntılar için https://ragflow.io/docs/chat_configuration#system-prompt adresine bakın.",
       add: 'Ekle',
       key: 'Anahtar',
       variableKeyMessage: 'Lütfen değişken anahtarını girin',
@@ -1260,7 +1260,7 @@ Bu otomatik etiketleme özelliği, mevcut datasete alanına özgü bilgi katman�
       extensionTitle: 'Chrome uzantısı',
       tokenError: 'Lütfen önce API anahtarı oluşturun.',
       betaError:
-        'Lütfen önce Sistem Ayarları sayfasından bir RAGFlow API anahtarı edinin.',
+        'Lütfen önce Sistem Ayarları sayfasından bir OneRAG API anahtarı edinin.',
       searching: 'Aranıyor...',
       parsing: 'Ayrıştırılıyor',
       uploading: 'Yükleniyor',
@@ -1369,9 +1369,9 @@ Bu otomatik etiketleme özelliği, mevcut datasete alanına özgü bilgi katman�
     setting: {
       gpustack: {
         serverUrl: "GPUStack sunucu URL'si",
-        serverUrlTip: 'RAGFlow konteynerinden erişilebilir olmalıdır.',
+        serverUrlTip: 'OneRAG konteynerinden erişilebilir olmalıdır.',
         loopbackWarning:
-          'localhost, RAGFlow konteynerinin kendisini gösterir. Bunun yerine IP adresini veya host.docker.internal adresini kullanın.',
+          'localhost, OneRAG konteynerinin kendisini gösterir. Bunun yerine IP adresini veya host.docker.internal adresini kullanın.',
         apiKey: 'API anahtarı',
         apiKeyTip:
           "GPUStack'te Erişim Kontrolü > API Anahtarları bölümünden bir anahtar oluşturun.",
@@ -1383,7 +1383,7 @@ Bu otomatik etiketleme özelliği, mevcut datasete alanına özgü bilgi katman�
         errorAuth:
           'GPUStack bu API anahtarını reddetti. Erişim Kontrolü > API Anahtarları bölümünden kontrol edin.',
         errorUnreachable:
-          "Bu sunucuya RAGFlow'dan erişilemiyor. URL'yi ve portun RAGFlow konteynerine açık olduğunu kontrol edin.",
+          "Bu sunucuya OneRAG'dan erişilemiyor. URL'yi ve portun OneRAG konteynerine açık olduğunu kontrol edin.",
         errorOther: 'Modeller listelenemedi: {{message}}',
         emptyTitle: 'Çalışan model bulunamadı',
         emptyBody:
@@ -1730,7 +1730,7 @@ Bu otomatik etiketleme özelliği, mevcut datasete alanına özgü bilgi katman�
       webdavRemotePathTip:
         'İsteğe bağlı: WebDAV sunucusunda bir klasör yolu belirtin.',
       webdavCaCertPathTip:
-        'İsteğe bağlı: RAGFlow konteynerinin içine bağlanmış bir CA sertifika paketinin yolu.',
+        'İsteğe bağlı: OneRAG konteynerinin içine bağlanmış bir CA sertifika paketinin yolu.',
       google_driveTokenTip:
         'OAuth yardımcısından veya Google Cloud Console\'dan oluşturulan OAuth token JSON\'unu yükleyin. "installed" veya "web" uygulamasından bir client_secret JSON da yükleyebilirsiniz. Bu ilk senkronizasyonunuzsa, OAuth onayını tamamlamak için bir tarayıcı penceresi açılacaktır. JSON zaten bir yenileme token\'ı içeriyorsa otomatik olarak yeniden kullanılacaktır.',
       google_drivePrimaryAdminTip:
@@ -1815,7 +1815,7 @@ Bu otomatik etiketleme özelliği, mevcut datasete alanına özgü bilgi katman�
       sitemapUserAgentTip:
         'Her istekle gönderilen User-Agent başlığı. RAGFlow-SitemapConnector/1.0 kullanmak için boş bırakın.',
       sitemapBatchSizeTip:
-        "Toplu işlem başına alınan ve RAGFlow'a gönderilen sayfa sayısı.",
+        "Toplu işlem başına alınan ve OneRAG'a gönderilen sayfa sayısı.",
       azure_devopsDescription:
         "Depo dosyalarını ve pull request'leri senkronize etmek için Azure DevOps'u bağlayın.",
       bitbucketDescription:
@@ -2204,7 +2204,7 @@ Bu otomatik etiketleme özelliği, mevcut datasete alanına özgü bilgi katman�
       mineruApiToken: "MinerU API token'ı",
       mineruApiTokenPlaceholder: 'mineru.net API yönetiminden alınan token',
       mineruApiTokenTip:
-        "Ayarlandığında RAGFlow resmi hassas API'yi (/api/v4, vlm dahil) kullanır. Oturum açma gerektirmeyen ajan API'sini kullanmak için boş bırakın. Kendi barındırdığınız MinerU sunucusu için gerekli değildir.",
+        "Ayarlandığında OneRAG resmi hassas API'yi (/api/v4, vlm dahil) kullanır. Oturum açma gerektirmeyen ajan API'sini kullanmak için boş bırakın. Kendi barındırdığınız MinerU sunucusu için gerekli değildir.",
       mineruOutputDir: 'MinerU Çıktı Dizini',
       mineruOutputDirMessage: 'Lütfen MinerU çıktı dizinini girin!',
       mineruOutputDirPlaceholder: '/tmp/mineru',
@@ -2705,7 +2705,7 @@ Bu otomatik etiketleme özelliği, mevcut datasete alanına özgü bilgi katman�
       directory: 'Dizin',
       uploadTitle: 'Yüklemek için dosyanızı buraya sürükleyip bırakın',
       uploadDescription:
-        'Tekil veya toplu dosya yüklemeyi destekler. Yerel RAGFlow için 1GB sınır, 32 dosya toplu yükleme sınırı.',
+        'Tekil veya toplu dosya yüklemeyi destekler. Yerel OneRAG için 1GB sınır, 32 dosya toplu yükleme sınırı.',
       local: 'Yerel yüklemeler',
       s3: 'S3 yüklemeleri',
       preview: 'Önizleme',
@@ -4113,7 +4113,7 @@ Temel Talimatlar:
     },
     admin: {
       loginTitle: 'Yönetici konsolu',
-      title: 'RAGFlow',
+      title: 'OneRAG',
       confirm: 'Onayla',
       close: 'Kapat',
       yes: 'Evet',

@@ -122,7 +122,7 @@ export default {
         '完成召回測試：確保你的設定可以從資料庫正確地召回文字區塊。請注意這裡的改動不會被自動保存。如果你調整了這裡的默認設置，比如關鍵詞相似度權重，請務必在聊天助手設置或者召回算子設置處同步更新相關設置。',
       similarityThreshold: '相似度閾值',
       similarityThresholdTip:
-        'RAGFlow 在檢索時會使用加權關鍵詞相似度與加權向量餘弦相似度的組合；選擇重排序模型時，則使用加權關鍵詞相似度與加權重排序分數的組合。此參數設定使用者查詢與文字區塊之間的相似度閾值。相似度分數低於此閾值的文字區塊將從結果中排除。預設閾值為 20，這表示只有混合相似度分數達到 20 或以上的文字區塊才會被檢索。如果向量相似度權重設定為 0，則此閾值不適用。',
+        'OneRAG 在檢索時會使用加權關鍵詞相似度與加權向量餘弦相似度的組合；選擇重排序模型時，則使用加權關鍵詞相似度與加權重排序分數的組合。此參數設定使用者查詢與文字區塊之間的相似度閾值。相似度分數低於此閾值的文字區塊將從結果中排除。預設閾值為 20，這表示只有混合相似度分數達到 20 或以上的文字區塊才會被檢索。如果向量相似度權重設定為 0，則此閾值不適用。',
       vectorSimilarityWeight: '矢量相似度權重',
       vectorSimilarityWeightTip:
         '此項用於設定混合相似度分數中的向量相似度權重，該權重可套用於向量餘弦相似度或重排序分數。兩個權重的總和必須等於 1.0。',
@@ -830,7 +830,7 @@ export default {
       sitemapRestrictPdfToDomainTip: '僅跟隨與 sitemap 同網域下的 PDF 連結。',
       sitemapUserAgentTip:
         '每次請求送出的 User-Agent 標頭。留空則使用 RAGFlow-SitemapConnector/1.0。',
-      sitemapBatchSizeTip: '每批擷取並送到 RAGFlow 的頁面數量。',
+      sitemapBatchSizeTip: '每批擷取並送到 OneRAG 的頁面數量。',
       azure_devopsDescription: '連接 Azure DevOps 以同步儲存庫檔案和拉取請求。',
       bitbucketDescription: '連接 Bitbucket，同步 PR 內容。',
       zendeskDescription: '連接 Zendesk，同步工單、文章及其他內容。',

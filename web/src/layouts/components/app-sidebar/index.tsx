@@ -95,7 +95,7 @@ function AppSidebarContent() {
         {!(collapsed && collapsedSecondarySidebar) && (
           <Link
             to={Routes.Root}
-            aria-label="RAGFlow"
+            aria-label="OneRAG"
             className={cn(
               'flex size-10 shrink-0 items-center justify-center',
               collapsedSecondarySidebar && 'max-md:hidden',
@@ -103,7 +103,7 @@ function AppSidebarContent() {
           >
             <img
               src="/logo.svg"
-              alt="RAGFlow logo"
+              alt="OneRAG logo"
               className={cn('size-8', { 'size-5': collapsed })}
             />
           </Link>

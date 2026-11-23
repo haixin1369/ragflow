@@ -531,7 +531,7 @@ Nümunə: 1024 ölçülü vektor təsviri olan 1 KB-lıq mesaj ~9 KB yer tutur. 
       testSetting: 'Parametr',
       retrievalTesting: 'Axtarış sınağı',
       retrievalTestingDescription:
-        'RAGFlow-un LLM üçün nəzərdə tutulan məzmunu tapa bilib-bilmədiyini yoxlamaq üçün axtarış sınağı aparın.',
+        'OneRAG-un LLM üçün nəzərdə tutulan məzmunu tapa bilib-bilmədiyini yoxlamaq üçün axtarış sınağı aparın.',
       Parse: 'Təhlil et',
       dataset: 'Verilənlər dəsti',
       testing: 'Axtarış sınağı',
@@ -567,10 +567,10 @@ Nümunə: 1024 ölçülü vektor təsviri olan 1 KB-lıq mesaj ~9 KB yer tutur. 
       noTestResultsForNotRuned:
         'Hələ heç bir sınaq aparılmayıb. Nəticələr burada görünəcək.',
       testingDescription:
-        'RAGFlow-un LLM üçün nəzərdə tutulan məzmunu tapa bilib-bilmədiyini yoxlamaq üçün axtarış sınağı aparın. Ən yaxşı nəticələrə nail olmaq üçün açar söz oxşarlığının çəkisi və ya oxşarlıq həddi kimi standart parametrləri dəyişmisinizsə, bu dəyişikliklərin avtomatik yadda saxlanılmayacağını nəzərə alın. Onları söhbət köməkçinizin parametrlərinə və ya axtarış agenti komponentinin parametrlərinə tətbiq etməlisiniz.',
+        'OneRAG-un LLM üçün nəzərdə tutulan məzmunu tapa bilib-bilmədiyini yoxlamaq üçün axtarış sınağı aparın. Ən yaxşı nəticələrə nail olmaq üçün açar söz oxşarlığının çəkisi və ya oxşarlıq həddi kimi standart parametrləri dəyişmisinizsə, bu dəyişikliklərin avtomatik yadda saxlanılmayacağını nəzərə alın. Onları söhbət köməkçinizin parametrlərinə və ya axtarış agenti komponentinin parametrlərinə tətbiq etməlisiniz.',
       similarityThreshold: 'Oxşarlıq həddi',
       similarityThresholdTip:
-        'RAGFlow axtarış zamanı ya çəki tətbiq edilmiş açar söz oxşarlığı ilə çəki tətbiq edilmiş vektor kosinus oxşarlığının birləşməsindən, ya da yenidən sıralama modeli seçildikdə çəki tətbiq edilmiş açar söz oxşarlığı ilə çəki tətbiq edilmiş yenidən sıralama balının birləşməsindən istifadə edir. Bu parametr istifadəçi sorğusu ilə fraqmentlər arasındakı oxşarlıq həddini təyin edir. Oxşarlıq balı bu həddən aşağı olan hər bir fraqment nəticələrdən çıxarılacaq. Standart olaraq hədd 20-yə təyin edilir. Bu o deməkdir ki, yalnız hibrid oxşarlıq balı 20 və ya daha yüksək olan fraqmentlər tapılacaq. Vektor oxşarlığının çəkisi 0-a təyin edilərsə, bu hədd tətbiq olunmur.',
+        'OneRAG axtarış zamanı ya çəki tətbiq edilmiş açar söz oxşarlığı ilə çəki tətbiq edilmiş vektor kosinus oxşarlığının birləşməsindən, ya da yenidən sıralama modeli seçildikdə çəki tətbiq edilmiş açar söz oxşarlığı ilə çəki tətbiq edilmiş yenidən sıralama balının birləşməsindən istifadə edir. Bu parametr istifadəçi sorğusu ilə fraqmentlər arasındakı oxşarlıq həddini təyin edir. Oxşarlıq balı bu həddən aşağı olan hər bir fraqment nəticələrdən çıxarılacaq. Standart olaraq hədd 20-yə təyin edilir. Bu o deməkdir ki, yalnız hibrid oxşarlıq balı 20 və ya daha yüksək olan fraqmentlər tapılacaq. Vektor oxşarlığının çəkisi 0-a təyin edilərsə, bu hədd tətbiq olunmur.',
       vectorSimilarityWeight: 'Vektor oxşarlığının çəkisi',
       vectorSimilarityWeightTip:
         'Bu, vektor kosinus oxşarlığı və ya yenidən sıralama balı ilə istifadə olunan birləşdirilmiş oxşarlıq balında vektor oxşarlığının çəkisini təyin edir. İki çəkinin cəmi 1.0-a bərabər olmalıdır.',
@@ -615,7 +615,7 @@ Nümunə: 1024 ölçülü vektor təsviri olan 1 KB-lıq mesaj ~9 KB yer tutur. 
       changeSpecificCategory: 'Müəyyən kateqoriyanı dəyiş',
       uploadTitle: 'Yükləmək üçün faylınızı buraya sürükləyib buraxın',
       uploadDescription:
-        'Faylların tək-tək və ya kütləvi yüklənməsini dəstəkləyir. Lokal yerləşdirilmiş RAGFlow üçün: bir yükləmə üzrə faylların ümumi ölçü həddi 1GB, kütləvi yükləmə həddi isə 32 fayldır. Hər hesab üzrə faylların ümumi sayına məhdudiyyət yoxdur. cloud.ragflow.io üçün bir yükləmə üzrə faylların ümumi ölçü həddi 10MB təşkil edir, hər fayl 10MB-dan böyük olmamalıdır və hər hesabda ən çox 128 fayl ola bilər.',
+        'Faylların tək-tək və ya kütləvi yüklənməsini dəstəkləyir. Lokal yerləşdirilmiş OneRAG üçün: bir yükləmə üzrə faylların ümumi ölçü həddi 1GB, kütləvi yükləmə həddi isə 32 fayldır. Hər hesab üzrə faylların ümumi sayına məhdudiyyət yoxdur. cloud.ragflow.io üçün bir yükləmə üzrə faylların ümumi ölçü həddi 10MB təşkil edir, hər fayl 10MB-dan böyük olmamalıdır və hər hesabda ən çox 128 fayl ola bilər.',
       chunk: 'Hissə',
       bulk: 'Kütləvi',
       cancel: 'Ləğv et',
@@ -623,7 +623,7 @@ Nümunə: 1024 ölçülü vektor təsviri olan 1 KB-lıq mesaj ~9 KB yer tutur. 
       rerankModel: 'Yenidən sıralama modeli',
       rerankPlaceholder: 'Dəyər seçin',
       rerankTip:
-        'İstəyə bağlıdır. Boş saxlanılarsa, RAGFlow çəkili açar söz oxşarlığı ilə çəkili vektor kosinus oxşarlığının birləşməsindən istifadə edəcək; yenidən sıralama modeli seçilərsə, çəkili yenidən sıralama balı çəkili vektor kosinus oxşarlığını əvəz edəcək. Nəzərə alın ki, yenidən sıralama modelindən istifadə sistemin cavab müddətini xeyli artıracaq.',
+        'İstəyə bağlıdır. Boş saxlanılarsa, OneRAG çəkili açar söz oxşarlığı ilə çəkili vektor kosinus oxşarlığının birləşməsindən istifadə edəcək; yenidən sıralama modeli seçilərsə, çəkili yenidən sıralama balı çəkili vektor kosinus oxşarlığını əvəz edəcək. Nəzərə alın ki, yenidən sıralama modelindən istifadə sistemin cavab müddətini xeyli artıracaq.',
       topK: 'Top-K',
       topKTip:
         'Yenidən sıralama modeli ilə birlikdə istifadə olunan bu parametr göstərilən yenidən sıralama modelinə göndəriləcək mətn hissələrinin sayını müəyyən edir.',
@@ -791,7 +791,7 @@ Nümunə: 1024 ölçülü vektor təsviri olan 1 KB-lıq mesaj ~9 KB yer tutur. 
       tableColumnModeAuto: 'Avtomatik',
       tableColumnModeManual: 'Əl ilə',
       tableColumnModeAutoDescription:
-        'Bütün sütunlar hissənin mətninə daxil edilir və metaverilənlər kimi saxlanılır (RAGFlow standartı).',
+        'Bütün sütunlar hissənin mətninə daxil edilir və metaverilənlər kimi saxlanılır (OneRAG standartı).',
       tableColumnRoles: 'Sütun rolları',
       tableColumnRolesTip:
         'Hansı sütunların hissənin mətninə (vektor və tam mətn axtarışı üçün indeksləşdirilir), yalnız metaverilənlərə (süzülə bilər) və ya hər ikisinə daxil ediləcəyini seçin. Dəyişikliklər yeni təhlillərə tətbiq olunur; rolların qüvvəyə minməsi üçün mövcud sənədləri yenidən təhlil edin.',
@@ -1132,7 +1132,7 @@ Bu avtomatik etiketləmə funksiyası mövcud verilənlər dəstinə sahəyə ai
         "Yenidən sıralama namizədlərinin sayı 'İlk N' dəyərindən böyük və ya ona bərabər olmalıdır.",
       variable: 'Dəyişən',
       variableTip:
-        "RAGFlow-un söhbət köməkçisinin idarəetmə API-ləri ilə birlikdə istifadə edilən dəyişənlər daha çevik sistem təlimatı strategiyaları hazırlamağa kömək edə bilər. Müəyyən edilmiş dəyişənlər 'Sistem təlimatı' tərəfindən LLM üçün təlimatların bir hissəsi kimi istifadə olunacaq. {knowledge} müəyyən edilmiş verilənlər dəstlərindən tapılan hissələri təmsil edən, xüsusi istifadə üçün ayrılmış dəyişəndir və 'Sistem təlimatı' sahəsində bütün dəyişənlər fiqurlu mötərizələr {} içərisində olmalıdır. Ətraflı məlumat üçün https://ragflow.io/docs/chat_configuration#system-prompt ünvanına baxın.",
+        "OneRAG-un söhbət köməkçisinin idarəetmə API-ləri ilə birlikdə istifadə edilən dəyişənlər daha çevik sistem təlimatı strategiyaları hazırlamağa kömək edə bilər. Müəyyən edilmiş dəyişənlər 'Sistem təlimatı' tərəfindən LLM üçün təlimatların bir hissəsi kimi istifadə olunacaq. {knowledge} müəyyən edilmiş verilənlər dəstlərindən tapılan hissələri təmsil edən, xüsusi istifadə üçün ayrılmış dəyişəndir və 'Sistem təlimatı' sahəsində bütün dəyişənlər fiqurlu mötərizələr {} içərisində olmalıdır. Ətraflı məlumat üçün https://ragflow.io/docs/chat_configuration#system-prompt ünvanına baxın.",
       add: 'Əlavə et',
       key: 'Açar',
       variableKeyMessage: 'Dəyişənin açarını daxil edin',
@@ -1227,7 +1227,7 @@ Bu avtomatik etiketləmə funksiyası mövcud verilənlər dəstinə sahəyə ai
       extensionTitle: 'Chrome genişlənməsi',
       tokenError: 'Əvvəlcə API açarı yaradın.',
       betaError:
-        'Əvvəlcə sistem parametrləri səhifəsindən RAGFlow API açarı əldə edin.',
+        'Əvvəlcə sistem parametrləri səhifəsindən OneRAG API açarı əldə edin.',
       searching: 'Axtarılır...',
       parsing: 'Təhlil edilir',
       uploading: 'Yüklənir',
@@ -1646,7 +1646,7 @@ Nümunə: Virtual host üslubu`,
       webdavRemotePathTip:
         'İstəyə bağlı: WebDAV serverində qovluq yolunu göstərin (məsələn, /Documents). Kökdən sinxronlaşdırmaq üçün boş buraxın.',
       webdavCaCertPathTip:
-        'İstəyə bağlı: RAGFlow konteynerinin daxilində qoşulmuş CA sertifikatları paketinin yolu.',
+        'İstəyə bağlı: OneRAG konteynerinin daxilində qoşulmuş CA sertifikatları paketinin yolu.',
       google_driveTokenTip:
         'OAuth köməkçisi və ya Google Cloud Console vasitəsilə yaradılmış OAuth tokeninin JSON faylını yükləyin. "installed" və ya "web" tətbiqindən client_secret JSON faylını da yükləyə bilərsiniz. Bu, ilk sinxronlaşdırmanızdırsa, OAuth razılığını tamamlamaq üçün brauzer pəncərəsi açılacaq. JSON faylında artıq yeniləmə tokeni varsa, o, avtomatik olaraq yenidən istifadə ediləcək.',
       google_drivePrimaryAdminTip:
@@ -1730,7 +1730,7 @@ Nümunə: Virtual host üslubu`,
       sitemapUserAgentTip:
         'Hər sorğu ilə göndərilən User-Agent başlığı. RAGFlow-SitemapConnector/1.0 istifadə etmək üçün boş buraxın.',
       sitemapBatchSizeTip:
-        'Hər paketdə alınan və RAGFlow-a göndərilən səhifələrin sayı.',
+        'Hər paketdə alınan və OneRAG-a göndərilən səhifələrin sayı.',
       azure_devopsDescription:
         'Repozitoriya fayllarını və dəyişikliklərin qəbulu sorğularını sinxronlaşdırmaq üçün Azure DevOps-u qoşun.',
       bitbucketDescription:
@@ -2624,7 +2624,7 @@ Nümunə: Virtual host üslubu`,
       directory: 'Kataloq',
       uploadTitle: 'Yükləmək üçün faylınızı buraya sürükləyib buraxın',
       uploadDescription:
-        'Tək və ya kütləvi fayl yükləməsini dəstəkləyir. Lokal yerləşdirilmiş RAGFlow üçün: hər yükləmədə ümumi fayl ölçüsü həddi 1GB-dır, kütləvi yükləmə həddi isə 32 fayldır. Hər hesab üzrə ümumi fayl sayına məhdudiyyət yoxdur. cloud.ragflow.io üçün hər yükləmədə ümumi fayl ölçüsü həddi 10MB-dır, hər fayl 10MB-dan, hər hesab üzrə fayl sayı isə 128-dən çox olmamalıdır.',
+        'Tək və ya kütləvi fayl yükləməsini dəstəkləyir. Lokal yerləşdirilmiş OneRAG üçün: hər yükləmədə ümumi fayl ölçüsü həddi 1GB-dır, kütləvi yükləmə həddi isə 32 fayldır. Hər hesab üzrə ümumi fayl sayına məhdudiyyət yoxdur. cloud.ragflow.io üçün hər yükləmədə ümumi fayl ölçüsü həddi 10MB-dır, hər fayl 10MB-dan, hər hesab üzrə fayl sayı isə 128-dən çox olmamalıdır.',
       local: 'Lokal yükləmələr',
       s3: 'S3 yükləmələri',
       preview: 'Önbaxış',
@@ -3931,7 +3931,7 @@ Vacib strukturlaşdırılmış məlumatlara adlar, tarixlər, məkanlar, hadisə
     },
     admin: {
       loginTitle: 'Administrator konsolu',
-      title: 'RAGFlow',
+      title: 'OneRAG',
       confirm: 'Təsdiqlə',
       close: 'Bağla',
       yes: 'Bəli',

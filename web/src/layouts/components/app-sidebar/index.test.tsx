@@ -92,7 +92,7 @@ describe('AppSidebar secondary sidebar expansion', () => {
       name: 'sidebar.expandSidebar',
     });
 
-    expect(screen.getByRole('link', { name: 'RAGFlow' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'OneRAG' })).toBeInTheDocument();
     expect(expandButton.parentElement).toHaveClass('md:ml-auto');
     fireEvent.click(expandButton);
 
@@ -138,7 +138,7 @@ describe('AppSidebar secondary sidebar expansion', () => {
     expect(
       screen.queryByRole('button', { name: 'sidebar.expandSidebar' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'RAGFlow' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'OneRAG' })).toBeInTheDocument();
   });
 
   it('expands the compilation template secondary sidebar on its editor routes', () => {
@@ -176,7 +176,7 @@ describe('AppSidebar secondary sidebar expansion', () => {
     expect(
       screen.queryByRole('button', { name: 'sidebar.collapseSidebar' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'RAGFlow' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'OneRAG' })).toBeInTheDocument();
   });
 });
 

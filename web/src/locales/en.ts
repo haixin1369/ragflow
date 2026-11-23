@@ -671,7 +671,7 @@ Example: A 1 KB message with 1024-dim embedding uses ~9 KB. The 5 MB default lim
       testSetting: 'Setting',
       retrievalTesting: 'Retrieval testing',
       retrievalTestingDescription:
-        'Conduct a retrieval test to check if RAGFlow can recover the intended content for the LLM.',
+        'Conduct a retrieval test to check if OneRAG can recover the intended content for the LLM.',
       Parse: 'Parse',
       dataset: 'Dataset',
       testing: 'Retrieval testing',
@@ -707,10 +707,10 @@ Example: A 1 KB message with 1024-dim embedding uses ~9 KB. The 5 MB default lim
       noTestResultsForNotRuned:
         'No test has been run yet. Results will appear here.',
       testingDescription:
-        'Conduct a retrieval test to check if RAGFlow can recover the intended content for the LLM. If you have adjusted the default settings, such as keyword similarity weight or similarity threshold, to achieve the optimal results, be aware that these changes will not be automatically saved. You must apply them to your chat assistant settings or the Retrieval agent component settings.',
+        'Conduct a retrieval test to check if OneRAG can recover the intended content for the LLM. If you have adjusted the default settings, such as keyword similarity weight or similarity threshold, to achieve the optimal results, be aware that these changes will not be automatically saved. You must apply them to your chat assistant settings or the Retrieval agent component settings.',
       similarityThreshold: 'Similarity threshold',
       similarityThresholdTip:
-        'RAGFlow employs either a combination of weighted keyword similarity and weighted vector cosine similarity, or a combination of weighted keyword similarity and weighted reranking score during retrieval when a reranker model is selected. This parameter sets the threshold for similarities between the user query and chunks. Any chunk with a similarity score below this threshold will be excluded from the results. By default, the threshold is set to 20. This means that only chunks with hybrid similarity score of 20 or higher will be retrieved. If the vector similarity weight is set to 0, this threshold does not apply.',
+        'OneRAG employs either a combination of weighted keyword similarity and weighted vector cosine similarity, or a combination of weighted keyword similarity and weighted reranking score during retrieval when a reranker model is selected. This parameter sets the threshold for similarities between the user query and chunks. Any chunk with a similarity score below this threshold will be excluded from the results. By default, the threshold is set to 20. This means that only chunks with hybrid similarity score of 20 or higher will be retrieved. If the vector similarity weight is set to 0, this threshold does not apply.',
       keywordSimilarityWeight: 'Keyword similarity weight',
       keywordSimilarityWeightTip:
         'This sets the weight of keyword similarity in the combined similarity score. The total of the vector and keyword weights must equal 1.0.',
@@ -762,14 +762,14 @@ Example: A 1 KB message with 1024-dim embedding uses ~9 KB. The 5 MB default lim
       changeSpecificCategory: 'Change specific category',
       uploadTitle: 'Drag and drop your file here to upload',
       uploadDescription:
-        'Supports single or batch file upload. For a locally deployed RAGFlow: the total file size limit per upload is 1GB, with a batch upload limit of 32 files. There is no cap on the total number of files per account. For cloud.ragflow.io, the total file size limit per upload is 10MB, with each file not exceeding 10MB and a maximum of 128 files per account.',
+        'Supports single or batch file upload. For a locally deployed OneRAG: the total file size limit per upload is 1GB, with a batch upload limit of 32 files. There is no cap on the total number of files per account. For cloud.ragflow.io, the total file size limit per upload is 10MB, with each file not exceeding 10MB and a maximum of 128 files per account.',
       chunk: 'Chunk',
       bulk: 'Bulk',
       cancel: 'Cancel',
       close: 'Close',
       rerankModel: 'Rerank model',
       rerankPlaceholder: 'Select value',
-      rerankTip: `Optional. If left empty, RAGFlow will use a combination of weighted keyword similarity and weighted vector cosine similarity; if a rerank model is selected, a weighted reranking score will replace the weighted vector cosine similarity. Please be aware that using a rerank model will significantly increase the system's response time.`,
+      rerankTip: `Optional. If left empty, OneRAG will use a combination of weighted keyword similarity and weighted vector cosine similarity; if a rerank model is selected, a weighted reranking score will replace the weighted vector cosine similarity. Please be aware that using a rerank model will significantly increase the system's response time.`,
       topK: 'Top-K',
       topKTip: `Used together with the Rerank model, this setting defines the number of text chunks to be sent to the specified reranking model.`,
       delimiter: `Delimiter for text`,
@@ -943,7 +943,7 @@ Example: A 1 KB message with 1024-dim embedding uses ~9 KB. The 5 MB default lim
       tableColumnModeAuto: 'Auto',
       tableColumnModeManual: 'Manual',
       tableColumnModeAutoDescription:
-        'All columns are included in chunk text and stored as metadata (RAGFlow default).',
+        'All columns are included in chunk text and stored as metadata (OneRAG default).',
       tableColumnRoles: 'Column roles',
       tableColumnRolesTip:
         'Choose which columns to include in chunk text (indexed for vector and full-text search), in metadata only (filterable), or both. Changes apply to new parses; re-parse existing documents for roles to take effect.',
@@ -1277,7 +1277,7 @@ This auto-tagging feature enhances retrieval by adding another layer of domain-s
       rerankCandidatesCountValidation:
         'Rerank candidates must be greater than or equal to Top N.',
       variable: 'Variable',
-      variableTip: `Used together with RAGFlow's chat assistant management APIs, variables can help develop more flexible system prompt strategies. The defined variables will be used by 'System prompt' as part of the prompts for the LLM. {knowledge} is a reserved special variable representing chunks retrieved from specified dataset(s), and all variables should be enclosed in curly braces {} in the 'System prompt'. See https://ragflow.io/docs/chat_configuration#system-prompt for details.`,
+      variableTip: `Used together with OneRAG's chat assistant management APIs, variables can help develop more flexible system prompt strategies. The defined variables will be used by 'System prompt' as part of the prompts for the LLM. {knowledge} is a reserved special variable representing chunks retrieved from specified dataset(s), and all variables should be enclosed in curly braces {} in the 'System prompt'. See https://ragflow.io/docs/chat_configuration#system-prompt for details.`,
       add: 'Add',
       key: 'Key',
       variableKeyMessage: 'Please input the variable key',
@@ -1382,7 +1382,7 @@ This auto-tagging feature enhances retrieval by adding another layer of domain-s
       extensionTitle: 'Chrome extension',
       tokenError: 'Please create API Key first.',
       betaError:
-        'Please acquire a RAGFlow API Key from the System Settings page first.',
+        'Please acquire a OneRAG API Key from the System Settings page first.',
       searching: 'Searching...',
       parsing: 'Parsing',
       uploading: 'Uploading',
@@ -1492,9 +1492,9 @@ This auto-tagging feature enhances retrieval by adding another layer of domain-s
     setting: {
       gpustack: {
         serverUrl: 'GPUStack server URL',
-        serverUrlTip: 'Must be reachable from the RAGFlow container.',
+        serverUrlTip: 'Must be reachable from the OneRAG container.',
         loopbackWarning:
-          'localhost points to the RAGFlow container itself. Use the IP address or host.docker.internal instead.',
+          'localhost points to the OneRAG container itself. Use the IP address or host.docker.internal instead.',
         apiKey: 'API key',
         apiKeyTip: 'Create one in GPUStack under Access Control > API Keys.',
         apiKeyKeep: 'Leave blank to keep the saved key',
@@ -1505,7 +1505,7 @@ This auto-tagging feature enhances retrieval by adding another layer of domain-s
         errorAuth:
           'GPUStack rejected this API key. Check it under Access Control > API Keys.',
         errorUnreachable:
-          'Cannot reach this server from RAGFlow. Check the URL and that the port is open to the RAGFlow container.',
+          'Cannot reach this server from OneRAG. Check the URL and that the port is open to the OneRAG container.',
         errorOther: 'Could not list models: {{message}}',
         emptyTitle: 'No running models found',
         emptyBody:
@@ -1857,7 +1857,7 @@ Example: Virtual Hosted Style`,
       webdavRemotePathTip:
         'Optional: Specify a folder path on the WebDAV server (e.g., /Documents). Leave empty to sync from root.',
       webdavCaCertPathTip:
-        'Optional: Path to a CA certificate bundle mounted inside the RAGFlow container.',
+        'Optional: Path to a CA certificate bundle mounted inside the OneRAG container.',
       google_driveTokenTip:
         'Upload the OAuth token JSON generated from the OAuth helper or Google Cloud Console. You may also upload a client_secret JSON from an "installed" or "web" application. If this is your first sync, a browser window will open to complete the OAuth consent. If the JSON already contains a refresh token, it will be reused automatically.',
       google_drivePrimaryAdminTip:
@@ -1941,7 +1941,7 @@ Example: Virtual Hosted Style`,
       sitemapUserAgentTip:
         'User-Agent header sent with every request. Leave empty to use RAGFlow-SitemapConnector/1.0.',
       sitemapBatchSizeTip:
-        'Number of pages fetched and sent to RAGFlow per batch.',
+        'Number of pages fetched and sent to OneRAG per batch.',
       azure_devopsDescription:
         'Connect Azure DevOps to sync repository files and pull requests.',
       bitbucketDescription: 'Connect Bitbucket to sync PR content.',
@@ -2361,7 +2361,7 @@ Example: Virtual Hosted Style`,
       mineruApiToken: 'MinerU API token',
       mineruApiTokenPlaceholder: 'Token from mineru.net API management',
       mineruApiTokenTip:
-        'When set, RAGFlow uses the official precise API (/api/v4, including vlm). Leave empty to use the no-login agent API. Not required for a self-hosted MinerU server.',
+        'When set, OneRAG uses the official precise API (/api/v4, including vlm). Leave empty to use the no-login agent API. Not required for a self-hosted MinerU server.',
       mineruOutputDir: 'MinerU Output Directory',
       mineruOutputDirMessage: 'Please input the MinerU output directory!',
       mineruOutputDirPlaceholder: '/tmp/mineru',
@@ -2900,7 +2900,7 @@ Example: Virtual Hosted Style`,
       directory: 'Directory',
       uploadTitle: 'Drag and drop your file here to upload',
       uploadDescription:
-        'Supports single or batch file upload. For a locally deployed RAGFlow: the total file size limit per upload is 1GB, with a batch upload limit of 32 files. There is no cap on the total number of files per account. For cloud.ragflow.io, the total file size limit per upload is 10MB, with each file not exceeding 10MB and a maximum of 128 files per account.',
+        'Supports single or batch file upload. For a locally deployed OneRAG: the total file size limit per upload is 1GB, with a batch upload limit of 32 files. There is no cap on the total number of files per account. For cloud.ragflow.io, the total file size limit per upload is 10MB, with each file not exceeding 10MB and a maximum of 128 files per account.',
       local: 'Local uploads',
       s3: 'S3 uploads',
       preview: 'Preview',
@@ -4448,7 +4448,7 @@ Important structured information may include: names, dates, locations, events, k
 
     admin: {
       loginTitle: 'Admin console',
-      title: 'RAGFlow',
+      title: 'OneRAG',
       confirm: 'Confirm',
       close: 'Close',
       yes: 'Yes',

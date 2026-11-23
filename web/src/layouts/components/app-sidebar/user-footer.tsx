@@ -1,4 +1,3 @@
-import { IconFontFill } from '@/components/icon-font';
 import { RAGFlowAvatar } from '@/components/ragflow-avatar';
 import { useIsDarkTheme, useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Domain, ThemeEnum } from '@/constants/common';
+import { ThemeEnum } from '@/constants/common';
 import {
   EnterpriseHeaderPlanBadge,
   EnterpriseHeaderTicketsLink,
@@ -22,11 +21,7 @@ import {
 import { useChangeLanguage } from '@/hooks/logic-hooks';
 import { useNavigatePage } from '@/hooks/logic-hooks/navigate-hooks';
 import { useLogout } from '@/hooks/use-login-request';
-import {
-  useFetchSystemVersion,
-  useFetchUserInfo,
-  useListTenant,
-} from '@/hooks/use-user-setting-request';
+import { useFetchUserInfo, useListTenant } from '@/hooks/use-user-setting-request';
 import { cn } from '@/lib/utils';
 import { supportedLanguages } from '@/locales/config';
 import { TenantMembershipStatus } from '@/pages/user-setting/constants';
@@ -40,14 +35,12 @@ import {
   LucideUnplug,
   LucideUser,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BellButton } from '../bell-button';
 import { useSidebarCollapse } from './use-sidebar-collapse';
 
 const HelpUrl = 'https://ragflow.io/docs/dev/category/user-guides';
-const GitHubUrl = 'https://github.com/infiniflow/ragflow';
-const DiscordUrl = 'https://discord.com/invite/NjYzJD3GM3';
 
 export function UserFooter() {
   const { t } = useTranslation();
@@ -69,13 +62,6 @@ export function UserFooter() {
     [tenantData],
   );
 
-  const { version, fetchSystemVersion } = useFetchSystemVersion();
-  useEffect(() => {
-    if (location.host !== Domain) {
-      fetchSystemVersion();
-    }
-  }, [fetchSystemVersion]);
-
   const toggleTheme = useCallback(() => {
     setTheme(theme === ThemeEnum.Dark ? ThemeEnum.Light : ThemeEnum.Dark);
   }, [setTheme, theme]);
@@ -89,14 +75,6 @@ export function UserFooter() {
 
   const openHelp = useCallback(() => {
     window.open(HelpUrl, '_blank', 'noreferrer,noopener');
-  }, []);
-
-  const openGitHub = useCallback(() => {
-    window.open(GitHubUrl, '_blank', 'noreferrer,noopener');
-  }, []);
-
-  const openDiscord = useCallback(() => {
-    window.open(DiscordUrl, '_blank', 'noreferrer,noopener');
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -207,22 +185,9 @@ export function UserFooter() {
               <LucideCircleHelp />
               {t('header.help')}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={openGitHub}>
-              <IconFontFill name="GitHub" />
-              {t('header.github')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={openDiscord}>
-              <IconFontFill name="a-DiscordIconSVGVectorIcon" />
-              {t('header.discord')}
-            </DropdownMenuItem>
 
             <DropdownMenuSeparator />
 
-            {version && (
-              <DropdownMenuLabel className="text-xs font-normal text-accent-primary">
-                {version}
-              </DropdownMenuLabel>
-            )}
             <DropdownMenuItem onClick={handleLogout}>
               <LucideLogOut />
               {t('setting.logout')}

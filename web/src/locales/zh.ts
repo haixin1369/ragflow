@@ -609,7 +609,7 @@ export default {
       testSetting: '测试设置',
       retrievalTesting: '知识检索测试',
       retrievalTestingDescription:
-        '进行检索测试，检查 RAGFlow 是否能够为大语言模型（LLM）恢复预期的内容。',
+        '进行检索测试，检查 OneRAG 是否能够为大语言模型（LLM）恢复预期的内容。',
       Parse: '解析',
       dataset: '知识库',
       testing: '检索测试',
@@ -645,7 +645,7 @@ export default {
         '请完成召回测试：确保你的配置可以从数据库召回正确的文本块。如果你调整了这里的默认设置，比如关键词相似度权重，请注意这里的改动不会被自动保存。请务必在聊天助手设置或者召回算子设置处同步更新相关设置。',
       similarityThreshold: '相似度阈值',
       similarityThresholdTip:
-        'RAGFlow 在检索时会使用加权关键词相似度与加权向量余弦相似度的组合；选择重排序模型时，则使用加权关键词相似度与加权重排序分数的组合。此参数用于设置用户查询与文本块之间的相似度阈值。相似度分数低于此阈值的文本块将从结果中排除。默认阈值为 20，也就是说，只有混合相似度分数达到 20 或以上的文本块才会被检索。如果向量相似度权重设置为 0，则此阈值不适用。',
+        'OneRAG 在检索时会使用加权关键词相似度与加权向量余弦相似度的组合；选择重排序模型时，则使用加权关键词相似度与加权重排序分数的组合。此参数用于设置用户查询与文本块之间的相似度阈值。相似度分数低于此阈值的文本块将从结果中排除。默认阈值为 20，也就是说，只有混合相似度分数达到 20 或以上的文本块才会被检索。如果向量相似度权重设置为 0，则此阈值不适用。',
       keywordSimilarityWeight: '关键词相似度权重',
       keywordSimilarityWeightTip:
         '此项用于设置混合相似度分数中的关键词相似度权重。向量与关键词相似度权重的总和必须等于 1.0。',
@@ -933,7 +933,7 @@ export default {
       简历有多种格式，就像一个人的个性一样，但我们经常必须将它们组织成结构化数据，以便于搜索。
       </p><p>
       我们不是将简历分块，而是将简历解析为结构化数据。 作为 HR，你可以扔掉所有的简历，
-      您只需与<i>'RAGFlow'</i>交谈即可列出所有符合资格的候选人。
+      您只需与<i>'OneRAG'</i>交谈即可列出所有符合资格的候选人。
       </p>
         `,
       table: `支持<p><b>XLSX</b>和<b>CSV/TXT</b>格式文件。</p><p>
@@ -1366,9 +1366,9 @@ NER：使用 spaCy NER 和基于规则的关键词提取来抽取 Entities 和 R
     setting: {
       gpustack: {
         serverUrl: 'GPUStack 服务地址',
-        serverUrlTip: '需要能从 RAGFlow 容器访问到。',
+        serverUrlTip: '需要能从 OneRAG 容器访问到。',
         loopbackWarning:
-          'localhost 指向的是 RAGFlow 容器自身，请改用 IP 地址或 host.docker.internal。',
+          'localhost 指向的是 OneRAG 容器自身，请改用 IP 地址或 host.docker.internal。',
         apiKey: 'API 密钥',
         apiKeyTip: '在 GPUStack 的“访问控制 > API 密钥”中创建。',
         apiKeyKeep: '留空则继续使用已保存的密钥',
@@ -1379,7 +1379,7 @@ NER：使用 spaCy NER 和基于规则的关键词提取来抽取 Entities 和 R
         errorAuth:
           'GPUStack 拒绝了这个 API 密钥，请到“访问控制 > API 密钥”中检查。',
         errorUnreachable:
-          'RAGFlow 无法访问这个地址，请检查地址是否正确，以及端口是否对 RAGFlow 容器开放。',
+          'OneRAG 无法访问这个地址，请检查地址是否正确，以及端口是否对 OneRAG 容器开放。',
         errorOther: '无法获取模型列表：{{message}}',
         emptyTitle: '没有发现运行中的模型',
         emptyBody:
@@ -1559,7 +1559,7 @@ NER：使用 spaCy NER 和基于规则的关键词提取来抽取 Entities 和 R
       sitemapRestrictPdfToDomainTip: '仅跟随与 sitemap 同域名下的 PDF 链接。',
       sitemapUserAgentTip:
         '每次请求发送的 User-Agent 请求头。留空则使用 RAGFlow-SitemapConnector/1.0。',
-      sitemapBatchSizeTip: '每批抓取并发送到 RAGFlow 的页面数量。',
+      sitemapBatchSizeTip: '每批抓取并发送到 OneRAG 的页面数量。',
       azure_devopsDescription: '连接 Azure DevOps 以同步仓库文件和拉取请求。',
       bitbucketDescription: '连接 Bitbucket，同步 PR 内容。',
       bitbucketTopWorkspaceTip:

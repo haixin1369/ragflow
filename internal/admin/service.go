@@ -152,10 +152,10 @@ func generateRandomHex(n int) string {
 // Returns:
 //   - map[string]interface{}: user information without password
 //   - error: error message
-func (s *Service) CreateUser(ctx context.Context, username, password, role, departmentID, roleID string) (map[string]interface{}, error) {
-	emailRegex := regexp.MustCompile(`^[\w\._-]+@([\w_-]+\.)+[\w-]{2,}$`)
-	if !emailRegex.MatchString(username) {
-		return nil, fmt.Errorf("invalid email address: %s", username)
+func (s *Service) CreateUser(ctx context.Context, username, password, nickname, role, departmentID, roleID string) (map[string]interface{}, error) {
+	accountRegex := regexp.MustCompile(`^[A-Za-z0-9_]+$`)
+	if !accountRegex.MatchString(username) {
+		return nil, fmt.Errorf("invalid account: %s (only letters, digits and underscores are allowed)", username)
 	}
 
 	existUser, _ := s.userDAO.GetByEmail(ctx, dao.DB, username)
@@ -183,7 +183,7 @@ func (s *Service) CreateUser(ctx context.Context, username, password, role, depa
 		ID:              userID,
 		AccessToken:     &accessToken,
 		Email:           username,
-		Nickname:        "",
+		Nickname:        nickname,
 		Password:        &hashedPassword,
 		Status:          &status,
 		IsActive:        "1",

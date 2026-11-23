@@ -182,12 +182,13 @@ export function DepartmentTree({
 
   return (
     <TreeView
-      // Remount when the selection is cleared externally so the highlight
-      // follows the caller-controlled selectedId.
-      key={selectedId ?? 'no-selection'}
       data={treeData}
       expandAll
       initialSelectedItemId={selectedId}
+      // Split-click mode: the row only selects (clicking an already-selected
+      // row keeps both the selection and the expand state); the chevron is
+      // the sole expand/collapse control.
+      expandOnRowClick={false}
       onSelectChange={handleSelectChange}
       defaultNodeIcon={LucideFolder}
     />

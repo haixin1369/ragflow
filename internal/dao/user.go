@@ -140,10 +140,13 @@ const (
 type UserListOptions struct {
 	Keyword string
 	Active  *bool // nil includes both active and inactive users.
-	OrderBy UserListOrder
-	Desc    bool
-	Offset  int
-	Limit   int
+	// DepartmentIDs restricts users to those whose department_id is in the
+	// list; the admin layer expands one selected department to its subtree.
+	DepartmentIDs []string
+	OrderBy       UserListOrder
+	Desc          bool
+	Offset        int
+	Limit         int
 }
 
 // List returns a page of users and their filtered total. Conditions on db are
@@ -153,7 +156,7 @@ func (dao *UserDAO) List(ctx context.Context, db *gorm.DB, opts UserListOptions)
 	if err != nil {
 		return nil, 0, err
 	}
-	query := userListQuery(ctx, db, opts.Keyword, opts.Active)
+	query := userListQuery(ctx, db, opts)
 	var total int64
 	if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -172,20 +175,23 @@ func (dao *UserDAO) List(ctx context.Context, db *gorm.DB, opts UserListOptions)
 	return users, total, err
 }
 
-func userListQuery(ctx context.Context, db *gorm.DB, keyword string, active *bool) *gorm.DB {
+func userListQuery(ctx context.Context, db *gorm.DB, opts UserListOptions) *gorm.DB {
 	query := db.WithContext(ctx).Model(&entity.User{})
-	if keyword != "" {
-		pattern := "%" + strings.NewReplacer("!", "!!", "%", "!%", "_", "!_").Replace(strings.ToLower(keyword)) + "%"
+	if opts.Keyword != "" {
+		pattern := "%" + strings.NewReplacer("!", "!!", "%", "!%", "_", "!_").Replace(strings.ToLower(opts.Keyword)) + "%"
 		query = query.Where("(LOWER(?) LIKE ? ESCAPE '!' OR LOWER(?) LIKE ? ESCAPE '!')",
 			clause.Column{Table: "user", Name: "email"}, pattern,
 			clause.Column{Table: "user", Name: "nickname"}, pattern)
 	}
-	if active != nil {
+	if opts.Active != nil {
 		value := "0"
-		if *active {
+		if *opts.Active {
 			value = "1"
 		}
 		query = query.Where(clause.Eq{Column: clause.Column{Table: "user", Name: "is_active"}, Value: value})
+	}
+	if len(opts.DepartmentIDs) > 0 {
+		query = query.Where(clause.Eq{Column: clause.Column{Table: "user", Name: "department_id"}, Value: opts.DepartmentIDs})
 	}
 	return query
 }

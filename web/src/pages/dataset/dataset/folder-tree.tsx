@@ -137,9 +137,10 @@ function FolderNode({
     setExpanded((prev) => !prev);
   }, []);
 
+  // Selecting a folder only filters the file list; the chevron is the sole
+  // expand/collapse control.
   const handleSelect = useCallback(() => {
     onSelect?.(folder.id);
-    setExpanded((prev) => !prev);
   }, [folder.id, onSelect]);
 
   return (

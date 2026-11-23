@@ -216,14 +216,11 @@ export default {
       language: 'Idioma',
       languageMessage: 'Por favor, insira seu idioma!',
       languagePlaceholder: 'Por favor, insira seu idioma!',
-      permissions: 'Permissões',
       embeddingModel: 'Modelo de incorporação',
       chunkTokenNumber: 'Tamanho de bloco recomendado',
       chunkTokenNumberMessage: 'O número de tokens por fragmento é obrigatório',
       embeddingModelTip:
         'O modelo de embedding padrão da base de conhecimento. Depois que a base de conhecimento já possui chunks, ao trocar o modelo de embedding o sistema sorteia alguns chunks para verificação de compatibilidade, os re-embebe com o novo modelo de embedding e calcula a similaridade cosseno entre os vetores novos e antigos. A troca só é permitida quando a similaridade média da amostra é ≥ 0.9. Caso contrário, é necessário excluir todos os chunks da base de conhecimento antes de poder alterar.',
-      permissionsTip:
-        "Se definido como 'Equipe', todos os membros da equipe poderão gerenciar a base de conhecimento.",
       chunkTokenNumberTip:
         'Define o limite de tokens para um fragmento. Um parágrafo com menos tokens que esse limite será combinado com o próximo parágrafo até que a contagem de tokens ultrapasse o limite, momento em que um fragmento será criado. Nenhum novo bloco será criado a menos que um delimitador seja encontrado, mesmo que esse limite seja excedido.',
       upload: 'Enviar',
@@ -234,8 +231,6 @@ export default {
         'Por favor, selecione um modelo de incorporação',
       chunkMethodPlaceholder: 'Por favor, selecione um método de fragmentação',
       save: 'Salvar',
-      me: 'Somente eu',
-      team: 'Equipe',
       cancel: 'Cancelar',
       methodTitle: 'Descrição do método de fragmentação',
       methodExamples: 'Exemplos',

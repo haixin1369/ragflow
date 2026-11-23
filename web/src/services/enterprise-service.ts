@@ -73,6 +73,8 @@ export interface EnterpriseUserListParams {
   pageSize: number;
   keyword?: string;
   status?: 'active' | 'inactive';
+  // Filters users to the department and its descendants.
+  department_id?: string;
 }
 
 export interface EnterpriseSaveDepartmentParams {
@@ -94,6 +96,7 @@ export interface EnterpriseSaveRoleParams {
 export interface EnterpriseCreateUserParams {
   username: string;
   password: string;
+  nickname?: string;
   department_id?: string;
   role_id?: string;
 }
@@ -156,15 +159,10 @@ export const enterpriseService = {
     ),
   createUser: (params: EnterpriseCreateUserParams) =>
     request.post<EnterpriseResponse<null>>(`${AdminApiPrefix}/users`, params),
-  assignUserDepartment: (username: string, departmentId: string) =>
+  updateUserPassword: (username: string, password: string) =>
     request.put<EnterpriseResponse<null>>(
-      `${AdminApiPrefix}/users/${encodeURIComponent(username)}/department`,
-      { department_id: departmentId },
-    ),
-  assignUserRole: (username: string, roleId: string) =>
-    request.put<EnterpriseResponse<null>>(
-      `${AdminApiPrefix}/users/${encodeURIComponent(username)}/role`,
-      { role_id: roleId },
+      `${AdminApiPrefix}/users/${encodeURIComponent(username)}/password`,
+      { new_password: password },
     ),
   updateUserActivateStatus: (username: string, isActive: boolean) =>
     request.put<EnterpriseResponse<null>>(

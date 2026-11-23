@@ -17,10 +17,8 @@ import {
 import { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { showPermissionField } from '@/ee/constants/feature-flags';
 import { useResourceTenantId } from '../contexts/knowledge-base-context';
 import { EmbeddingModelItem } from './embedding-model-form-field';
-import { PermissionFormField } from './permission-form-field';
 
 export function GeneralForm() {
   const form = useFormContext();
@@ -129,7 +127,6 @@ export function GeneralForm() {
           );
         }}
       />
-      {showPermissionField && <PermissionFormField></PermissionFormField>}
       <EmbeddingModelItem
         isEdit={true}
         resourceTenantId={resourceTenantId}

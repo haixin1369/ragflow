@@ -228,13 +228,11 @@ export default {
       language: '文件語言',
       languageMessage: '請輸入語言',
       languagePlaceholder: '請輸入語言',
-      permissions: '權限',
       embeddingModel: '嵌入模型',
       chunkTokenNumber: '推薦分塊大小',
       chunkTokenNumberMessage: '塊Token數是必填項',
       embeddingModelTip:
         '知識庫採用的默認嵌入模型。一旦知識庫內已經產生了文本塊，更換嵌入模型時，系統將隨機抽取若干 chunk 進行兼容性校驗，使用新嵌入模型重新編碼並計算新舊向量的餘弦相似度，樣本平均相似度需 ≥ 0.9 方可切換。否則，必須刪除知識庫內的所有文本塊後才能更改。',
-      permissionsTip: '如果權限是“團隊”，則所有團隊成員都可以操作知識庫。',
       chunkTokenNumberTip:
         '建議的生成文本塊的 token 數閾值。如果切分得到的小文本段 token 數達不到這一閾值，系統就會不斷與之後的文本段合併，直至再合併下一個文本段會超過這一閾值為止，此時產生一個最終文本塊。如果系統在切分文本段時始終沒有遇到文本分段標識符，即便文本段 token 數已經超過這一閾值，系統也不會生成新文本塊。',
       upload: '上傳',
@@ -243,8 +241,6 @@ export default {
       embeddingModelPlaceholder: '請選擇嵌入模型',
       chunkMethodPlaceholder: '請選擇分塊方法',
       save: '保持',
-      me: '只有我',
-      team: '團隊',
       cancel: '取消',
       methodTitle: '分塊方法說明',
       methodExamples: '示例',

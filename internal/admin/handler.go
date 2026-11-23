@@ -212,18 +212,19 @@ func (h *Handler) ListUsers(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
+	departmentID := c.Query("department_id")
 	var users []map[string]interface{}
 	var total int64
 	switch common.GetRAGFlowType() {
 	case common.OpenSourceVersion:
-		users, total, err = h.service.ListUsers(ctx, pageInt, pageSizeInt, name, status, sort, orderBy)
+		users, total, err = h.service.ListUsers(ctx, pageInt, pageSizeInt, name, status, sort, orderBy, departmentID)
 	case common.EnterpriseEdition:
 		users, total, err = h.service.ListUsersEE(ctx, pageInt, pageSizeInt, name, status, sort, orderBy, plan, topInt, daysInt, quotaPtr)
 	default:
 		common.RespondError(c, common.CodeBadRequest, "Invalid RAGFlow type")
 		return
 	}
-	if errors.Is(err, errInvalidUserListQuery) {
+	if errors.Is(err, errInvalidUserListQuery) || errors.Is(err, errDepartmentNotFound) {
 		common.RespondError(c, common.CodeBadRequest, err.Error())
 		return
 	}
@@ -268,6 +269,7 @@ type CreateUserHTTPRequest struct {
 	Role         string `json:"role"`
 	DepartmentID string `json:"department_id"`
 	RoleID       string `json:"role_id"`
+	Nickname     string `json:"nickname"`
 }
 
 // CreateUser handle create user
@@ -288,7 +290,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	}
 	ctx := c.Request.Context()
 
-	userInfo, err := h.service.CreateUser(ctx, req.Username, req.Password, req.Role, req.DepartmentID, req.RoleID)
+	userInfo, err := h.service.CreateUser(ctx, req.Username, req.Password, req.Nickname, req.Role, req.DepartmentID, req.RoleID)
 	if err != nil {
 		common.RespondError(c, common.CodeServerError, err.Error())
 		return

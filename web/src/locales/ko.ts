@@ -687,14 +687,11 @@ export default {
       language: '문서 언어',
       languageMessage: '언어를 입력해 주세요',
       languagePlaceholder: '언어를 입력해 주세요',
-      permissions: '권한',
       embeddingModel: 'Embedding 모델',
       chunkTokenNumber: '권장 chunk 크기',
       chunkTokenNumberMessage: '텍스트 chunk 토큰 수는 필수입니다',
       embeddingModelTip:
         '데이터셋에서 사용 중인 기본 임베딩 모델입니다. 데이터셋에 이미 chunk가 있는 상태에서 임베딩 모델을 변경하면, 시스템이 일부 chunk를 무작위로 샘플링해 호환성을 검사합니다. 새 모델로 해당 chunk를 다시 임베딩한 뒤 기존 벡터와의 코사인 유사도를 계산하며, 평균 유사도가 0.9 이상일 때만 모델 전환이 가능합니다. 기준을 충족하지 못하면, 데이터셋의 모든 chunk를 삭제한 후에만 모델을 변경할 수 있습니다.',
-      permissionsTip:
-        "'팀'으로 설정하면 모든 팀원이 데이터셋을 관리할 수 있습니다.",
       chunkTokenNumberTip:
         'Chunk 생성을 위한 토큰 임계값을 설정합니다. 이 임계값보다 토큰이 적은 세그먼트는 임계값을 초과할 때까지 다음 세그먼트와 결합되며, 그 시점에 chunk가 생성됩니다. 임계값을 초과하더라도 구분자가 나오지 않으면 새 chunk가 생성되지 않습니다.',
       upload: '업로드',
@@ -735,8 +732,6 @@ export default {
         tag: '태그',
       },
       save: '저장',
-      me: '나만',
-      team: '팀',
       cancel: '취소',
       methodTitle: 'Chunking 방법 설명',
       methodExamples: '예시',

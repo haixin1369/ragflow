@@ -57,9 +57,82 @@ func TestListUsersRejectsInvalidQueryBeforeDatabaseAccess(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// No DAO or database is configured: invalid input must fail in the service.
 			var svc Service
-			users, total, err := svc.ListUsers(t.Context(), tt.page, tt.pageSize, "", tt.status, tt.direction, tt.field)
+			users, total, err := svc.ListUsers(t.Context(), tt.page, tt.pageSize, "", tt.status, tt.direction, tt.field, "")
 			if !errors.Is(err, errInvalidUserListQuery) || users != nil || total != 0 {
 				t.Fatalf("ListUsers() = (%v, %d, %v)", users, total, err)
+			}
+		})
+	}
+}
+
+// ListUsers with department_id resolves the subtree through the materialized
+// path column: the selected department plus every descendant matches.
+func TestListUsersDepartmentSubtreeFilter(t *testing.T) {
+	handler := setupAdminUserDetailTest(t)
+	root, err := dao.NewDepartmentDAO().Create(t.Context(), dao.DB, "Company", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	child, err := dao.NewDepartmentDAO().Create(t.Context(), dao.DB, "Sub", root.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := dao.NewDepartmentDAO().Create(t.Context(), dao.DB, "Other", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	second := entity.User{ID: "user-2", Email: "second@example.com", Nickname: "Two", IsActive: "1"}
+	third := entity.User{ID: "user-3", Email: "third@example.com", Nickname: "Three", IsActive: "1"}
+	for i, user := range []entity.User{second, third} {
+		departmentID := root.ID
+		if i == 1 {
+			departmentID = other.ID
+		}
+		if err := dao.DB.Create(&user).Error; err != nil {
+			t.Fatal(err)
+		}
+		if err := dao.DB.Model(&entity.User{}).Where("id = ?", user.ID).Update("department_id", departmentID).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	// user-1 sits in the child department; selecting the root must include it.
+	if err := dao.DB.Model(&entity.User{}).Where("id = ?", "user-1").Update("department_id", child.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tt := range []struct {
+		name          string
+		departmentID  string
+		emails        []string
+		total         int64
+		wantError     bool
+	}{
+		{name: "root includes descendants", departmentID: root.ID, emails: []string{"second@example.com", "user@example.com"}, total: 2},
+		{name: "leaf only", departmentID: child.ID, emails: []string{"user@example.com"}, total: 1},
+		{name: "keyword combined", departmentID: root.ID, emails: []string{"second@example.com"}, total: 1},
+		{name: "unknown department", departmentID: "missing", wantError: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			keyword := ""
+			if tt.name == "keyword combined" {
+				keyword = "second"
+			}
+			users, total, err := handler.service.ListUsers(t.Context(), 1, 10, keyword, "", "", "", tt.departmentID)
+			if tt.wantError {
+				if err == nil {
+					t.Fatal("ListUsers() expected error for unknown department")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			emails := make([]string, 0, len(users))
+			for _, user := range users {
+				emails = append(emails, user["email"].(string))
+			}
+			if total != tt.total || !reflect.DeepEqual(emails, tt.emails) {
+				t.Fatalf("emails = %v, total = %d; want %v, %d", emails, total, tt.emails, tt.total)
 			}
 		})
 	}
@@ -134,7 +207,7 @@ func TestListUsersFiltersAndOrdering(t *testing.T) {
 		{name: "no matches", keyword: "missing", page: 1, pageSize: 10, emails: []string{}, total: 0},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			users, total, err := handler.service.ListUsers(t.Context(), tt.page, tt.pageSize, tt.keyword, tt.status, tt.direction, tt.field)
+			users, total, err := handler.service.ListUsers(t.Context(), tt.page, tt.pageSize, tt.keyword, tt.status, tt.direction, tt.field, "")
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -241,33 +241,15 @@ export const useCreateEnterpriseUser = () => {
   });
 };
 
-export const useAssignEnterpriseUserDepartment = () => {
-  const { invalidateUsers } = useInvalidateEnterprise();
-
+export const useUpdateEnterpriseUserPassword = () => {
   return useMutation({
     mutationFn: ({
       username,
-      departmentId,
+      password,
     }: {
       username: string;
-      departmentId: string;
-    }) =>
-      unwrap(enterpriseService.assignUserDepartment(username, departmentId)),
-    onSuccess: () => {
-      invalidateUsers();
-    },
-  });
-};
-
-export const useAssignEnterpriseUserRole = () => {
-  const { invalidateUsers } = useInvalidateEnterprise();
-
-  return useMutation({
-    mutationFn: ({ username, roleId }: { username: string; roleId: string }) =>
-      unwrap(enterpriseService.assignUserRole(username, roleId)),
-    onSuccess: () => {
-      invalidateUsers();
-    },
+      password: string;
+    }) => unwrap(enterpriseService.updateUserPassword(username, password)),
   });
 };
 

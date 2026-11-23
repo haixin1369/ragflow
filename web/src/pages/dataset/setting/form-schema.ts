@@ -30,7 +30,6 @@ export const buildFormSchema = (isParserOptionMissing: () => boolean) =>
         .optional(),
       parser_id: z.string().optional(),
       avatar: z.any().nullish(),
-      permission: z.string().optional(),
       language: z.string().optional(),
       embedding_model: z.string(),
       pagerank: z.number(),

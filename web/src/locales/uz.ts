@@ -755,14 +755,11 @@ export default {
       language: 'Hujjat tili',
       languageMessage: 'Iltimos, tilni kiriting!',
       languagePlaceholder: 'Iltimos, tilni kiriting!',
-      permissions: 'Ruxsatlar',
       embeddingModel: 'Embedding modeli',
       chunkTokenNumber: 'Tavsiya etilgan bo‘lak hajmi',
       chunkTokenNumberMessage: 'Matn uchun bo‘lak token soni talab qilinadi',
       embeddingModelTip:
         'Ma’lumotlar to‘plami ishlatadigan standart embedding modeli. To‘plamda bo‘laklar paydo bo‘lgach, embedding modelini almashtirishda tizim moslik tekshiruvi uchun bir nechta bo‘lakni tasodifiy tanlaydi, ularni yangi embedding modeli bilan qayta embed qiladi va yangi hamda eski vektorlar orasidagi kosinus o‘xshashligini hisoblaydi. Faqat namuna o‘rtacha o‘xshashligi ≥ 0.9 bo‘lgandagina almashtirishga ruxsat beriladi. Aks holda, uni o‘zgartirishdan oldin to‘plamdagi barcha bo‘laklarni o‘chirishingiz kerak.',
-      permissionsTip:
-        '«Jamoa» qilib belgilansa, jamoangizning barcha a’zolari to‘plamni boshqarishi mumkin.',
       chunkTokenNumberTip:
         'Bu bo‘lak yaratish uchun token chegarasini belgilaydi. Bu chegaradan kam tokenli segment keyingi segmentlar bilan chegaradan oshmaguncha birlashtiriladi va aynan shu nuqtada bo‘lak yaratiladi. Chegara oshsa ham, ajratgich uchraguniga qadar yangi bo‘lak yaratilmaydi.',
       upload: 'Yuklash',
@@ -805,8 +802,6 @@ export default {
         tag: 'Teg',
       },
       save: 'Saqlash',
-      me: 'Faqat men',
-      team: 'Jamoa',
       cancel: 'Bekor qilish',
       methodTitle: 'Bo‘laklash usuli tavsifi',
       methodExamples: 'Misollar',

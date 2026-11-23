@@ -21,17 +21,22 @@ import i18n from '@/locales/config';
 import { KnowledgeApiAction } from '@/hooks/use-knowledge-request';
 import {
   kbMemberService,
+  type DatasetMemberPermission,
   type DatasetMemberResponse,
+  type MemberCandidates,
   type SetDatasetMemberParams,
 } from '@/services/kb-member-service';
 
 export const enum KbMemberApiAction {
   DatasetMembers = 'datasetMembers',
+  DatasetMemberCandidates = 'datasetMemberCandidates',
 }
 
 export const KbMemberKeys = {
   members: (datasetId: string) =>
     [KbMemberApiAction.DatasetMembers, datasetId] as const,
+  memberCandidates: (datasetId: string) =>
+    [KbMemberApiAction.DatasetMemberCandidates, datasetId] as const,
 };
 
 async function unwrap<T>(
@@ -84,6 +89,36 @@ export const useSetDatasetMember = (datasetId: string) => {
       unwrap(kbMemberService.setMember(datasetId, params)),
     onSuccess: () => {
       message.success(i18n.t('message.operated'));
+      invalidateMembers(datasetId);
+    },
+  });
+};
+
+// The organization-structure data behind the batch-add dialog; loaded only
+// while the selector dialog is open.
+export const useFetchMemberCandidates = (datasetId: string, enabled: boolean) => {
+  return useQuery({
+    queryKey: KbMemberKeys.memberCandidates(datasetId),
+    enabled: enabled && !!datasetId,
+    queryFn: async (): Promise<MemberCandidates> => {
+      const { data } = await kbMemberService.fetchMemberCandidates(datasetId);
+      if (data.code !== 0) {
+        throw new Error(data.message);
+      }
+      return data.data;
+    },
+  });
+};
+
+export const useSetDatasetMembersBatch = (datasetId: string) => {
+  const { invalidateMembers } = useInvalidateDatasetMembers();
+
+  return useMutation({
+    mutationFn: (params: {
+      members: string[];
+      permission: DatasetMemberPermission;
+    }) => unwrap(kbMemberService.setMembersBatch(datasetId, params)),
+    onSuccess: () => {
       invalidateMembers(datasetId);
     },
   });

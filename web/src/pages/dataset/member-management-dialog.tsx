@@ -23,7 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { SearchInput } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -44,8 +43,11 @@ import {
   useFetchDatasetMembers,
   useRemoveDatasetMember,
   useSetDatasetMember,
+  useSetDatasetMembersBatch,
   useTransferDatasetOwnership,
 } from '@/hooks/use-kb-member-request';
+import message from '@/components/ui/message';
+import i18n from '@/locales/config';
 import {
   DatasetMember,
   DatasetMemberPermission,
@@ -54,6 +56,7 @@ import { Trash2, UserPlus } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useKbManagePermission } from './hooks/use-kb-manage-permission';
+import { OrgMemberSelector } from './org-member-selector';
 
 interface MemberManagementDialogProps {
   datasetId: string;
@@ -116,12 +119,11 @@ export function MemberManagementDialog({
   const setMemberMutation = useSetDatasetMember(datasetId);
   const removeMemberMutation = useRemoveDatasetMember(datasetId);
   const transferMutation = useTransferDatasetOwnership(datasetId);
+  const batchMutation = useSetDatasetMembersBatch(datasetId);
 
-  const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [newMemberPermission, setNewMemberPermission] =
-    useState<DatasetMemberPermission>(DatasetMemberPermission.View);
   const [transferTargetId, setTransferTargetId] = useState('');
   const [transferConfirmVisible, setTransferConfirmVisible] = useState(false);
+  const [orgSelectorVisible, setOrgSelectorVisible] = useState(false);
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -132,41 +134,35 @@ export function MemberManagementDialog({
     [hideModal],
   );
 
-  const handleNewMemberEmailChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setNewMemberEmail(e.target.value);
-    },
-    [],
-  );
-
-  const handleNewMemberPermissionChange = useCallback((value: string) => {
-    setNewMemberPermission(value as DatasetMemberPermission);
+  const showOrgSelector = useCallback(() => {
+    setOrgSelectorVisible(true);
   }, []);
 
-  const handleAddMember = useCallback(() => {
-    const userId = newMemberEmail.trim();
-    if (!userId) {
-      return;
-    }
-    // The backend validates the id (an unresolvable email surfaces its own
-    // "user not found" message) and upserts the grant.
-    setMemberMutation.mutate(
-      { user_id: userId, permission: newMemberPermission },
-      {
-        onSuccess: () => {
-          setNewMemberEmail('');
-        },
-      },
-    );
-  }, [newMemberEmail, newMemberPermission, setMemberMutation]);
+  const hideOrgSelector = useCallback(() => {
+    setOrgSelectorVisible(false);
+  }, []);
 
-  const handleAddMemberKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        handleAddMember();
-      }
+  const handleOrgConfirm = useCallback(
+    (userIds: string[], permission: DatasetMemberPermission) => {
+      batchMutation.mutate(
+        { members: userIds, permission },
+        {
+          onSuccess: (response) => {
+            const { added, failed } = response.data;
+            if (added > 0) {
+              message.success(i18n.t('kbMember.batchResult', { added }));
+            }
+            if (failed.length) {
+              message.warning(
+                i18n.t('kbMember.batchFailed', { count: failed.length }),
+              );
+            }
+            hideOrgSelector();
+          },
+        },
+      );
     },
-    [handleAddMember],
+    [batchMutation, hideOrgSelector],
   );
 
   const handleMemberPermissionChange = useCallback(
@@ -225,36 +221,7 @@ export function MemberManagementDialog({
           </DialogHeader>
 
           <div className="flex items-center gap-2">
-            <SearchInput
-              value={newMemberEmail}
-              onChange={handleNewMemberEmailChange}
-              onKeyDown={handleAddMemberKeyDown}
-              placeholder={t('kbMember.emailPlaceholder')}
-              className="flex-1 min-w-0"
-            />
-            <Select
-              value={newMemberPermission}
-              onValueChange={handleNewMemberPermissionChange}
-            >
-              <SelectTrigger className="w-28 shrink-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PermissionOptions.map((permission) => (
-                  <SelectItem key={permission} value={permission}>
-                    {permission === DatasetMemberPermission.View
-                      ? t('kbMember.permissionView')
-                      : t('kbMember.permissionEdit')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              className="shrink-0"
-              loading={setMemberMutation.isPending}
-              disabled={!newMemberEmail.trim()}
-              onClick={handleAddMember}
-            >
+            <Button className="shrink-0" onClick={showOrgSelector}>
               <UserPlus className="size-[1em]" />
               {t('kbMember.addMember')}
             </Button>
@@ -418,6 +385,15 @@ export function MemberManagementDialog({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+
+      {orgSelectorVisible && (
+        <OrgMemberSelector
+          datasetId={datasetId}
+          hideModal={hideOrgSelector}
+          onConfirm={handleOrgConfirm}
+          loading={batchMutation.isPending}
+        />
       )}
     </>
   );

@@ -109,6 +109,39 @@ func TestUserListFiltersAndPagination(t *testing.T) {
 	}
 }
 
+func TestUserListDepartmentFilter(t *testing.T) {
+	db := setupUserListDB(t)
+	for id, departmentID := range map[string]string{"a": "dept-1", "b": "dept-2", "c": "dept-1"} {
+		if err := db.Model(&entity.User{}).Where("id = ?", id).Update("department_id", departmentID).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, tt := range []struct {
+		name string
+		opts UserListOptions
+		ids  []string
+	}{
+		{name: "single department", opts: UserListOptions{DepartmentIDs: []string{"dept-1"}}, ids: []string{"a", "c"}},
+		{name: "multiple departments", opts: UserListOptions{DepartmentIDs: []string{"dept-1", "dept-2"}}, ids: []string{"a", "b", "c"}},
+		{name: "unknown department", opts: UserListOptions{DepartmentIDs: []string{"dept-x"}}, ids: []string{}},
+		{name: "department plus keyword", opts: UserListOptions{Keyword: "alice", DepartmentIDs: []string{"dept-1"}}, ids: []string{"a"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			users, total, err := NewUserDAO().List(t.Context(), db, tt.opts)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ids := make([]string, 0, len(users))
+			for _, user := range users {
+				ids = append(ids, user.ID)
+			}
+			if total != int64(len(tt.ids)) || !reflect.DeepEqual(ids, tt.ids) {
+				t.Fatalf("ids = %v, total = %d; want %v, %d", ids, total, tt.ids, len(tt.ids))
+			}
+		})
+	}
+}
+
 func TestUserListCreationTimeOrder(t *testing.T) {
 	db := setupUserListDB(t)
 	createdAt := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
@@ -162,14 +195,14 @@ func TestUserListCountsCallerConditionsBeforePagination(t *testing.T) {
 func TestUserListQueryDryRun(t *testing.T) {
 	db := setupUserListDB(t)
 	inactive := false
-	query := userListQuery(t.Context(), db.Session(&gorm.Session{DryRun: true}).Where("user.id <> ?", "b"), "a%_", &inactive)
+	query := userListQuery(t.Context(), db.Session(&gorm.Session{DryRun: true}).Where("user.id <> ?", "b"), UserListOptions{Keyword: "a%_", Active: &inactive, DepartmentIDs: []string{"dept-1", "dept-2"}})
 	result := query.Find(&[]entity.User{})
 	sql := result.Statement.SQL.String()
 	if !strings.Contains(sql, "LOWER(`user`.`email`) LIKE ? ESCAPE '!' OR LOWER(`user`.`nickname`) LIKE ? ESCAPE '!'") ||
-		!strings.Contains(sql, "`user`.`is_active` = ?") || strings.Contains(sql, "`user`.`status`") {
+		!strings.Contains(sql, "`user`.`is_active` = ?") || !strings.Contains(sql, "`user`.`department_id` IN (?,?)") || strings.Contains(sql, "`user`.`status`") {
 		t.Fatalf("unexpected SQL: %s", sql)
 	}
-	if !reflect.DeepEqual(result.Statement.Vars, []interface{}{"b", "%a!%!_%", "%a!%!_%", "0"}) {
+	if !reflect.DeepEqual(result.Statement.Vars, []interface{}{"b", "%a!%!_%", "%a!%!_%", "0", "dept-1", "dept-2"}) {
 		t.Fatalf("unexpected bindings: %#v", result.Statement.Vars)
 	}
 }

@@ -703,15 +703,12 @@ Esempio: un messaggio di 1 KB con embedding a 1024 dimensioni usa ~9 KB. Il limi
       language: 'Lingua documento',
       languageMessage: 'Inserisci la tua lingua!',
       languagePlaceholder: 'Inserisci la tua lingua!',
-      permissions: 'Permessi',
       embeddingModel: 'Modello di embedding',
       chunkTokenNumber: 'Dimensione chunk raccomandata',
       chunkTokenNumberMessage:
         'Il numero di token per chunk per il testo è richiesto',
       embeddingModelTip:
         'Il modello di embedding predefinito usato dal dataset. Una volta che il dataset contiene chunk, quando si cambia il modello di embedding il sistema estrae casualmente alcuni chunk per una verifica di compatibilità, li ricodifica con il nuovo modello di embedding e calcola la similarità coseno tra i vettori nuovi e quelli vecchi. Il cambio è consentito solo se la similarità media del campione è ≥ 0.9. In caso contrario, è necessario eliminare tutti i chunk nel dataset prima di poterlo modificare.',
-      permissionsTip:
-        "Se impostato su 'Team', tutti i membri del team potranno gestire il dataset.",
       chunkTokenNumberTip:
         'Imposta in qualche modo la soglia di token per creare un chunk. Un segmento con meno token di questa soglia sarà combinato con i segmenti successivi finché il conteggio dei token non supera la soglia, a quel punto viene creato un chunk. Non viene creato un nuovo chunk a meno che non si incontri un delimitatore, anche se la soglia viene superata.',
       upload: 'Carica',
@@ -752,8 +749,6 @@ Esempio: un messaggio di 1 KB con embedding a 1024 dimensioni usa ~9 KB. Il limi
         tag: 'Tag',
       },
       save: 'Salva',
-      me: 'Solo io',
-      team: 'Team',
       cancel: 'Annulla',
       methodTitle: 'Descrizione metodo di chunking',
       methodExamples: 'Esempi',

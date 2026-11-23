@@ -15,6 +15,7 @@
  */
 
 import request from '@/utils/next-request';
+import type { EnterpriseDepartment } from '@/services/enterprise-service';
 
 const ApiPrefix = '/api/v1';
 
@@ -29,6 +30,23 @@ export interface DatasetMember {
   nickname: string;
   permission: DatasetMemberPermission;
   create_time: number;
+}
+
+export interface MemberCandidateUser {
+  user_id: string;
+  email: string;
+  nickname: string;
+  department_id: string;
+}
+
+export interface MemberCandidates {
+  departments: EnterpriseDepartment[];
+  users: MemberCandidateUser[];
+}
+
+export interface DatasetMembersBatchResult {
+  added: number;
+  failed: { user_id: string; reason: string }[];
 }
 
 export interface DatasetMemberListResponse {
@@ -57,6 +75,22 @@ export const kbMemberService = {
   setMember: (datasetId: string, params: SetDatasetMemberParams) =>
     request.put<DatasetMemberResponse>(
       `${ApiPrefix}/datasets/${encodeURIComponent(datasetId)}/members`,
+      params,
+    ),
+  // Organization-structure data behind the batch-add dialog: departments plus
+  // every grantable user with their department assignment.
+  fetchMemberCandidates: (datasetId: string) =>
+    request.get<DatasetMemberResponse<MemberCandidates>>(
+      `${ApiPrefix}/datasets/${encodeURIComponent(datasetId)}/members/candidates`,
+    ),
+  // Grants one permission level to many users at once; per-target failures
+  // come back in the payload instead of failing the request.
+  setMembersBatch: (
+    datasetId: string,
+    params: { members: string[]; permission: DatasetMemberPermission },
+  ) =>
+    request.put<DatasetMemberResponse<DatasetMembersBatchResult>>(
+      `${ApiPrefix}/datasets/${encodeURIComponent(datasetId)}/members/batch`,
       params,
     ),
   removeMember: (datasetId: string, userId: string) =>

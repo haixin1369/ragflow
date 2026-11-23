@@ -403,7 +403,6 @@ export default {
       language: '言語',
       languageMessage: '言語を入力してください',
       languagePlaceholder: '言語を選択してください',
-      permissions: '権限',
       embeddingModel: '埋め込みモデル',
       chunkTokenNumber: '推奨チャンクサイズ',
       chunkTokenNumberMessage: 'チャンクトークン数は必須です',
@@ -411,8 +410,6 @@ export default {
       embeddingModelTip:
         'ナレッジベースで使用されるデフォルトの埋め込みモデルです。ナレッジベースにチャンクが作成された後に埋め込みモデルを変更する場合、システムは互換性チェックのためにいくつかのチャンクをランダムに抽出し、新しい埋め込みモデルで再エンコードして新旧ベクトルのコサイン類似度を計算します。サンプルの平均類似度が ≥ 0.9 の場合のみ切り替えできます。平均類似度が 0.9 未満の場合は、変更する前にナレッジベース内のすべてのチャンクを削除する必要があります。',
 
-      permissionsTip:
-        '「チーム」に設定すると、全てのチームメンバーがナレッジベースを管理できます。',
 
       chunkTokenNumberTip:
         'チャンクのトークンしきい値を設定します。このしきい値を下回る段落は、次の段落と結合され、しきい値を超えた時点でチャンクが作成されます。新しいチャンクは、デリミタが検出されるまで作成されません。このしきい値が超過されていてもです。',
@@ -423,8 +420,6 @@ export default {
       embeddingModelPlaceholder: '埋め込みモデルを選択してください',
       chunkMethodPlaceholder: 'チャンク方法を選択してください',
       save: '保存',
-      me: '自分のみ',
-      team: 'チーム',
       cancel: 'キャンセル',
       methodTitle: 'チャンク方法の説明',
       methodExamples: '例',

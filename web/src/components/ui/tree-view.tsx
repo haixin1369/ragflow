@@ -307,7 +307,7 @@ const TreeNode = ({
                 default={defaultNodeIcon}
               />
               <TreeItemLabel item={item} />
-              <TreeActions isSelected={isSelected}>{item.actions}</TreeActions>
+              <TreeActions>{item.actions}</TreeActions>
             </div>
           </AccordionPrimitive.Header>
           {content}
@@ -334,7 +334,7 @@ const TreeNode = ({
             default={defaultNodeIcon}
           />
           <TreeItemLabel item={item} />
-          <TreeActions isSelected={isSelected}>{item.actions}</TreeActions>
+          <TreeActions>{item.actions}</TreeActions>
         </AccordionTrigger>
         {content}
       </AccordionPrimitive.Item>
@@ -383,9 +383,7 @@ const TreeLeaf = React.forwardRef<
           default={defaultLeafIcon}
         />
         <TreeItemLabel item={item} />
-        <TreeActions isSelected={selectedItemId === item.id}>
-          {item.actions}
-        </TreeActions>
+        <TreeActions>{item.actions}</TreeActions>
       </div>
     );
   },
@@ -451,22 +449,11 @@ const TreeIcon = ({
   return Icon ? <Icon className="h-4 w-4 shrink-0 mr-2" /> : <></>;
 };
 
-const TreeActions = ({
-  children,
-  isSelected,
-}: {
-  children: React.ReactNode;
-  isSelected: boolean;
-}) => {
+const TreeActions = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div
-      className={cn(
-        isSelected ? 'block' : 'hidden',
-        'absolute right-3 group-hover:block',
-      )}
-    >
-      {children}
-    </div>
+    // Hover-only: floating actions must disappear once the pointer leaves
+    // the row, even for the selected item.
+    <div className="absolute right-3 hidden group-hover:block">{children}</div>
   );
 };
 

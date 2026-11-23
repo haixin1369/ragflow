@@ -511,14 +511,11 @@ Beispiel: Eine 1 KB Nachricht mit 1024-dim Einbettung verwendet ~9 KB. Das Stand
       language: 'Dokumentensprache',
       languageMessage: 'Bitte geben Sie Ihre Sprache ein!',
       languagePlaceholder: 'Bitte geben Sie Ihre Sprache ein!',
-      permissions: 'Berechtigungen',
       embeddingModel: 'Embedding-Modell',
       chunkTokenNumber: 'Empfohlene Chunk-Größe',
       chunkTokenNumberMessage: 'Chunk-Token-Anzahl ist erforderlich',
       embeddingModelTip:
         'Das Standard-Embedding-Modell der Wissensdatenbank. Sobald die Wissensdatenbank Chunks enthält, führt das System beim Wechsel des Embedding-Modells eine Kompatibilitätsprüfung durch: Es zieht zufällig einige Chunks als Stichprobe, kodiert sie mit dem neuen Embedding-Modell neu und berechnet die Kosinusähnlichkeit zwischen neuen und alten Vektoren. Ein Wechsel ist nur möglich, wenn die durchschnittliche Ähnlichkeit der Stichprobe ≥ 0.9 ist. Andernfalls müssen Sie alle Chunks in der Wissensdatenbank löschen, bevor Sie das Modell ändern können.',
-      permissionsTip:
-        'Wenn auf "Team" gesetzt, können alle Teammitglieder die Wissensdatenbank verwalten.',
       chunkTokenNumberTip:
         'Legt den Token-Schwellenwert für einen Chunk fest. Ein Absatz mit weniger Tokens als dieser Schwellenwert wird mit dem folgenden Absatz kombiniert, bis die Token-Anzahl den Schwellenwert überschreitet, dann wird ein Chunk erstellt. Ein neuer Block wird nicht erstellt, es sei denn, ein Trennzeichen wird gefunden, auch wenn dieser Schwellenwert überschritten wird.',
       upload: 'Hochladen',
@@ -528,8 +525,6 @@ Beispiel: Eine 1 KB Nachricht mit 1024-dim Einbettung verwendet ~9 KB. Das Stand
       embeddingModelPlaceholder: 'Bitte wählen Sie ein Embedding-Modell',
       chunkMethodPlaceholder: 'Bitte wählen Sie eine Chunk-Methode',
       save: 'Speichern',
-      me: 'Nur ich',
-      team: 'Team',
       cancel: 'Abbrechen',
       methodTitle: 'Beschreibung der Chunk-Methode',
       methodExamples: 'Beispiele',

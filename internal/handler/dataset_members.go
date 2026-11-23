@@ -121,3 +121,51 @@ func (h *KBMemberHandler) RemoveDatasetMember(c *gin.Context) {
 	}
 	common.RespondSuccess(c, nil, fmt.Sprintf("Member %s removed", targetUserID))
 }
+
+// ListMemberCandidates returns the departments and grantable users behind the
+// organization-structure batch-add dialog.
+func (h *KBMemberHandler) ListMemberCandidates(c *gin.Context) {
+	userID, ok := kbMemberIdentity(c)
+	if !ok {
+		return
+	}
+	datasetID, ok := h.datasetID(c)
+	if !ok {
+		return
+	}
+	departments, users, err := h.memberService.Candidates(c.Request.Context(), datasetID, userID)
+	if err != nil {
+		common.RespondError(c, http.StatusForbidden, err.Error())
+		return
+	}
+	common.RespondSuccess(c, gin.H{"departments": departments, "users": users}, "List member candidates")
+}
+
+// datasetMemberBatchRequest carries one bulk grant: many users, one level.
+type datasetMemberBatchRequest struct {
+	Members    []string `json:"members" binding:"required"`
+	Permission string   `json:"permission" binding:"required"`
+}
+
+// SetDatasetMembers grants one permission level to many users at once.
+func (h *KBMemberHandler) SetDatasetMembers(c *gin.Context) {
+	userID, ok := kbMemberIdentity(c)
+	if !ok {
+		return
+	}
+	datasetID, ok := h.datasetID(c)
+	if !ok {
+		return
+	}
+	var req datasetMemberBatchRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.RespondError(c, common.CodeBadRequest, "members and permission are required: "+err.Error())
+		return
+	}
+	added, failures, err := h.memberService.Batch(c.Request.Context(), datasetID, userID, req.Members, req.Permission)
+	if err != nil {
+		common.RespondError(c, http.StatusForbidden, err.Error())
+		return
+	}
+	common.RespondSuccess(c, gin.H{"added": added, "failed": failures}, fmt.Sprintf("Added %d members", added))
+}

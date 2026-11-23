@@ -23,6 +23,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  RootDepartmentId,
+  collectDepartmentSubtreeIds,
+  getDepartmentDepth,
+} from '@/components/department-tree/department-utils';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -30,11 +35,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { EnterpriseDepartment } from '@/services/enterprise-service';
-import {
-  RootDepartmentId,
-  collectDepartmentSubtreeIds,
-  getDepartmentDepth,
-} from './department-utils';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

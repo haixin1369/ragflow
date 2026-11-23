@@ -38,11 +38,8 @@ import type {
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-// Radix Select forbids empty-string item values, so "unassigned" options use a
-// sentinel and map back to "" on submit.
-const UnassignedValue = '__unassigned__';
-
 export interface CreateUserFormValues {
+  nickname: string;
   email: string;
   password: string;
   departmentId: string;
@@ -57,6 +54,13 @@ interface CreateUserDialogProps {
   onOk: (values: CreateUserFormValues) => void;
 }
 
+function RequiredMark() {
+  return <span className="text-red-500">*</span>;
+}
+
+// The account accepts letters, digits, and underscores only.
+const AccountFormat = /^[A-Za-z0-9_]+$/;
+
 export function CreateUserDialog({
   departments,
   roles,
@@ -65,10 +69,11 @@ export function CreateUserDialog({
   onOk,
 }: CreateUserDialogProps) {
   const { t } = useTranslation();
+  const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [departmentId, setDepartmentId] = useState(UnassignedValue);
-  const [roleId, setRoleId] = useState(UnassignedValue);
+  const [departmentId, setDepartmentId] = useState('');
+  const [roleId, setRoleId] = useState('');
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -77,6 +82,13 @@ export function CreateUserDialog({
       }
     },
     [hideModal],
+  );
+
+  const handleNicknameChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setNickname(e.target.value);
+    },
+    [],
   );
 
   const handleEmailChange = useCallback(
@@ -101,17 +113,30 @@ export function CreateUserDialog({
     setRoleId(value);
   }, []);
 
+  // Every field is required: the confirm button stays disabled until the
+  // name, account, password, department, and role are all filled in and the
+  // account matches the allowed character set.
+  const account = email.trim();
+  const accountValid = AccountFormat.test(account);
+  const formComplete =
+    nickname.trim() !== '' &&
+    accountValid &&
+    password !== '' &&
+    departmentId !== '' &&
+    roleId !== '';
+
   const handleOk = useCallback(() => {
-    if (!email.trim() || !password) {
+    if (!formComplete) {
       return;
     }
     onOk({
+      nickname: nickname.trim(),
       email: email.trim(),
       password,
-      departmentId: departmentId === UnassignedValue ? '' : departmentId,
-      roleId: roleId === UnassignedValue ? '' : roleId,
+      departmentId,
+      roleId,
     });
-  }, [email, password, departmentId, roleId, onOk]);
+  }, [formComplete, nickname, email, password, departmentId, roleId, onOk]);
 
   return (
     <Dialog open onOpenChange={handleOpenChange}>
@@ -123,19 +148,37 @@ export function CreateUserDialog({
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="create-user-email">{t('enterprise.email')}</Label>
+            <Label htmlFor="create-user-nickname">
+              {t('enterprise.nickname')} <RequiredMark />
+            </Label>
+            <Input
+              id="create-user-nickname"
+              autoFocus
+              value={nickname}
+              placeholder={t('enterprise.nicknamePlaceholder')}
+              onChange={handleNicknameChange}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="create-user-email">
+              {t('enterprise.email')} <RequiredMark />
+            </Label>
             <Input
               id="create-user-email"
-              autoFocus
-              type="email"
+              type="text"
               value={email}
               placeholder={t('enterprise.emailPlaceholder')}
               onChange={handleEmailChange}
             />
+            {account !== '' && !accountValid && (
+              <span className="text-xs text-red-500">
+                {t('enterprise.accountFormatHint')}
+              </span>
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="create-user-password">
-              {t('enterprise.password')}
+              {t('enterprise.password')} <RequiredMark />
             </Label>
             <Input
               id="create-user-password"
@@ -146,15 +189,14 @@ export function CreateUserDialog({
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label>{t('enterprise.department')}</Label>
+            <Label>
+              {t('enterprise.department')} <RequiredMark />
+            </Label>
             <Select value={departmentId} onValueChange={handleDepartmentChange}>
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue placeholder={t('enterprise.selectDepartment')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={UnassignedValue}>
-                  {t('enterprise.noDepartmentOption')}
-                </SelectItem>
                 {departments.map((department) => (
                   <SelectItem key={department.id} value={department.id}>
                     <span className="block max-w-56 truncate">
@@ -166,15 +208,14 @@ export function CreateUserDialog({
             </Select>
           </div>
           <div className="flex flex-col gap-2">
-            <Label>{t('enterprise.role')}</Label>
+            <Label>
+              {t('enterprise.role')} <RequiredMark />
+            </Label>
             <Select value={roleId} onValueChange={handleRoleChange}>
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue placeholder={t('enterprise.selectRole')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={UnassignedValue}>
-                  {t('enterprise.noRoleOption')}
-                </SelectItem>
                 {roles.map((role) => (
                   <SelectItem key={role.id} value={role.id}>
                     <span className="block max-w-56 truncate">{role.name}</span>
@@ -188,11 +229,7 @@ export function CreateUserDialog({
           <Button variant="outline" onClick={hideModal}>
             {t('common.cancel')}
           </Button>
-          <Button
-            loading={loading}
-            disabled={!email.trim() || !password}
-            onClick={handleOk}
-          >
+          <Button loading={loading} disabled={!formComplete} onClick={handleOk}>
             {t('common.confirm')}
           </Button>
         </DialogFooter>

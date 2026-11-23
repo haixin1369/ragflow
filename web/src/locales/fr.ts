@@ -596,14 +596,11 @@ export default {
       language: 'Langue du document',
       languageMessage: 'Veuillez choisir votre langue',
       languagePlaceholder: 'Veuillez saisir votre langue !',
-      permissions: 'Autorisations',
       embeddingModel: "Modèle d'embedding",
       chunkTokenNumber: 'Taille de segment recommandée',
       chunkTokenNumberMessage: 'Le nombre de tokens par segment est requis',
       embeddingModelTip:
         "Modèle d'embedding par défaut de la base de connaissances. Une fois que la base de connaissances contient des segments, lors du changement de modèle d'embedding, le système prélève aléatoirement quelques segments pour un contrôle de compatibilité, les ré-encode avec le nouveau modèle d'embedding et calcule la similarité cosinus entre les nouveaux et anciens vecteurs. Le basculement est autorisé uniquement si la similarité moyenne de l'échantillon est ≥ 0.9. Sinon, vous devez supprimer tous les segments de la base de connaissances avant de pouvoir le modifier.",
-      permissionsTip:
-        "Si défini sur 'Équipe', tous les membres de votre équipe pourront gérer cette base.",
       chunkTokenNumberTip:
         "Définit un seuil de tokens pour créer un segment. Les textes courts sont regroupés jusqu'à dépasser ce seuil, sauf si un délimiteur est détecté.",
       upload: 'Téléverser',
@@ -613,8 +610,6 @@ export default {
       embeddingModelPlaceholder: "Veuillez sélectionner un modèle d'embedding.",
       chunkMethodPlaceholder: 'Veuillez sélectionner une méthode de découpage.',
       save: 'Enregistrer',
-      me: 'Moi uniquement',
-      team: 'Équipe',
       cancel: 'Annuler',
       methodTitle: 'Description de la méthode de découpage',
       methodExamples: 'Exemples',

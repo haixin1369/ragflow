@@ -15,6 +15,7 @@
  */
 
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
+import { DepartmentTree } from '@/components/department-tree/department-tree';
 import { TableEmpty } from '@/components/table-skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,8 +33,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  useAssignEnterpriseUserDepartment,
-  useAssignEnterpriseUserRole,
   useCreateEnterpriseDepartment,
   useCreateEnterpriseUser,
   useDeleteEnterpriseDepartment,
@@ -43,6 +42,7 @@ import {
   useFetchEnterpriseUsers,
   useUpdateEnterpriseDepartment,
   useUpdateEnterpriseUserActivateStatus,
+  useUpdateEnterpriseUserPassword,
 } from '@/hooks/use-enterprise-request';
 import { useFetchUserInfo } from '@/hooks/use-user-setting-request';
 import {
@@ -54,10 +54,10 @@ import { rsaPsw } from '@/utils';
 import { formatDate } from '@/utils/date';
 import { useDebounce } from 'ahooks';
 import {
-  LucideBuilding2,
+  LucideKeyRound,
   LucidePlus,
   LucidePower,
-  LucideShieldCheck,
+  LucideRotateCcw,
   LucideTrash2,
   LucideUserPlus,
 } from 'lucide-react';
@@ -69,16 +69,19 @@ import {
 } from './create-user-dialog';
 import { DepartmentDialog, DepartmentDialogMode } from './department-dialog';
 import { DepartmentMoveDialog } from './department-move-dialog';
-import { DepartmentTree } from './department-tree';
-import { UserAssignDialog, UserAssignType } from './user-assign-dialog';
+import { UserPasswordDialog } from './user-password-dialog';
 
 const UserListPageSize = 10;
+
+// Password assigned by the "reset password" action; admins should ask the
+// user to change it after logging in.
+const ResetUserPasswordValue = 'Ragflow@123456';
 
 interface UserRowActionsProps {
   user: EnterpriseUser;
   isSelf: boolean;
-  onAssignDepartment: (user: EnterpriseUser) => void;
-  onAssignRole: (user: EnterpriseUser) => void;
+  onChangePassword: (user: EnterpriseUser) => void;
+  onResetPassword: (user: EnterpriseUser) => void;
   onToggleActivate: (user: EnterpriseUser) => void;
   onDelete: (user: EnterpriseUser) => void;
 }
@@ -86,21 +89,21 @@ interface UserRowActionsProps {
 function UserRowActions({
   user,
   isSelf,
-  onAssignDepartment,
-  onAssignRole,
+  onChangePassword,
+  onResetPassword,
   onToggleActivate,
   onDelete,
 }: UserRowActionsProps) {
   const { t } = useTranslation();
   const active = isEnterpriseUserActive(user.is_active);
 
-  const handleAssignDepartment = useCallback(
-    () => onAssignDepartment(user),
-    [onAssignDepartment, user],
+  const handleChangePassword = useCallback(
+    () => onChangePassword(user),
+    [onChangePassword, user],
   );
-  const handleAssignRole = useCallback(
-    () => onAssignRole(user),
-    [onAssignRole, user],
+  const handleResetPassword = useCallback(
+    () => onResetPassword(user),
+    [onResetPassword, user],
   );
   const handleToggleActivate = useCallback(
     () => onToggleActivate(user),
@@ -110,14 +113,14 @@ function UserRowActions({
 
   return (
     <div className="flex items-center gap-0.5">
-      <RAGFlowTooltip asChild tooltip={t('enterprise.assignDepartment')}>
-        <Button variant="ghost" size="icon-sm" onClick={handleAssignDepartment}>
-          <LucideBuilding2 className="size-4" />
+      <RAGFlowTooltip asChild tooltip={t('enterprise.changePassword')}>
+        <Button variant="ghost" size="icon-sm" onClick={handleChangePassword}>
+          <LucideKeyRound className="size-4" />
         </Button>
       </RAGFlowTooltip>
-      <RAGFlowTooltip asChild tooltip={t('enterprise.assignRole')}>
-        <Button variant="ghost" size="icon-sm" onClick={handleAssignRole}>
-          <LucideShieldCheck className="size-4" />
+      <RAGFlowTooltip asChild tooltip={t('enterprise.resetPassword')}>
+        <Button variant="ghost" size="icon-sm" onClick={handleResetPassword}>
+          <LucideRotateCcw className="size-4" />
         </Button>
       </RAGFlowTooltip>
       {!isSelf && (
@@ -153,6 +156,9 @@ export default function UserManagement() {
 
   const [searchString, setSearchString] = useState('');
   const keyword = useDebounce(searchString, { wait: 500 });
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<
+    string | undefined
+  >(undefined);
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: UserListPageSize,
@@ -163,8 +169,9 @@ export default function UserManagement() {
       page: pagination.page,
       pageSize: pagination.pageSize,
       keyword,
+      department_id: selectedDepartmentId,
     }),
-    [pagination.page, pagination.pageSize, keyword],
+    [pagination.page, pagination.pageSize, keyword, selectedDepartmentId],
   );
 
   const { data: users, isLoading: usersLoading } =
@@ -185,10 +192,11 @@ export default function UserManagement() {
   const [deleteDepartmentTarget, setDeleteDepartmentTarget] =
     useState<EnterpriseDepartment | null>(null);
   const [createUserVisible, setCreateUserVisible] = useState(false);
-  const [assignTarget, setAssignTarget] = useState<{
-    type: UserAssignType;
-    user: EnterpriseUser;
-  } | null>(null);
+  const [passwordTarget, setPasswordTarget] = useState<EnterpriseUser | null>(
+    null,
+  );
+  const [resetPasswordTarget, setResetPasswordTarget] =
+    useState<EnterpriseUser | null>(null);
   const [deleteUserTarget, setDeleteUserTarget] =
     useState<EnterpriseUser | null>(null);
 
@@ -197,8 +205,7 @@ export default function UserManagement() {
   const updateDepartmentMutation = useUpdateEnterpriseDepartment();
   const deleteDepartmentMutation = useDeleteEnterpriseDepartment();
   const createUserMutation = useCreateEnterpriseUser();
-  const assignDepartmentMutation = useAssignEnterpriseUserDepartment();
-  const assignRoleMutation = useAssignEnterpriseUserRole();
+  const updatePasswordMutation = useUpdateEnterpriseUserPassword();
   const updateActivateStatusMutation = useUpdateEnterpriseUserActivateStatus();
   const deleteUserMutation = useDeleteEnterpriseUser();
 
@@ -217,6 +224,16 @@ export default function UserManagement() {
       pageSize: pageSize ?? prev.pageSize,
     }));
   }, []);
+
+  // Selecting a department filters the list; clicking it again keeps it
+  // selected (the chevron is the only expand/collapse control).
+  const handleDepartmentSelect = useCallback(
+    (department: EnterpriseDepartment) => {
+      setSelectedDepartmentId(department.id);
+      setPagination((prev) => ({ ...prev, page: 1 }));
+    },
+    [],
+  );
 
   const showCreateUserDialog = useCallback(() => {
     setCreateUserVisible(true);
@@ -341,6 +358,7 @@ export default function UserManagement() {
         {
           username: values.email,
           password: rsaPsw(values.password) as string,
+          nickname: values.nickname,
           department_id: values.departmentId || undefined,
           role_id: values.roleId || undefined,
         },
@@ -350,43 +368,47 @@ export default function UserManagement() {
     [createUserMutation, hideCreateUserDialog],
   );
 
-  const handleAssignDepartment = useCallback((user: EnterpriseUser) => {
-    setAssignTarget({ type: UserAssignType.Department, user });
+  const handleChangePassword = useCallback((user: EnterpriseUser) => {
+    setPasswordTarget(user);
   }, []);
 
-  const handleAssignRole = useCallback((user: EnterpriseUser) => {
-    setAssignTarget({ type: UserAssignType.Role, user });
+  const handleResetPassword = useCallback((user: EnterpriseUser) => {
+    setResetPasswordTarget(user);
   }, []);
 
-  const hideAssignDialog = useCallback(() => {
-    setAssignTarget(null);
+  const hidePasswordDialog = useCallback(() => {
+    setPasswordTarget(null);
   }, []);
 
-  const handleAssignOk = useCallback(
-    (value: string) => {
-      if (!assignTarget) {
+  const hideResetPasswordDialog = useCallback(() => {
+    setResetPasswordTarget(null);
+  }, []);
+
+  const handleChangePasswordOk = useCallback(
+    (password: string) => {
+      if (!passwordTarget) {
         return;
       }
-      const { type, user } = assignTarget;
-      if (type === UserAssignType.Department) {
-        assignDepartmentMutation.mutate(
-          { username: user.email, departmentId: value },
-          { onSuccess: hideAssignDialog },
-        );
-        return;
-      }
-      assignRoleMutation.mutate(
-        { username: user.email, roleId: value },
-        { onSuccess: hideAssignDialog },
+      updatePasswordMutation.mutate(
+        { username: passwordTarget.email, password: rsaPsw(password) as string },
+        { onSuccess: hidePasswordDialog },
       );
     },
-    [
-      assignTarget,
-      assignDepartmentMutation,
-      assignRoleMutation,
-      hideAssignDialog,
-    ],
+    [passwordTarget, updatePasswordMutation, hidePasswordDialog],
   );
+
+  const handleResetPasswordOk = useCallback(() => {
+    if (!resetPasswordTarget) {
+      return;
+    }
+    updatePasswordMutation.mutate(
+      {
+        username: resetPasswordTarget.email,
+        password: rsaPsw(ResetUserPasswordValue) as string,
+      },
+      { onSuccess: hideResetPasswordDialog },
+    );
+  }, [resetPasswordTarget, updatePasswordMutation, hideResetPasswordDialog]);
 
   const handleToggleActivate = useCallback(
     (user: EnterpriseUser) => {
@@ -455,6 +477,8 @@ export default function UserManagement() {
             <CardContent className="min-h-0 overflow-auto p-2">
               <DepartmentTree
                 departments={departments}
+                selectedId={selectedDepartmentId}
+                onSelect={handleDepartmentSelect}
                 onAddChild={handleAddChildDepartment}
                 onRename={handleRenameDepartment}
                 onMove={handleMoveDepartment}
@@ -554,8 +578,8 @@ export default function UserManagement() {
                           <UserRowActions
                             user={user}
                             isSelf={user.email === selfEmail}
-                            onAssignDepartment={handleAssignDepartment}
-                            onAssignRole={handleAssignRole}
+                            onChangePassword={handleChangePassword}
+                            onResetPassword={handleResetPassword}
                             onToggleActivate={handleToggleActivate}
                             onDelete={handleShowDeleteUser}
                           />
@@ -624,30 +648,30 @@ export default function UserManagement() {
           onOk={handleCreateUserOk}
         />
       )}
-      {assignTarget && (
-        <UserAssignDialog
-          type={assignTarget.type}
-          username={assignTarget.user.email}
-          options={
-            assignTarget.type === UserAssignType.Department
-              ? departments.map((department) => ({
-                  id: department.id,
-                  name: department.name,
-                }))
-              : roles.map((role) => ({ id: role.id, name: role.name }))
-          }
-          currentId={
-            assignTarget.type === UserAssignType.Department
-              ? assignTarget.user.department_id
-              : assignTarget.user.role_id
-          }
-          loading={
-            assignDepartmentMutation.isPending || assignRoleMutation.isPending
-          }
-          hideModal={hideAssignDialog}
-          onOk={handleAssignOk}
+      {passwordTarget && (
+        <UserPasswordDialog
+          loading={updatePasswordMutation.isPending}
+          hideModal={hidePasswordDialog}
+          onOk={handleChangePasswordOk}
         />
       )}
+      <ConfirmDeleteDialog
+        open={Boolean(resetPasswordTarget)}
+        onOpenChange={hideResetPasswordDialog}
+        title={t('enterprise.resetPassword')}
+        content={{
+          title: resetPasswordTarget?.email,
+          node: (
+            <div className="text-sm text-text-secondary">
+              {t('enterprise.resetPasswordWarn', {
+                password: ResetUserPasswordValue,
+              })}
+            </div>
+          ),
+        }}
+        okButtonText={t('common.confirm')}
+        onOk={handleResetPasswordOk}
+      />
       <ConfirmDeleteDialog
         open={Boolean(deleteUserTarget)}
         onOpenChange={hideDeleteUserDialog}

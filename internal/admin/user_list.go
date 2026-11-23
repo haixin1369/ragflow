@@ -25,15 +25,25 @@ import (
 
 	"ragflow/internal/dao"
 	"ragflow/internal/entity"
+
+	"gorm.io/gorm"
 )
 
 var errInvalidUserListQuery = errors.New("invalid user list query")
 
-// ListUsers returns a page of users and the total number of users.
-func (s *Service) ListUsers(ctx context.Context, pageIndex, pageSize int, name, status, sort, orderBy string) ([]map[string]interface{}, int64, error) {
+// ListUsers returns a page of users and the total number of users. A non-empty
+// departmentID filters users to that department and its descendants.
+func (s *Service) ListUsers(ctx context.Context, pageIndex, pageSize int, name, status, sort, orderBy, departmentID string) ([]map[string]interface{}, int64, error) {
 	opts, err := parseUserListOptions(pageIndex, pageSize, name, status, sort, orderBy)
 	if err != nil {
 		return nil, 0, err
+	}
+	if departmentID = strings.TrimSpace(departmentID); departmentID != "" {
+		ids, err := s.departmentSubtreeIDs(ctx, departmentID)
+		if err != nil {
+			return nil, 0, err
+		}
+		opts.DepartmentIDs = ids
 	}
 	users, total, err := s.userDAO.List(ctx, dao.DB, opts)
 	if err != nil {
@@ -64,6 +74,31 @@ func (s *Service) ListUsers(ctx context.Context, pageIndex, pageSize int, name, 
 
 func isSuperuser(user *entity.User) bool {
 	return user.IsSuperuser != nil && *user.IsSuperuser
+}
+
+// errDepartmentNotFound reports a department_id filter pointing at an
+// unknown department; the handler maps it to a 400 instead of a 500.
+var errDepartmentNotFound = errors.New("部门不存在")
+
+// departmentSubtreeIDs returns the selected department id and all its
+// descendants, resolved through the materialized path column. Path segments
+// are fixed-length 32-char ids, so a longer path starting with the selected
+// prefix is always a descendant, never a sibling sharing the prefix.
+func (s *Service) departmentSubtreeIDs(ctx context.Context, departmentID string) ([]string, error) {
+	department, err := s.enterpriseDepartmentDAO().Get(ctx, dao.DB, departmentID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errDepartmentNotFound
+		}
+		return nil, err
+	}
+	var ids []string
+	if err := dao.DB.WithContext(ctx).Model(&entity.Department{}).
+		Where("path LIKE ?", department.Path+"%").
+		Order("path").Pluck("id", &ids).Error; err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
 
 func parseUserListOptions(page, pageSize int, keyword, status, direction, field string) (dao.UserListOptions, error) {

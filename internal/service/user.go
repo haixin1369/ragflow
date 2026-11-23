@@ -76,9 +76,11 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// EmailLoginRequest email login request
+// EmailLoginRequest login request; the "email" field carries the account
+// (stored in the email column), which accepts letters, digits, underscores,
+// or a legacy email address.
 type EmailLoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
+	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 

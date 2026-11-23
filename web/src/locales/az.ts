@@ -773,14 +773,11 @@ Nümunə: 1024 ölçülü vektor təsviri olan 1 KB-lıq mesaj ~9 KB yer tutur. 
       language: 'Sənədin dili',
       languageMessage: 'Dilinizi daxil edin!',
       languagePlaceholder: 'Dilinizi daxil edin!',
-      permissions: 'İcazələr',
       embeddingModel: 'Vektorlaşdırma modeli',
       chunkTokenNumber: 'Tövsiyə olunan hissə ölçüsü',
       chunkTokenNumberMessage: 'Mətn hissəsi üçün token sayı tələb olunur',
       embeddingModelTip:
         'Verilənlər dəstinin istifadə etdiyi standart vektorlaşdırma modeli. Verilənlər dəstində hissələr olduqda, vektorlaşdırma modelini dəyişərkən sistem uyğunluğu yoxlamaq üçün bir neçə hissəni təsadüfi seçir, onları yeni vektorlaşdırma modeli ilə yenidən vektorlaşdırır və yeni vektorlarla köhnə vektorlar arasındakı kosinus oxşarlığını hesablayır. Dəyişməyə yalnız nümunənin orta oxşarlığı ≥ 0.9 olduqda icazə verilir. Əks halda, modeli dəyişmək üçün əvvəlcə verilənlər dəstindəki bütün hissələri silməlisiniz.',
-      permissionsTip:
-        "'Komanda' seçilərsə, komandanızın bütün üzvləri verilənlər dəstini idarə edə biləcək.",
       chunkTokenNumberTip:
         'Hissə yaratmaq üçün token həddini müəyyən edir. Token sayı bu həddən az olan seqment token sayı həddi keçənə qədər sonrakı seqmentlərlə birləşdirilir və həmin anda hissə yaradılır. Hədd keçilsə belə, ayırıcıya rast gəlinməyincə yeni hissə yaradılmır.',
       upload: 'Yüklə',
@@ -823,8 +820,6 @@ Nümunə: 1024 ölçülü vektor təsviri olan 1 KB-lıq mesaj ~9 KB yer tutur. 
         tag: 'Etiket',
       },
       save: 'Yadda saxla',
-      me: 'Yalnız mən',
-      team: 'Komanda',
       cancel: 'Ləğv et',
       methodTitle: 'Hissələrə bölmə üsulunun təsviri',
       methodExamples: 'Nümunələr',

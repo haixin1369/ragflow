@@ -15,39 +15,81 @@
  */
 
 import { useMemo } from 'react';
+import { useFetchKnowledgeBaseConfiguration } from '@/hooks/use-knowledge-request';
 import { useFetchDatasetMembers } from '@/hooks/use-kb-member-request';
 import { useFetchUserInfo } from '@/hooks/use-user-setting-request';
+import { IDataset } from '@/interfaces/database/dataset';
 import { useKnowledgeBaseContext } from '../contexts/knowledge-base-context';
 
-// Resolves what the current user may do inside one knowledge base: owners and
-// superusers manage everything; granted members manage content when their row
-// (read from the member list) says "edit".
+interface KbManagePermissionInput {
+  userInfo?: { id?: string; is_superuser?: boolean };
+  knowledgeBase?: Pick<IDataset, 'id' | 'user_id' | 'created_by'> | null;
+  members?: Array<{ user_id: string; permission: string }>;
+}
+
+interface KbManagePermission {
+  currentUserId: string;
+  isSuperuser: boolean;
+  isOwner: boolean;
+  isEditor: boolean;
+  // Member/content management (folders, moves, uploads stay function-gated).
+  canManage: boolean;
+  // Knowledge-base-level management (configuration, member dialog, grants,
+  // transfers): reserved to the creator and the superuser.
+  canManageMembers: boolean;
+  datasetId: string;
+}
+
+// Owner resolution mirrors the backend's COALESCE(user_id, created_by).
+function computeKbManagePermission({
+  userInfo,
+  knowledgeBase,
+  members = [],
+}: KbManagePermissionInput): KbManagePermission {
+  const currentUserId = userInfo?.id ?? '';
+  const isSuperuser = Boolean(userInfo?.is_superuser);
+  const ownerId = knowledgeBase?.user_id || knowledgeBase?.created_by || '';
+  const isOwner = !!currentUserId && !!ownerId && ownerId === currentUserId;
+  const isEditor = members.some(
+    (member) =>
+      member.user_id === currentUserId && member.permission === 'edit',
+  );
+
+  return {
+    currentUserId,
+    isSuperuser,
+    isOwner,
+    isEditor,
+    canManage: isOwner || isSuperuser || isEditor,
+    canManageMembers: isOwner || isSuperuser,
+    datasetId: knowledgeBase?.id ?? '',
+  };
+}
+
+// Resolves what the current user may do inside the knowledge base from the
+// dataset layout context.
 export function useKbManagePermission() {
   const { knowledgeBase } = useKnowledgeBaseContext();
   const { data: userInfo } = useFetchUserInfo();
   const { data: members = [] } = useFetchDatasetMembers(knowledgeBase?.id);
 
-  return useMemo(() => {
-    const currentUserId = userInfo?.id ?? '';
-    const isSuperuser = Boolean(userInfo?.is_superuser);
-    // The backend resolves the owner as COALESCE(user_id, created_by).
-    const ownerId = knowledgeBase?.user_id || knowledgeBase?.created_by || '';
-    const isOwner = !!currentUserId && !!ownerId && ownerId === currentUserId;
-    const isEditor = members.some(
-      (member) =>
-        member.user_id === currentUserId && member.permission === 'edit',
-    );
+  return useMemo(
+    () => computeKbManagePermission({ userInfo, knowledgeBase, members }),
+    [userInfo, knowledgeBase, members],
+  );
+}
 
-    return {
-      currentUserId,
-      isSuperuser,
-      isOwner,
-      isEditor,
-      // Member/content management (folders, moves, uploads stay function-gated).
-      canManage: isOwner || isSuperuser || isEditor,
-      // Member-list management (the dialog entry, grants, transfers).
-      canManageMembers: isOwner || isSuperuser,
-      datasetId: knowledgeBase?.id ?? '',
-    };
-  }, [userInfo, knowledgeBase, members]);
+// Same resolution for pages outside the KnowledgeBaseProvider (the chunk
+// page), which only know the dataset id from the route query.
+export function useKbManagePermissionForDataset(datasetId?: string) {
+  const { data: knowledgeBase } = useFetchKnowledgeBaseConfiguration();
+  const { data: userInfo } = useFetchUserInfo();
+  const { data: members = [] } = useFetchDatasetMembers(
+    datasetId || knowledgeBase?.id,
+  );
+
+  return useMemo(
+    () => computeKbManagePermission({ userInfo, knowledgeBase, members }),
+    [userInfo, knowledgeBase, members],
+  );
 }

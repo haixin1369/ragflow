@@ -527,10 +527,41 @@ func (f *ModelFactory) authorize(ctx context.Context) error {
 	if userID == "" || userID == tenantID {
 		return nil
 	}
-	if err := permission.NewDatabaseChecker(dao.DB).CheckTenant(ctx, tenantID, permission.TenantMember); err != nil {
+	err := permission.NewDatabaseChecker(dao.DB).CheckTenant(ctx, tenantID, permission.TenantMember)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, permission.ErrMembershipNotFound) {
 		return fmt.Errorf("%w: user %s has no access to tenant %s: %w", errModelConfigUnavailable, userID, tenantID, err)
 	}
-	return nil
+	// Retrieval and chat pipelines resolve models under the knowledge base
+	// owner's tenant after the KB resource check has already passed. Callers
+	// that are members of such a knowledge base may use that tenant's models
+	// without a user_tenant membership, and the superuser is never restricted.
+	if userHasCrossTenantModelAccess(ctx, userID, tenantID) {
+		return nil
+	}
+	return fmt.Errorf("%w: user %s has no access to tenant %s: %w", errModelConfigUnavailable, userID, tenantID, err)
+}
+
+// userHasCrossTenantModelAccess reports whether the caller may resolve models
+// under a tenant it does not belong to: either the caller is the built-in
+// superuser, or the caller is a member of at least one knowledge base owned by
+// that tenant.
+func userHasCrossTenantModelAccess(ctx context.Context, userID, tenantID string) bool {
+	var count int64
+	if err := dao.DB.WithContext(ctx).Table("user").
+		Where("id = ? AND is_superuser = ?", userID, true).
+		Count(&count).Error; err == nil && count > 0 {
+		return true
+	}
+	if err := dao.DB.WithContext(ctx).Table("kb_member").
+		Joins("JOIN knowledgebase ON knowledgebase.id = kb_member.kb_id").
+		Where("kb_member.user_id = ? AND knowledgebase.tenant_id = ?", userID, tenantID).
+		Count(&count).Error; err == nil && count > 0 {
+		return true
+	}
+	return false
 }
 
 func (f *ModelFactory) tenantOwnerMembership(ctx context.Context, tenantID string) (*entity.UserTenant, error) {
@@ -746,6 +777,11 @@ func (s *ModelFactory) resolveModelIdentity(ctx context.Context, requestedType e
 		}
 		identity.modelName = name
 		identity.providerEntity, err = s.modelProviderDAO.GetByTenantIDAndUserIDAndProviderName(ctx, dao.DB, tenantID, owner.UserID, providerName)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Shared providers (added by the superuser) live in their
+			// creator's tenant and resolve by name from any tenant.
+			identity.providerEntity, err = s.modelProviderDAO.GetSharedByProviderName(ctx, dao.DB, providerName)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("%w: provider %q lookup failed: %w", errModelConfigUnavailable, providerName, err)
 		}
@@ -780,7 +816,7 @@ func (s *ModelFactory) resolveModelIdentity(ctx context.Context, requestedType e
 		}
 	}
 	provider, instance := identity.providerEntity, identity.instanceEntity
-	if provider.TenantID != tenantID {
+	if provider.TenantID != tenantID && !provider.IsShared {
 		return nil, fmt.Errorf("%w: tenant %s can use only its owner's model configuration", errModelConfigUnavailable, tenantID)
 	}
 	if instance.ProviderID != provider.ID {

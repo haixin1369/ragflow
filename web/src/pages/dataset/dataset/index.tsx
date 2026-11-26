@@ -24,8 +24,6 @@ import {
 } from '@/hooks/logic-hooks/use-row-selection';
 import { useFetchDocumentList } from '@/hooks/use-document-request';
 import { useMoveDocumentToFolder } from '@/hooks/use-kb-folder-request';
-import { FunctionPermissionCode } from '@/services/user-permission-service';
-import { PermissionGate } from '@/components/permission-gate';
 import { LucidePlus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +40,7 @@ import { MoveToFolderDialog } from './move-to-folder-dialog';
 import { useBulkOperateDataset } from './use-bulk-operate-dataset';
 import { useCreateEmptyDocument } from './use-create-empty-document';
 import { useSelectDatasetFilters } from './use-select-filters';
+import { useKbManagePermission } from '../hooks/use-kb-manage-permission';
 import {
   ShowPrivilegeModalContext,
   useShowPrivilegeDialog,
@@ -50,6 +49,7 @@ import { useHandleUploadDocument } from './use-upload-document';
 
 export default function Dataset() {
   const datasetEditButtonDisabled = useDatasetEditButtonDisabled();
+  const { canManage } = useKbManagePermission();
 
   const { t } = useTranslation();
   const { knowledgeBase } = useKnowledgeBaseContext();
@@ -236,8 +236,8 @@ export default function Dataset() {
           }
         >
           <div className="flex items-center gap-4">
-            <CancelParsingDropdown />
-            <PermissionGate code={FunctionPermissionCode.DocUpload}>
+            {canManage && <CancelParsingDropdown />}
+            {canManage && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="default" disabled={datasetEditButtonDisabled}>
@@ -254,17 +254,18 @@ export default function Dataset() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </PermissionGate>
+            )}
           </div>
         </ListFilterBar>
 
-        {rowSelectionIsEmpty || (
-          <BulkOperateBar
-            className="!mt-2.5 !-mb-2.5"
-            list={updatedList as BulkOperateItemType[]}
-            count={selectedCount}
-          />
-        )}
+        {canManage &&
+          (rowSelectionIsEmpty || (
+            <BulkOperateBar
+              className="!mt-2.5 !-mb-2.5"
+              list={updatedList as BulkOperateItemType[]}
+              count={selectedCount}
+            />
+          ))}
       </CardHeader>
 
       <CardContent className="px-5 py-0 flex-1 min-h-0 flex flex-col">

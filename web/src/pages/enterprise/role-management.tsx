@@ -44,7 +44,7 @@ import {
   LucideShieldCheck,
   LucideTrash2,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SearchInput } from '@/components/ui/input';
 import { RoleDialog, RoleDialogMode } from './role-dialog';
@@ -159,6 +159,16 @@ export default function RoleManagement() {
       : true,
   );
 
+  // The table shows permission names (Chinese); unknown codes fall back to
+  // the raw code.
+  const permissionName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const permission of permissions) {
+      map.set(permission.code, permission.name);
+    }
+    return map;
+  }, [permissions]);
+
   return (
     <>
       <article
@@ -241,8 +251,11 @@ export default function RoleManagement() {
                                 variant="secondary"
                                 className="max-w-40"
                               >
-                                <span className="truncate" title={code}>
-                                  {code}
+                                <span
+                                  className="truncate"
+                                  title={permissionName.get(code) ?? code}
+                                >
+                                  {permissionName.get(code) ?? code}
                                 </span>
                               </Badge>
                             ))}

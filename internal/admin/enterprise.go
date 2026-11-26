@@ -159,6 +159,41 @@ func (s *Service) AssignUserRole(ctx context.Context, username, roleID string) e
 	return s.userDAO.Update(ctx, dao.DB, user)
 }
 
+// UpdateUser sets a user's profile fields in one call: nickname (kept as-is
+// when empty), department ("" = unassign) and role ("" = remove; the
+// superuser never takes a role).
+func (s *Service) UpdateUser(ctx context.Context, username, nickname, departmentID, roleID string) error {
+	user, err := s.userByEmail(ctx, username)
+	if err != nil {
+		return err
+	}
+	if nickname = strings.TrimSpace(nickname); nickname != "" {
+		user.Nickname = nickname
+	}
+	if departmentID = strings.TrimSpace(departmentID); departmentID != "" {
+		if _, err := s.enterpriseDepartmentDAO().Get(ctx, dao.DB, departmentID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("部门不存在")
+			}
+			return err
+		}
+	}
+	if roleID = strings.TrimSpace(roleID); roleID != "" {
+		if user.IsSuperuser != nil && *user.IsSuperuser {
+			return fmt.Errorf("超级管理员不走角色体系")
+		}
+		if _, err := s.enterpriseRoleDAO().Get(ctx, dao.DB, roleID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("角色不存在")
+			}
+			return err
+		}
+	}
+	user.DepartmentID = departmentID
+	user.RoleID = roleID
+	return s.userDAO.Update(ctx, dao.DB, user)
+}
+
 // CountUserOwnedKnowledgebases returns how many knowledge bases the user owns.
 func (s *Service) CountUserOwnedKnowledgebases(ctx context.Context, userID string) (int64, error) {
 	var count int64

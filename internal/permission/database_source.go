@@ -133,6 +133,66 @@ func (m kbMembers) withEdit(userID string) kbMembers {
 	return m
 }
 
+// canvasMemberGrants resolves the kb_member grants of the knowledge bases that
+// reference the given canvases as their parse pipeline, either directly
+// (knowledgebase.pipeline_id) or through their documents (document.pipeline_id).
+// Only read is granted; pipeline management stays with the canvas owner.
+func (s *databaseSource) canvasMemberGrants(ctx context.Context, canvasIDs []string) (map[string]kbMembers, error) {
+	grants := make(map[string]kbMembers)
+	if s == nil || s.db == nil || len(canvasIDs) == 0 {
+		return grants, nil
+	}
+	query := `
+SELECT knowledgebase.pipeline_id AS canvas_id, kb_member.user_id, kb_member.permission
+FROM kb_member
+JOIN knowledgebase ON knowledgebase.id = kb_member.kb_id
+WHERE knowledgebase.pipeline_id IN ?
+UNION
+SELECT document.pipeline_id AS canvas_id, kb_member.user_id, kb_member.permission
+FROM kb_member
+JOIN document ON document.kb_id = kb_member.kb_id
+WHERE document.pipeline_id IN ?`
+	var rows []struct {
+		CanvasID   string
+		UserID     string
+		Permission string
+	}
+	if err := s.db.WithContext(ctx).Raw(query, canvasIDs, canvasIDs).Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	// A user may belong to several knowledge bases referencing the same
+	// canvas; the strongest grant wins.
+	editUsers := make(map[string]map[string]struct{})
+	viewUsers := make(map[string]map[string]struct{})
+	for _, row := range rows {
+		switch row.Permission {
+		case entity.KBMemberPermissionEdit:
+			if editUsers[row.CanvasID] == nil {
+				editUsers[row.CanvasID] = make(map[string]struct{})
+			}
+			editUsers[row.CanvasID][row.UserID] = struct{}{}
+		case entity.KBMemberPermissionView:
+			if viewUsers[row.CanvasID] == nil {
+				viewUsers[row.CanvasID] = make(map[string]struct{})
+			}
+			viewUsers[row.CanvasID][row.UserID] = struct{}{}
+		}
+	}
+	for canvasID, users := range viewUsers {
+		for userID := range users {
+			if _, edited := editUsers[canvasID][userID]; !edited {
+				grants[canvasID] = grants[canvasID].withView(userID)
+			}
+		}
+	}
+	for canvasID, users := range editUsers {
+		for userID := range users {
+			grants[canvasID] = grants[canvasID].withEdit(userID)
+		}
+	}
+	return grants, nil
+}
+
 func (s *databaseSource) GetMembership(ctx context.Context, userID, tenantID string) (*Membership, error) {
 	if s == nil || s.db == nil {
 		return nil, ErrSourceUnavailable
@@ -315,6 +375,10 @@ func (s *databaseSource) GetResources(ctx context.Context, refs []ResourceRef) (
 	if err != nil {
 		return nil, err
 	}
+	canvasGrants, err := s.canvasMemberGrants(ctx, canvasIDs)
+	if err != nil {
+		return nil, err
+	}
 	memoriesByID, err := s.loadMemories(ctx, memoryIDs)
 	if err != nil {
 		return nil, err
@@ -438,7 +502,7 @@ func (s *databaseSource) GetResources(ctx context.Context, refs []ResourceRef) (
 			}
 		case ResourceKindCanvas:
 			if canvas, ok := canvasesByID[ref.ID]; ok {
-				resources = append(resources, canvasResource(canvas))
+				resources = append(resources, canvasResource(canvas, canvasGrants[ref.ID]))
 			}
 		case ResourceKindAgentSession:
 			session, ok := agentSessionsByID[ref.ID]
@@ -1206,11 +1270,17 @@ func documentResource(document *entity.Document, dataset *entity.Knowledgebase, 
 	}
 }
 
-func canvasResource(canvas *entity.UserCanvas) Resource {
+func canvasResource(canvas *entity.UserCanvas, grants kbMembers) Resource {
 	tenantID := canvas.EffectiveTenantID()
 	visibility := VisibilityPrivate
 	if canvas.Permission == string(entity.TenantPermissionTeam) {
+		// Team canvases keep sharing through tenant membership.
 		visibility = VisibilityTenant
+	} else if len(grants.viewUserIDs)+len(grants.editUserIDs) > 0 {
+		// Knowledge-base members may read the metadata of the pipeline
+		// canvases their knowledge base (or its documents) parse with — the
+		// dataset file list renders the published pipeline version label.
+		visibility = VisibilityShared
 	}
 	return Resource{
 		Ref:               ResourceRef{Kind: ResourceKindCanvas, ID: canvas.ID},
@@ -1221,7 +1291,11 @@ func canvasResource(canvas *entity.UserCanvas) Resource {
 		TenantRequirement: TenantMember,
 		OwnerOperations:   []Operation{OperationRead, OperationUpdate, OperationDelete, OperationShare, OperationRun, OperationUse},
 		TenantOperations:  []Operation{OperationRead, OperationUpdate, OperationRun, OperationUse},
-		Active:            true,
+		SharedWithUserIDs:    grants.viewUserIDs,
+		SharedViewOperations: []Operation{OperationRead},
+		SharedEditUserIDs:    grants.editUserIDs,
+		SharedEditOperations: []Operation{OperationRead},
+		Active:               true,
 	}
 }
 

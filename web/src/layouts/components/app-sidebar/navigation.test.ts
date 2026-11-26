@@ -1,8 +1,5 @@
-import { Routes } from '@/routes';
 import {
-  getActiveIntegrationKey,
   getActiveNavItemKey,
-  getActivePageTab,
   matchesPath,
   NavItemKey,
 } from './navigation';
@@ -28,15 +25,15 @@ describe('getActiveNavItemKey', () => {
   });
 
   it.each([
-    ['/datasets', NavItemKey.Context],
-    ['/dataset/files/1', NavItemKey.Context],
-    ['/dataset/retrieval/1', NavItemKey.Context],
-    ['/memories', NavItemKey.Context],
-    ['/memory/memory-message/1', NavItemKey.Context],
-    ['/chats', NavItemKey.Application],
-    ['/chat/1', NavItemKey.Application],
-    ['/searches', NavItemKey.Application],
-    ['/search/1', NavItemKey.Application],
+    ['/datasets', NavItemKey.KnowledgeBase],
+    ['/dataset/files/1', NavItemKey.KnowledgeBase],
+    ['/dataset/retrieval/1', NavItemKey.KnowledgeBase],
+    ['/chats', NavItemKey.Chat],
+    ['/chat/1', NavItemKey.Chat],
+    ['/searches', NavItemKey.Search],
+    ['/search/1', NavItemKey.Search],
+    ['/memories', NavItemKey.Memories],
+    ['/memory/memory-message/1', NavItemKey.Memories],
     ['/agents', NavItemKey.Studio],
     ['/agent-templates', NavItemKey.Studio],
     ['/agent/1', NavItemKey.Studio],
@@ -50,55 +47,20 @@ describe('getActiveNavItemKey', () => {
     expect(getActiveNavItemKey(pathname)).toBe(expected);
   });
 
-  it('leaves integrations children to the integrations group', () => {
-    expect(getActiveNavItemKey('/integrations/model')).toBeUndefined();
-    expect(getActiveNavItemKey('/integrations/mcp')).toBeUndefined();
+  it.each([
+    ['/integrations/model', NavItemKey.ModelProviders],
+    ['/integrations/data-source', NavItemKey.DataSources],
+    ['/integrations/data-source/data-source-detail-page', NavItemKey.DataSources],
+    ['/integrations/chat-channel', NavItemKey.ChatChannels],
+    ['/integrations/mcp', NavItemKey.Mcp],
+    ['/user-management', NavItemKey.UserManagement],
+    ['/role-management', NavItemKey.RoleManagement],
+  ])('maps %s to %s', (pathname, expected) => {
+    expect(getActiveNavItemKey(pathname)).toBe(expected);
   });
 
   it('activates nothing for profile and api settings', () => {
     expect(getActiveNavItemKey('/user-setting/profile')).toBeUndefined();
     expect(getActiveNavItemKey('/user-setting/api')).toBeUndefined();
-  });
-});
-
-describe('getActiveIntegrationKey', () => {
-  it.each([
-    [`${Routes.Integrations}${Routes.Model}`, 'model'],
-    [`${Routes.Integrations}${Routes.DataSource}`, 'data-source'],
-    [
-      `${Routes.Integrations}${Routes.DataSource}${Routes.DataSourceDetailPage}`,
-      'data-source',
-    ],
-    [`${Routes.Integrations}${Routes.ChatChannel}`, 'chat-channel'],
-    [`${Routes.Integrations}${Routes.Mcp}`, 'mcp'],
-  ])('maps %s to %s', (pathname, expected) => {
-    expect(getActiveIntegrationKey(pathname)).toBe(expected);
-  });
-
-  it('does not match non-integration routes', () => {
-    expect(getActiveIntegrationKey('/files')).toBeUndefined();
-    expect(getActiveIntegrationKey('/user-setting/profile')).toBeUndefined();
-  });
-});
-
-describe('getActivePageTab', () => {
-  it('returns the context group with the active tab', () => {
-    expect(getActivePageTab('/datasets')).toEqual({
-      group: expect.objectContaining({ key: NavItemKey.Context }),
-      activePath: '/datasets',
-    });
-    expect(getActivePageTab('/memories')?.activePath).toBe('/memories');
-  });
-
-  it('returns the application group with the active tab', () => {
-    expect(getActivePageTab('/chats')?.activePath).toBe('/chats');
-    expect(getActivePageTab('/searches')?.activePath).toBe('/searches');
-  });
-
-  it('returns no group for pages outside tab groups', () => {
-    expect(getActivePageTab('/agents')).toBeUndefined();
-    expect(getActivePageTab('/dataset/files/1')).toBeUndefined();
-    expect(getActivePageTab('/chat/1')).toBeUndefined();
-    expect(getActivePageTab('/')).toBeUndefined();
   });
 });

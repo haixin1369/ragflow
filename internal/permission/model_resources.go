@@ -114,13 +114,23 @@ func (s *databaseSource) tenantIDsForCurrentUser(ctx context.Context) ([]string,
 	return uniqueStringValues(append(tenantIDs, userID)), nil
 }
 
+// modelProviderVisibility exposes shared (superuser-added) providers to every
+// authenticated user with their tenant operations; regular providers stay
+// tenant-scoped.
+func modelProviderVisibility(provider *entity.TenantModelProvider) Visibility {
+	if provider.IsShared {
+		return VisibilityPublic
+	}
+	return VisibilityTenant
+}
+
 // modelProviderResource builds permission metadata for a model provider.
 func modelProviderResource(provider *entity.TenantModelProvider) Resource {
 	return Resource{
 		Ref:               ResourceRef{Kind: ResourceKindModelProvider, ID: provider.ID},
 		TenantID:          provider.TenantID,
 		OwnerUserID:       provider.UserID,
-		Visibility:        VisibilityTenant,
+		Visibility:        modelProviderVisibility(provider),
 		TenantRequirement: TenantMember,
 		OwnerOperations:   []Operation{OperationRead, OperationCreate, OperationUpdate, OperationDelete},
 		TenantOperations:  []Operation{OperationRead},
@@ -130,14 +140,20 @@ func modelProviderResource(provider *entity.TenantModelProvider) Resource {
 
 // modelInstanceResource builds permission metadata for a model instance.
 func modelInstanceResource(instance *entity.TenantModelInstance, provider *entity.TenantModelProvider) Resource {
+	// Shared instances are readable by everyone; regular instances only grant
+	// use to tenant members.
+	tenantOperations := []Operation{OperationUse}
+	if provider.IsShared {
+		tenantOperations = []Operation{OperationRead, OperationUse}
+	}
 	return Resource{
 		Ref:               ResourceRef{Kind: ResourceKindModelInstance, ID: instance.ID},
 		TenantID:          provider.TenantID,
 		OwnerUserID:       provider.UserID,
-		Visibility:        VisibilityTenant,
+		Visibility:        modelProviderVisibility(provider),
 		TenantRequirement: TenantMember,
 		OwnerOperations:   []Operation{OperationRead, OperationCreate, OperationUpdate, OperationDelete, OperationUse},
-		TenantOperations:  []Operation{OperationUse},
+		TenantOperations:  tenantOperations,
 		Active:            true,
 	}
 }
@@ -148,7 +164,7 @@ func tenantModelResource(model *entity.TenantModel, provider *entity.TenantModel
 		Ref:               ResourceRef{Kind: ResourceKindModel, ID: model.ID},
 		TenantID:          provider.TenantID,
 		OwnerUserID:       provider.UserID,
-		Visibility:        VisibilityTenant,
+		Visibility:        modelProviderVisibility(provider),
 		TenantRequirement: TenantMember,
 		OwnerOperations:   []Operation{OperationRead, OperationCreate, OperationUpdate, OperationDelete, OperationUse},
 		TenantOperations:  []Operation{OperationRead, OperationUse},

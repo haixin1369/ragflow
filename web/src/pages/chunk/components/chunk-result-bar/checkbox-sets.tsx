@@ -18,6 +18,8 @@ type ICheckboxSetProps = {
   switchChunk: (available: number) => void;
   checked: boolean;
   selectedChunkIds: string[];
+  // Read-only members get no chunk selection or bulk actions.
+  editDisabled?: boolean;
 };
 
 export default function CheckboxSets(props: ICheckboxSetProps) {
@@ -29,6 +31,7 @@ export default function CheckboxSets(props: ICheckboxSetProps) {
     switchChunk,
     checked,
     selectedChunkIds,
+    editDisabled = false,
   } = props;
   const { t } = useTranslation();
   const handleSelectAllCheck = useCallback(
@@ -54,7 +57,7 @@ export default function CheckboxSets(props: ICheckboxSetProps) {
   const isSelected = useMemo(() => {
     return selectedChunkIds?.length > 0;
   }, [selectedChunkIds]);
-  if (datasetEditButtonDisabled) {
+  if (editDisabled || datasetEditButtonDisabled) {
     return null;
   }
   return (

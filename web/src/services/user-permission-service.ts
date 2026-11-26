@@ -18,11 +18,10 @@ import request from '@/utils/next-request';
 
 // Mirrors internal/entity/role.go BuiltinFunctionPermissions. The superuser
 // receives every code from the backend; role-less users receive an empty list.
+// Document actions are governed per knowledge base by its member grants, not
+// by role permissions.
 export const enum FunctionPermissionCode {
   KbCreate = 'kb.create',
-  DocUpload = 'doc.upload',
-  DocDelete = 'doc.delete',
-  DocReparse = 'doc.reparse',
   ChatCreate = 'chat.create',
   AgentCreate = 'agent.create',
   FileManage = 'file.manage',

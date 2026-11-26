@@ -33,6 +33,8 @@ interface IProps {
   clickChunkCard: (chunkId: string) => void;
   textMode: ChunkTextMode;
   t?: string | number; // Cache-busting key for images
+  // Read-only members see the chunk without any action controls.
+  editDisabled?: boolean;
 }
 
 const ChunkCard = ({
@@ -46,9 +48,11 @@ const ChunkCard = ({
   clickChunkCard,
   textMode,
   t: imageCacheKey,
+  editDisabled: editDisabledProp = false,
 }: IProps) => {
   const { t } = useTranslation();
   const datasetEditButtonDisabled = useDatasetEditButtonDisabled();
+  const editDisabled = editDisabledProp || datasetEditButtonDisabled;
 
   const available = Number(item.available_int);
   const [enabled, setEnabled] = useState(false);
@@ -114,11 +118,13 @@ const ChunkCard = ({
       </div>
 
       <div className="flex items-start justify-between gap-2.5">
-        <Checkbox
-          className="mt-1"
-          onCheckedChange={handleCheck}
-          checked={checked}
-        />
+        {!editDisabled && (
+          <Checkbox
+            className="mt-1"
+            onCheckedChange={handleCheck}
+            checked={checked}
+          />
+        )}
 
         {/* Using <Tooltip> instead of <Popover> to avoid flickering when hovering over the image */}
         {item.image_id && (
@@ -167,43 +173,48 @@ const ChunkCard = ({
         <div className="flex w-7 shrink-0 flex-col items-center">
           <span
             className={cn(
-              'm-1.5 size-2 rounded-full group-hover:hidden group-has-[:focus-visible]:hidden',
+              'm-1.5 size-2 rounded-full',
+              !editDisabled && 'group-hover:hidden group-has-[:focus-visible]:hidden',
               enabled ? 'bg-state-success' : 'bg-text-disabled',
             )}
           />
 
           <div className="hidden group-hover:flex group-has-[:focus-visible]:flex flex-col items-center gap-2">
-            <Switch
-              checked={enabled}
-              onCheckedChange={onChange}
-              aria-readonly
-              className="!m-0"
-              disabled={datasetEditButtonDisabled || switching}
-            />
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label={t('common.edit')}
-              title={t('common.edit')}
-              onClick={handleEditClick}
-              disabled={datasetEditButtonDisabled}
-            >
-              <PenLine className="size-4" />
-            </Button>
+            {!editDisabled && (
+              <>
+                <Switch
+                  checked={enabled}
+                  onCheckedChange={onChange}
+                  aria-readonly
+                  className="!m-0"
+                  disabled={switching}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={t('common.edit')}
+                  title={t('common.edit')}
+                  onClick={handleEditClick}
+                >
+                  <PenLine className="size-4" />
+                </Button>
+              </>
+            )}
             {/* The history sits above delete: it opens from the card so a reader
                 can inspect what changed without opening an edit, and delete stays
                 the last action in the column where a destructive control belongs. */}
             <ChunkVersionEntry chunkId={item.chunk_id} docId={item.doc_id} />
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label={t('common.delete')}
-              title={t('common.delete')}
-              onClick={handleDeleteClick}
-              disabled={datasetEditButtonDisabled}
-            >
-              <Trash2 className="size-4 text-state-error" />
-            </Button>
+            {!editDisabled && (
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={t('common.delete')}
+                title={t('common.delete')}
+                onClick={handleDeleteClick}
+              >
+                <Trash2 className="size-4 text-state-error" />
+              </Button>
+            )}
           </div>
         </div>
       </div>

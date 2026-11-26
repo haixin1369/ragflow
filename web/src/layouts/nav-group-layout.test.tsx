@@ -24,33 +24,26 @@ function renderListPage(pathname: string) {
 
 describe('NavGroupLayout list page header', () => {
   it.each([
-    ['/datasets', 'header.dataset', 'sidebar.context'],
-    ['/memories', 'header.memories', 'sidebar.context'],
-    ['/chats', 'header.chat', 'sidebar.application'],
-    ['/searches', 'header.search', 'sidebar.application'],
+    ['/datasets', 'sidebar.knowledgeBase'],
+    ['/memories', 'sidebar.aiMemory'],
+    ['/chats', 'sidebar.chat'],
+    ['/searches', 'sidebar.search'],
   ])(
-    'renders %s with the title above tabs and the toolbar on the same row',
-    (pathname, tabLabel, title) => {
+    'renders %s with the page title above the toolbar on the same row',
+    (pathname, title) => {
       renderListPage(pathname);
 
       const heading = screen.getByRole('heading', { name: title });
-      const tab = screen.getByText(tabLabel);
       const toolbar = screen.getByRole('toolbar');
-      const tabPanel = tab.closest('h1');
 
-      expect(heading.compareDocumentPosition(tab)).toBe(
+      expect(heading.compareDocumentPosition(toolbar)).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING,
       );
-      expect(tab.compareDocumentPosition(toolbar)).toBe(
-        Node.DOCUMENT_POSITION_FOLLOWING,
-      );
-      expect(tabPanel?.parentElement).toBe(toolbar.parentElement);
       expect(toolbar.parentElement).toHaveClass(
         'md:flex-row',
         'md:justify-between',
       );
       expect(heading.querySelector('svg')).not.toBeInTheDocument();
-      expect(tab.querySelector('svg')).not.toBeInTheDocument();
     },
   );
 });

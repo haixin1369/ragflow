@@ -101,6 +101,14 @@ export interface EnterpriseCreateUserParams {
   role_id?: string;
 }
 
+// Department and role are always stored as given ("" unassigns); the nickname
+// is only changed when provided.
+export interface EnterpriseUpdateUserParams {
+  nickname?: string;
+  department_id?: string;
+  role_id?: string;
+}
+
 export const enterpriseService = {
   // Departments
   listDepartments: () =>
@@ -159,6 +167,11 @@ export const enterpriseService = {
     ),
   createUser: (params: EnterpriseCreateUserParams) =>
     request.post<EnterpriseResponse<null>>(`${AdminApiPrefix}/users`, params),
+  updateUser: (username: string, params: EnterpriseUpdateUserParams) =>
+    request.put<EnterpriseResponse<null>>(
+      `${AdminApiPrefix}/users/${encodeURIComponent(username)}`,
+      params,
+    ),
   updateUserPassword: (username: string, password: string) =>
     request.put<EnterpriseResponse<null>>(
       `${AdminApiPrefix}/users/${encodeURIComponent(username)}/password`,

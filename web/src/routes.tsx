@@ -224,15 +224,48 @@ const routeConfigOptions = [
     Component: () => import('@/layouts/root-layout'),
     children: [
       {
-        Component: () => import('@/layouts/nav-group-layout'),
+        // Superuser-only pages: the enterprise permission pages and the
+        // integration settings pages.
+        Component: () => import('@/layouts/superuser-route'),
         children: [
           {
-            path: Routes.UserManagement,
-            Component: () => import('@/pages/enterprise/user-management'),
+            Component: () => import('@/layouts/nav-group-layout'),
+            children: [
+              {
+                path: Routes.UserManagement,
+                Component: () => import('@/pages/enterprise/user-management'),
+              },
+              {
+                path: Routes.RoleManagement,
+                Component: () => import('@/pages/enterprise/role-management'),
+              },
+            ],
           },
           {
-            path: Routes.RoleManagement,
-            Component: () => import('@/pages/enterprise/role-management'),
+            Component: () => import('@/layouts/settings-page-layout'),
+            children: [
+              {
+                path: `${Routes.Integrations}${Routes.Model}`,
+                Component: () => import('@/pages/user-setting/setting-model'),
+              },
+              {
+                path: `${Routes.Integrations}${Routes.DataSource}`,
+                Component: () => import('@/pages/user-setting/data-source'),
+              },
+              {
+                path: `${Routes.Integrations}${Routes.ChatChannel}`,
+                Component: () => import('@/pages/user-setting/chat-channel'),
+              },
+              {
+                path: `${Routes.Integrations}${Routes.Mcp}`,
+                Component: () => import('@/pages/user-setting/mcp'),
+              },
+            ],
+          },
+          {
+            path: `${Routes.Integrations}${Routes.DataSource}${Routes.DataSourceDetailPage}`,
+            Component: () =>
+              import('@/pages/user-setting/data-source/data-source-detail-page'),
           },
         ],
       },
@@ -349,32 +382,6 @@ const routeConfigOptions = [
         element: (
           <Navigate to={`${Routes.Integrations}${Routes.Model}`} replace />
         ),
-      },
-      {
-        Component: () => import('@/layouts/settings-page-layout'),
-        children: [
-          {
-            path: `${Routes.Integrations}${Routes.Model}`,
-            Component: () => import('@/pages/user-setting/setting-model'),
-          },
-          {
-            path: `${Routes.Integrations}${Routes.DataSource}`,
-            Component: () => import('@/pages/user-setting/data-source'),
-          },
-          {
-            path: `${Routes.Integrations}${Routes.ChatChannel}`,
-            Component: () => import('@/pages/user-setting/chat-channel'),
-          },
-          {
-            path: `${Routes.Integrations}${Routes.Mcp}`,
-            Component: () => import('@/pages/user-setting/mcp'),
-          },
-        ],
-      },
-      {
-        path: `${Routes.Integrations}${Routes.DataSource}${Routes.DataSourceDetailPage}`,
-        Component: () =>
-          import('@/pages/user-setting/data-source/data-source-detail-page'),
       },
       {
         path: `${Routes.UserSetting}${Routes.DataSource}${Routes.DataSourceDetailPage}`,

@@ -57,7 +57,6 @@ jest.mock('./use-sidebar-collapse', () => ({
 }));
 
 jest.mock('./nav-item', () => ({
-  IntegrationsNavGroup: () => null,
   NavItemLink: () => null,
 }));
 

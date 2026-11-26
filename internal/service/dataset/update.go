@@ -46,6 +46,26 @@ func (d *DatasetService) UpdateDataset(ctx context.Context, datasetID string, re
 		return nil, common.CodeServerError, fmt.Errorf("database operation failed: %w", err)
 	}
 
+	// Renaming or reconfiguring a knowledge base is reserved to its creator;
+	// members — even edit-level ones — manage the content inside, not the
+	// knowledge base itself. The superuser is never restricted.
+	ownerID := strings.TrimSpace(kb.UserID)
+	if ownerID == "" {
+		ownerID = strings.TrimSpace(kb.CreatedBy)
+	}
+	if userID != ownerID {
+		var superusers int64
+		if err := dao.DB.WithContext(ctx).Model(&entity.User{}).
+			Where("id = ? AND is_superuser = ?", userID, true).
+			Count(&superusers).Error; err != nil {
+			return nil, common.CodeServerError, fmt.Errorf("database operation failed: %w", err)
+		}
+		if superusers == 0 {
+			code, permissionErr := permissionresponse.Normalize(permission.ErrPermissionDenied)
+			return nil, code, permissionErr
+		}
+	}
+
 	connectorsProvided := req.Connectors != nil
 	connectors := make([]service.DatasetConnectorRequest, 0)
 	if req.Connectors != nil {

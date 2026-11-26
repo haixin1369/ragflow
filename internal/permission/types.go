@@ -170,6 +170,10 @@ const (
 	VisibilityPrivate Visibility = "private"
 	VisibilityTenant  Visibility = "tenant"
 	VisibilityShared  Visibility = "shared"
+	// VisibilityPublic exposes a resource to every authenticated user with
+	// exactly its TenantOperations (e.g. superuser-added shared model
+	// providers that all users may read and use).
+	VisibilityPublic Visibility = "public"
 )
 
 // Resource contains normalized authorization and attribution facts loaded from

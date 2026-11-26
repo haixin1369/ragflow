@@ -1,6 +1,5 @@
 import ListFilterBar from '@/components/list-filter-bar';
 import type { ComponentProps } from 'react';
-import { NavGroupTabs } from './nav-group-tabs';
 
 type NavGroupListFilterBarProps = Omit<
   ComponentProps<typeof ListFilterBar>,
@@ -11,5 +10,5 @@ export function NavGroupListFilterBar({
   leftPanel,
   ...props
 }: NavGroupListFilterBarProps) {
-  return <ListFilterBar {...props} leftPanel={leftPanel ?? <NavGroupTabs />} />;
+  return <ListFilterBar {...props} leftPanel={leftPanel} />;
 }

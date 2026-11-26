@@ -444,12 +444,7 @@ func (h *DocumentHandler) DeleteDocuments(c *gin.Context) {
 	common.StartOperationLog(c, "delete_dataset_documents")
 	defer common.FinishOperationLog(c)
 
-	if !requireFeatureCode(c, entity.PermissionDocDelete) {
-		return
-	}
-
-	_, errorCode, errorMessage := GetUser(c)
-	if errorCode != common.CodeSuccess {
+	if _, errorCode, errorMessage := GetUser(c); errorCode != common.CodeSuccess {
 		common.RespondError(c, errorCode, errorMessage)
 		return
 	}
@@ -1015,10 +1010,6 @@ func (h *DocumentHandler) UploadDocuments(c *gin.Context) {
 	common.StartOperationLog(c, "upload_dataset_documents")
 	defer common.FinishOperationLog(c)
 
-	if !requireFeatureCode(c, entity.PermissionDocUpload) {
-		return
-	}
-
 	ctx := c.Request.Context()
 	userID := permission.UserIDFromContext(ctx)
 	if userID == "" {
@@ -1465,10 +1456,6 @@ type StartParseDocumentsRequest struct {
 func (h *DocumentHandler) StartIngestionTask(c *gin.Context) {
 	common.StartOperationLog(c, "start_ingestion_task")
 	defer common.FinishOperationLog(c)
-
-	if !requireFeatureCode(c, entity.PermissionDocReparse) {
-		return
-	}
 
 	datasetID := c.Param("dataset_id")
 

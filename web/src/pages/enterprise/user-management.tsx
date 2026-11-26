@@ -41,6 +41,7 @@ import {
   useFetchEnterpriseRoles,
   useFetchEnterpriseUsers,
   useUpdateEnterpriseDepartment,
+  useUpdateEnterpriseUser,
   useUpdateEnterpriseUserActivateStatus,
   useUpdateEnterpriseUserPassword,
 } from '@/hooks/use-enterprise-request';
@@ -54,7 +55,7 @@ import { rsaPsw } from '@/utils';
 import { formatDate } from '@/utils/date';
 import { useDebounce } from 'ahooks';
 import {
-  LucideKeyRound,
+  LucidePenLine,
   LucidePlus,
   LucidePower,
   LucideRotateCcw,
@@ -69,7 +70,7 @@ import {
 } from './create-user-dialog';
 import { DepartmentDialog, DepartmentDialogMode } from './department-dialog';
 import { DepartmentMoveDialog } from './department-move-dialog';
-import { UserPasswordDialog } from './user-password-dialog';
+import { EditUserDialog, type EditUserFormValues } from './edit-user-dialog';
 
 const UserListPageSize = 10;
 
@@ -80,7 +81,7 @@ const ResetUserPasswordValue = 'Ragflow@123456';
 interface UserRowActionsProps {
   user: EnterpriseUser;
   isSelf: boolean;
-  onChangePassword: (user: EnterpriseUser) => void;
+  onEdit: (user: EnterpriseUser) => void;
   onResetPassword: (user: EnterpriseUser) => void;
   onToggleActivate: (user: EnterpriseUser) => void;
   onDelete: (user: EnterpriseUser) => void;
@@ -89,7 +90,7 @@ interface UserRowActionsProps {
 function UserRowActions({
   user,
   isSelf,
-  onChangePassword,
+  onEdit,
   onResetPassword,
   onToggleActivate,
   onDelete,
@@ -97,9 +98,9 @@ function UserRowActions({
   const { t } = useTranslation();
   const active = isEnterpriseUserActive(user.is_active);
 
-  const handleChangePassword = useCallback(
-    () => onChangePassword(user),
-    [onChangePassword, user],
+  const handleEdit = useCallback(
+    () => onEdit(user),
+    [onEdit, user],
   );
   const handleResetPassword = useCallback(
     () => onResetPassword(user),
@@ -113,9 +114,9 @@ function UserRowActions({
 
   return (
     <div className="flex items-center gap-0.5">
-      <RAGFlowTooltip asChild tooltip={t('enterprise.changePassword')}>
-        <Button variant="ghost" size="icon-sm" onClick={handleChangePassword}>
-          <LucideKeyRound className="size-4" />
+      <RAGFlowTooltip asChild tooltip={t('enterprise.editUser')}>
+        <Button variant="ghost" size="icon-sm" onClick={handleEdit}>
+          <LucidePenLine className="size-4" />
         </Button>
       </RAGFlowTooltip>
       <RAGFlowTooltip asChild tooltip={t('enterprise.resetPassword')}>
@@ -192,7 +193,7 @@ export default function UserManagement() {
   const [deleteDepartmentTarget, setDeleteDepartmentTarget] =
     useState<EnterpriseDepartment | null>(null);
   const [createUserVisible, setCreateUserVisible] = useState(false);
-  const [passwordTarget, setPasswordTarget] = useState<EnterpriseUser | null>(
+  const [editUserTarget, setEditUserTarget] = useState<EnterpriseUser | null>(
     null,
   );
   const [resetPasswordTarget, setResetPasswordTarget] =
@@ -205,6 +206,7 @@ export default function UserManagement() {
   const updateDepartmentMutation = useUpdateEnterpriseDepartment();
   const deleteDepartmentMutation = useDeleteEnterpriseDepartment();
   const createUserMutation = useCreateEnterpriseUser();
+  const updateUserMutation = useUpdateEnterpriseUser();
   const updatePasswordMutation = useUpdateEnterpriseUserPassword();
   const updateActivateStatusMutation = useUpdateEnterpriseUserActivateStatus();
   const deleteUserMutation = useDeleteEnterpriseUser();
@@ -368,33 +370,40 @@ export default function UserManagement() {
     [createUserMutation, hideCreateUserDialog],
   );
 
-  const handleChangePassword = useCallback((user: EnterpriseUser) => {
-    setPasswordTarget(user);
+  const handleEditUser = useCallback((user: EnterpriseUser) => {
+    setEditUserTarget(user);
   }, []);
 
   const handleResetPassword = useCallback((user: EnterpriseUser) => {
     setResetPasswordTarget(user);
   }, []);
 
-  const hidePasswordDialog = useCallback(() => {
-    setPasswordTarget(null);
+  const hideEditUserDialog = useCallback(() => {
+    setEditUserTarget(null);
   }, []);
 
   const hideResetPasswordDialog = useCallback(() => {
     setResetPasswordTarget(null);
   }, []);
 
-  const handleChangePasswordOk = useCallback(
-    (password: string) => {
-      if (!passwordTarget) {
+  const handleEditUserOk = useCallback(
+    (values: EditUserFormValues) => {
+      if (!editUserTarget) {
         return;
       }
-      updatePasswordMutation.mutate(
-        { username: passwordTarget.email, password: rsaPsw(password) as string },
-        { onSuccess: hidePasswordDialog },
+      updateUserMutation.mutate(
+        {
+          username: editUserTarget.email,
+          params: {
+            nickname: values.nickname,
+            department_id: values.departmentId,
+            role_id: values.roleId,
+          },
+        },
+        { onSuccess: hideEditUserDialog },
       );
     },
-    [passwordTarget, updatePasswordMutation, hidePasswordDialog],
+    [editUserTarget, updateUserMutation, hideEditUserDialog],
   );
 
   const handleResetPasswordOk = useCallback(() => {
@@ -578,7 +587,7 @@ export default function UserManagement() {
                           <UserRowActions
                             user={user}
                             isSelf={user.email === selfEmail}
-                            onChangePassword={handleChangePassword}
+                            onEdit={handleEditUser}
                             onResetPassword={handleResetPassword}
                             onToggleActivate={handleToggleActivate}
                             onDelete={handleShowDeleteUser}
@@ -648,11 +657,14 @@ export default function UserManagement() {
           onOk={handleCreateUserOk}
         />
       )}
-      {passwordTarget && (
-        <UserPasswordDialog
-          loading={updatePasswordMutation.isPending}
-          hideModal={hidePasswordDialog}
-          onOk={handleChangePasswordOk}
+      {editUserTarget && (
+        <EditUserDialog
+          user={editUserTarget}
+          departments={departments}
+          roles={roles}
+          loading={updateUserMutation.isPending}
+          hideModal={hideEditUserDialog}
+          onOk={handleEditUserOk}
         />
       )}
       <ConfirmDeleteDialog

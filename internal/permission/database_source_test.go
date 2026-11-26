@@ -566,7 +566,7 @@ func TestDatabaseCheckerSharedCanvasRestrictsOwnerOperations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.UserCanvas{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.UserCanvas{}, &entity.UserTenant{}, &entity.Knowledgebase{}, &entity.Document{}, &entity.KBMember{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 	valid := string(entity.StatusValid)
@@ -634,12 +634,65 @@ func TestDatabaseCheckerSharedCanvasRestrictsOwnerOperations(t *testing.T) {
 	}
 }
 
+func TestDatabaseCheckerGrantsPipelineCanvasReadToKnowledgeBaseMembers(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:"+url.QueryEscape(t.Name())+"?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := db.AutoMigrate(&entity.UserCanvas{}, &entity.UserTenant{}, &entity.Knowledgebase{}, &entity.Document{}, &entity.KBMember{}); err != nil {
+		t.Fatalf("migrate permission tables: %v", err)
+	}
+	canvas := entity.UserCanvas{ID: "pipeline-canvas", UserID: "owner-1", Permission: string(entity.TenantPermissionMe)}
+	if err := db.Create(&canvas).Error; err != nil {
+		t.Fatalf("create canvas: %v", err)
+	}
+	dataset := entity.Knowledgebase{ID: "kb-1", UserID: "owner-1", TenantID: "owner-1", PipelineID: &canvas.ID}
+	if err := db.Create(&dataset).Error; err != nil {
+		t.Fatalf("create dataset: %v", err)
+	}
+	documentPipeline := "document-pipeline-canvas"
+	documentCanvas := entity.UserCanvas{ID: documentPipeline, UserID: "owner-1", Permission: string(entity.TenantPermissionMe)}
+	if err := db.Create(&documentCanvas).Error; err != nil {
+		t.Fatalf("create document canvas: %v", err)
+	}
+	document := entity.Document{ID: "doc-1", KbID: "kb-1", PipelineID: &documentPipeline, ParserConfig: entity.JSONMap{}}
+	if err := db.Create(&document).Error; err != nil {
+		t.Fatalf("create document: %v", err)
+	}
+	members := []entity.KBMember{
+		{ID: "member-viewer-1", KbID: "kb-1", UserID: "viewer-1", Permission: entity.KBMemberPermissionView},
+		{ID: "member-editor-1", KbID: "kb-1", UserID: "editor-1", Permission: entity.KBMemberPermissionEdit},
+	}
+	if err := db.Create(&members).Error; err != nil {
+		t.Fatalf("create members: %v", err)
+	}
+	checker := newCommunityDatabaseChecker(db)
+	datasetCanvas := ResourceRef{Kind: ResourceKindCanvas, ID: canvas.ID}
+	docCanvas := ResourceRef{Kind: ResourceKindCanvas, ID: documentPipeline}
+	unlinkedCanvas := ResourceRef{Kind: ResourceKindCanvas, ID: "unlinked"}
+
+	for _, ref := range []ResourceRef{datasetCanvas, docCanvas} {
+		for _, user := range []string{"viewer-1", "editor-1"} {
+			ctx := WithIdentity(context.Background(), user, "")
+			if err := checker.CheckResource(ctx, ref, OperationRead); err != nil {
+				t.Errorf("%s CheckResource(%s, read) error = %v, want nil", user, ref.ID, err)
+			}
+			if err := checker.CheckResource(ctx, ref, OperationUpdate); !errors.Is(err, ErrPermissionDenied) {
+				t.Errorf("%s CheckResource(%s, update) error = %v, want permission denied", user, ref.ID, err)
+			}
+		}
+	}
+	if err := checker.CheckResource(WithIdentity(context.Background(), "viewer-1", ""), unlinkedCanvas, OperationRead); !errors.Is(err, ErrResourceNotFound) {
+		t.Errorf("unlinked canvas error = %v, want resource not found", err)
+	}
+}
+
 func TestDatabaseCheckerListsTenantCanvasCreatedByAnotherMember(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open("file:"+url.QueryEscape(t.Name())+"?mode=memory&cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.UserCanvas{}, &entity.UserTenant{}); err != nil {
+	if err := db.AutoMigrate(&entity.UserCanvas{}, &entity.UserTenant{}, &entity.Knowledgebase{}, &entity.Document{}, &entity.KBMember{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 
@@ -678,7 +731,7 @@ func TestDatabaseCheckerRestrictsAgentSessionRunToCreator(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.UserCanvas{}, &entity.API4Conversation{}); err != nil {
+	if err := db.AutoMigrate(&entity.UserCanvas{}, &entity.API4Conversation{}, &entity.Knowledgebase{}, &entity.Document{}, &entity.KBMember{}); err != nil {
 		t.Fatalf("migrate permission tables: %v", err)
 	}
 	if err := db.Create(&entity.UserCanvas{ID: "canvas-1", UserID: "canvas-owner"}).Error; err != nil {

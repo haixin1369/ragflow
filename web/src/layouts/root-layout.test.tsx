@@ -11,7 +11,6 @@ jest.mock('@/ee/layouts/components/header-enterprise', () => ({
 }));
 
 jest.mock('./components/app-sidebar/nav-item', () => ({
-  IntegrationsNavGroup: () => null,
   NavItemLink: () => null,
 }));
 

@@ -22,6 +22,10 @@ type TenantModelProvider struct {
 	UserID       string `gorm:"column:user_id;size:32;index;index:idx_tenant_provider_user_unique,unique,priority:3" json:"user_id"`
 	ProviderName string `gorm:"column:provider_name;size:128;not null;index:idx_tenant_provider_user_unique,unique,priority:1" json:"provider_name"`
 	TenantID     string `gorm:"column:tenant_id;size:32;not null;index;index:idx_tenant_provider_user_unique,unique,priority:2" json:"tenant_id"`
+	// IsShared marks providers added by the superuser: every user can read
+	// them and use their instances and models, while only the owner can
+	// manage them.
+	IsShared bool `gorm:"column:is_shared;not null;default:false" json:"is_shared"`
 	BaseModel
 }
 

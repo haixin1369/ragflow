@@ -13,7 +13,7 @@ import { LucideChevronRight, LucidePanelLeftOpen } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
-import { IntegrationsNavGroup, NavItemLink } from './nav-item';
+import { NavItemLink } from './nav-item';
 import { matchesPath, NavItems } from './navigation';
 import { useSidebarCollapse } from './use-sidebar-collapse';
 import { UserFooter } from './user-footer';
@@ -42,11 +42,16 @@ function AppSidebarContent() {
     data: { is_superuser: isSuperuser },
   } = useFetchUserInfo();
 
-  const visibleNavItems = useMemo(
-    () =>
-      NavItems.filter((item) => !item.superuserOnly || Boolean(isSuperuser)),
-    [isSuperuser],
-  );
+  const { mainNavItems, adminNavItems } = useMemo(() => {
+    const visible = NavItems.filter(
+      (item) => !item.superuserOnly || Boolean(isSuperuser),
+    );
+    return {
+      mainNavItems: visible.filter((item) => !item.superuserOnly),
+      // Superuser-only pages: integrations and enterprise permission pages.
+      adminNavItems: visible.filter((item) => item.superuserOnly),
+    };
+  }, [isSuperuser]);
 
   const activeSecondarySidebar = [
     {
@@ -131,17 +136,21 @@ function AppSidebarContent() {
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-3 md:px-3">
         <ul className="flex flex-col gap-1">
-          {visibleNavItems.map((item) => (
+          {mainNavItems.map((item) => (
             <li key={item.key}>
               <NavItemLink item={item} />
             </li>
           ))}
-          <li aria-hidden>
-            <Separator className="my-2" />
-          </li>
-          <li>
-            <IntegrationsNavGroup />
-          </li>
+          {adminNavItems.length > 0 && (
+            <li aria-hidden>
+              <Separator className="my-2" />
+            </li>
+          )}
+          {adminNavItems.map((item) => (
+            <li key={item.key}>
+              <NavItemLink item={item} />
+            </li>
+          ))}
         </ul>
       </nav>
 

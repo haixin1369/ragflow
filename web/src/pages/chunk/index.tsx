@@ -47,6 +47,7 @@ import {
 } from '@/hooks/logic-hooks/navigate-hooks';
 import { useClearSelectionOnPageChange } from '@/hooks/logic-hooks/use-clear-selection-on-page-change';
 import { useSidebarCollapse } from '@/layouts/components/app-sidebar/use-sidebar-collapse';
+import { useKbManagePermissionForDataset } from '@/pages/dataset/hooks/use-kb-manage-permission';
 import { getExtension } from '@/utils/document-util';
 import { useMemoizedFn } from 'ahooks';
 import { ArrowLeft } from 'lucide-react';
@@ -94,6 +95,9 @@ function Chunk() {
   const handleBack = navigateToDataFile(
     getQueryString(QueryStringMap.id) as string,
   );
+  // Read-only knowledge-base members see chunks but get no chunk actions.
+  const kbId = getQueryString(QueryStringMap.id) as string;
+  const { canManage: canEditChunks } = useKbManagePermissionForDataset(kbId);
   const fileUrl = useGetDocumentUrl(false);
 
   // Entering the chunk page collapses the primary sidebar to the icon rail
@@ -372,6 +376,7 @@ function Chunk() {
                         available={available}
                         selectAllChunk={selectAllChunk}
                         handleSetAvailable={handleSetAvailable}
+                        editDisabled={!canEditChunks}
                       />
 
                       <CheckboxSets
@@ -381,6 +386,7 @@ function Chunk() {
                         removeChunk={handleRemoveChunk}
                         checked={selectedChunkIds.length === data.length}
                         selectedChunkIds={selectedChunkIds}
+                        editDisabled={!canEditChunks}
                       />
                     </div>
 
@@ -399,6 +405,7 @@ function Chunk() {
                       // replaced in place re-fetches it instead of reusing the
                       // cached bytes.
                       imageCacheKey={dataUpdatedAt}
+                      editDisabled={!canEditChunks}
                     />
 
                     <footer className="mt-5">
@@ -443,6 +450,7 @@ interface ChunkVirtualListProps {
   switchChunk: (available?: number, chunkIds?: string[]) => Promise<void>;
   clickChunkCard: (chunkId: string) => void;
   imageCacheKey?: string | number;
+  editDisabled?: boolean;
 }
 
 // Owned by a separate component so each result set can remount it (key from
@@ -460,6 +468,7 @@ function ChunkVirtualList({
   switchChunk,
   clickChunkCard,
   imageCacheKey,
+  editDisabled = false,
 }: ChunkVirtualListProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
@@ -506,6 +515,7 @@ function ChunkVirtualList({
                 selected={item.chunk_id === selectedChunkId}
                 textMode={textMode}
                 t={imageCacheKey}
+                editDisabled={editDisabled}
               />
             </div>
           );

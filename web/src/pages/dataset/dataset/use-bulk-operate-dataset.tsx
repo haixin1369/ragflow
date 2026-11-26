@@ -5,13 +5,7 @@ import {
   UseRowSelectionType,
   useSelectedIds,
 } from '@/hooks/logic-hooks/use-row-selection';
-import {
-  useRemoveDocument,
-  useRunDocument,
-  useSetDocumentStatus,
-} from '@/hooks/use-document-request';
-import { usePermission } from '@/hooks/use-permission';
-import { FunctionPermissionCode } from '@/services/user-permission-service';
+import { useRemoveDocument, useRunDocument, useSetDocumentStatus } from '@/hooks/use-document-request';
 import { IDocumentInfo } from '@/interfaces/database/document';
 import { omit } from 'lodash';
 import {
@@ -51,7 +45,6 @@ export function useBulkOperateDataset({
   const { setDocumentStatus } = useSetDocumentStatus();
   const { removeDocument } = useRemoveDocument();
   const { findDocumentParseGaps } = useParserGapValidation();
-  const { has } = usePermission();
   const extraBulkActions = useExtraBulkActions(
     handShowPrivilegeModal,
     selectedRowKeys,
@@ -238,16 +231,12 @@ export function useBulkOperateDataset({
       label: t('knowledgeDetails.metadata.metadata'),
       icon: <LucideCylinder />,
     },
-    ...(has(FunctionPermissionCode.DocDelete)
-      ? [
-          {
-            id: 'delete',
-            label: t('common.delete'),
-            icon: <LucideTrash2 />,
-            onClick: handleDelete,
-          },
-        ]
-      : []),
+    {
+      id: 'delete',
+      label: t('common.delete'),
+      icon: <LucideTrash2 />,
+      onClick: handleDelete,
+    },
   ];
 
   return { list };

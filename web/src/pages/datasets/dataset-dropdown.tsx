@@ -12,6 +12,7 @@ import {
 import { DatasetDropdownGuard } from '@/ee/pages/datasets/dataset-dropdown-guard';
 import useDuplicateDataset from '@/ee/pages/datasets/use-duplicate-dataset';
 import { useDeleteKnowledge } from '@/hooks/use-knowledge-request';
+import { useFetchUserInfo } from '@/hooks/use-user-setting-request';
 import { IDataset } from '@/interfaces/database/dataset';
 import { PenLine, Trash2 } from 'lucide-react';
 import { MouseEventHandler, PropsWithChildren, useCallback } from 'react';
@@ -37,6 +38,7 @@ export function DatasetDropdown({
     dataset: IDataset;
   }) {
   const { t } = useTranslation();
+  const { data: userInfo } = useFetchUserInfo();
   const { deleteKnowledge } = useDeleteKnowledge();
 
   const handleShowDatasetRenameModal: MouseEventHandler<HTMLDivElement> =
@@ -51,6 +53,15 @@ export function DatasetDropdown({
   const handleDelete: MouseEventHandler<HTMLDivElement> = useCallback(() => {
     deleteKnowledge(dataset.id);
   }, [dataset.id, deleteKnowledge]);
+
+  // Renaming and deleting a knowledge base is reserved to its creator (the
+  // superuser is never restricted); members manage the content inside it.
+  const ownerId = dataset.user_id || dataset.created_by || '';
+  const isOwner = Boolean(userInfo?.id) && ownerId === userInfo?.id;
+  const isSuperuser = Boolean(userInfo?.is_superuser);
+  if (!isOwner && !isSuperuser) {
+    return null;
+  }
 
   return (
     <DropdownMenu>

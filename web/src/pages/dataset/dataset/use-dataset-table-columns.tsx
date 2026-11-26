@@ -44,7 +44,7 @@ export function useDatasetTableColumns({
   setRowSelection,
 }: UseDatasetTableColumnsType) {
   const datasetEditButtonDisabled = useDatasetEditButtonDisabled();
-  const { canManage: canMoveToFolder } = useKbManagePermission();
+  const { canManage } = useKbManagePermission();
   const { t } = useTranslation('translation', {
     keyPrefix: 'knowledgeDetails',
   });
@@ -67,7 +67,7 @@ export function useDatasetTableColumns({
               table.toggleAllPageRowsSelected(!!value)
             }
             aria-label="Select all"
-            disabled={datasetEditButtonDisabled}
+            disabled={datasetEditButtonDisabled || !canManage}
           />
         ),
         cell: ({ row }) => (
@@ -75,7 +75,7 @@ export function useDatasetTableColumns({
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
             aria-label="Select row"
-            disabled={datasetEditButtonDisabled}
+            disabled={datasetEditButtonDisabled || !canManage}
           />
         ),
         enableSorting: false,
@@ -161,6 +161,7 @@ export function useDatasetTableColumns({
           return (
             <Switch
               checked={row.getValue('status') === '1'}
+              disabled={!canManage}
               onCheckedChange={(e) => {
                 setDocumentStatus({
                   status: e,
@@ -192,7 +193,7 @@ export function useDatasetTableColumns({
             }
             return true;
           }).length;
-          return (
+          return canManage ? (
             <Button
               variant="static"
               size="auto"
@@ -223,6 +224,8 @@ export function useDatasetTableColumns({
             >
               {length + ' fields'}
             </Button>
+          ) : (
+            <span className="text-text-secondary">{length + ' fields'}</span>
           );
         },
       },
@@ -234,6 +237,7 @@ export function useDatasetTableColumns({
             <ParseDropdownButton
               record={row.original}
               showChangeParserModal={showChangeParserModal}
+              canManage={canManage}
             />
           );
         },
@@ -248,6 +252,7 @@ export function useDatasetTableColumns({
               showChangeParserModal={showChangeParserModal}
               showLog={showLog}
               datasetEditButtonDisabled={datasetEditButtonDisabled}
+              canManage={canManage}
             />
           );
         },
@@ -264,7 +269,8 @@ export function useDatasetTableColumns({
               record={record}
               showRenameModal={showRenameModal}
               showMoveToFolderModal={showMoveToFolderModal}
-              canMoveToFolder={canMoveToFolder}
+              canManage={canManage}
+              canMoveToFolder={canManage}
               setRowSelection={setRowSelection}
               datasetEditButtonDisabled={datasetEditButtonDisabled}
             />
@@ -284,7 +290,7 @@ export function useDatasetTableColumns({
       showLog,
       setRowSelection,
       datasetEditButtonDisabled,
-      canMoveToFolder,
+      canManage,
     ],
   );
 

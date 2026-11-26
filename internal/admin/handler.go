@@ -330,6 +330,44 @@ func (h *Handler) GetUser(c *gin.Context) {
 	common.RespondSuccessList(c, []map[string]interface{}{userDetails}, "")
 }
 
+// UpdateUserHTTPRequest update user profile request. Department and role are
+// always stored as given ("" unassigns); the nickname is only changed when
+// provided.
+type UpdateUserHTTPRequest struct {
+	Nickname     string `json:"nickname"`
+	DepartmentID string `json:"department_id"`
+	RoleID       string `json:"role_id"`
+}
+
+// UpdateUser handle update user profile (nickname, department, role)
+func (h *Handler) UpdateUser(c *gin.Context) {
+	common.StartOperationLog(c, "update_admin_user")
+	defer common.FinishOperationLog(c)
+
+	common.SetOperationResource(c, "target_username", c.Param("username"))
+	username, err := getUserName(c)
+	if err != nil {
+		return
+	}
+
+	var req UpdateUserHTTPRequest
+	if err = c.ShouldBindJSON(&req); err != nil {
+		common.RespondError(c, common.CodeBadRequest, "Invalid request: "+err.Error())
+		return
+	}
+
+	if err = h.service.UpdateUser(c.Request.Context(), username, req.Nickname, req.DepartmentID, req.RoleID); err != nil {
+		if errors.Is(err, common.ErrUserNotFound) {
+			common.RespondError(c, common.CodeNotFound, "User not found")
+			return
+		}
+		common.RespondError(c, common.CodeServerError, err.Error())
+		return
+	}
+
+	common.RespondSuccess(c, nil, "User updated successfully")
+}
+
 // DeleteUser handle delete user
 func (h *Handler) DeleteUser(c *gin.Context) {
 	common.StartOperationLog(c, "delete_admin_user")

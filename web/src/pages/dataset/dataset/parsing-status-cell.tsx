@@ -67,9 +67,12 @@ const ParseStatusStateMap = {
 export function ParseDropdownButton({
   record,
   showChangeParserModal,
+  // Changing the parser pipeline is an owner/superuser/edit-member action.
+  canManage = true,
   // showSetMetaModal,
 }: {
   record: IDocumentInfo;
+  canManage?: boolean;
 } & UseChangeDocumentParserShowType) {
   const { t } = useTranslation();
   const parserLabel = getDocumentParserLabel(record);
@@ -101,33 +104,39 @@ export function ParseDropdownButton({
     <p>{parserLabel}</p>
   );
 
+  const label = (
+    <div className="flex items-center gap-1">
+      <RAGFlowTooltip asChild tooltip={tooltipContent}>
+        <Button variant="static" size="auto">
+          {parserMissing ? (
+            <ParserUnavailableLabel className="text-text-secondary" />
+          ) : isPipeline ? (
+            <PipelineVersionLabel
+              title={versionTitle}
+              alias={version?.alias}
+              className="max-w-72"
+              aliasClassName="max-w-[50%]"
+            />
+          ) : (
+            parserLabel
+          )}
+        </Button>
+      </RAGFlowTooltip>
+      {record.pipeline_version_outdated && !parserMissing ? (
+        <RAGFlowTooltip tooltip={t('flow.version.outdated')}>
+          <span className="text-destructive cursor-help font-bold">!</span>
+        </RAGFlowTooltip>
+      ) : null}
+    </div>
+  );
+
+  if (!canManage) {
+    return label;
+  }
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <div className="flex items-center gap-1">
-          <RAGFlowTooltip asChild tooltip={tooltipContent}>
-            <Button variant="static" size="auto">
-              {parserMissing ? (
-                <ParserUnavailableLabel className="text-text-secondary" />
-              ) : isPipeline ? (
-                <PipelineVersionLabel
-                  title={versionTitle}
-                  alias={version?.alias}
-                  className="max-w-72"
-                  aliasClassName="max-w-[50%]"
-                />
-              ) : (
-                parserLabel
-              )}
-            </Button>
-          </RAGFlowTooltip>
-          {record.pipeline_version_outdated && !parserMissing ? (
-            <RAGFlowTooltip tooltip={t('flow.version.outdated')}>
-              <span className="text-destructive cursor-help font-bold">!</span>
-            </RAGFlowTooltip>
-          ) : null}
-        </div>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>{label}</DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem onClick={handleShowChangeParserModal}>
           {t('knowledgeDetails.dataPipeline')}
@@ -142,10 +151,14 @@ export function ParsingStatusCell({
   showLog,
   datasetEditButtonDisabled = false,
   showChangeParserModal,
+  // Run/cancel are owner/superuser/edit-member actions; viewers only watch
+  // progress and open logs.
+  canManage = true,
 }: {
   record: IDocumentInfo;
   showLog: (record: IDocumentInfo) => void;
   datasetEditButtonDisabled?: boolean;
+  canManage?: boolean;
 } & UseChangeDocumentParserShowType) {
   const { t } = useTranslation();
   const { progress, chunk_count, id } = record;
@@ -263,18 +276,20 @@ export function ParsingStatusCell({
                   </Button>
                 )}
 
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  disabled={isStopping}
-                  onClick={handleParseClick}
-                  data-testid="document-parse-toggle"
-                >
-                  <CircleX
-                    color="rgba(var(--state-error))"
-                    className="size-[1em]"
-                  />
-                </Button>
+                {canManage && (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    disabled={isStopping}
+                    onClick={handleParseClick}
+                    data-testid="document-parse-toggle"
+                  >
+                    <CircleX
+                      color="rgba(var(--state-error))"
+                      className="size-[1em]"
+                    />
+                  </Button>
+                )}
               </div>
 
               {/* Go only: STOPPING means a cancel request is in flight but
@@ -297,14 +312,16 @@ export function ParsingStatusCell({
             </Button>
           ) : (
             <>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={handleParseClick}
-                data-testid="document-parse-toggle"
-              >
-                {operationIcon}
-              </Button>
+              {canManage && (
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={handleParseClick}
+                  data-testid="document-parse-toggle"
+                >
+                  {operationIcon}
+                </Button>
+              )}
 
               <ParsingCard record={record} handleShowLog={handleShowLog} />
             </>

@@ -70,7 +70,8 @@ func (dao *TenantModelDAO) GetByIDs(ctx context.Context, db *gorm.DB, ids []stri
 	return models, nil
 }
 
-// ListByTenantIDAndModelType returns a tenant's authorized model records.
+// ListByTenantIDAndModelType returns a tenant's authorized model records plus
+// the records of every shared provider (added by the superuser).
 // Zero-type rows are retained when filtering so the caller can derive their
 // type from the provider catalog before producing the response.
 func (dao *TenantModelDAO) ListByTenantIDAndModelType(ctx context.Context, db *gorm.DB, tenantID string, modelType int, authorize func(*gorm.DB) *gorm.DB) ([]*entity.TenantModel, error) {
@@ -80,7 +81,7 @@ func (dao *TenantModelDAO) ListByTenantIDAndModelType(ctx context.Context, db *g
 	var models []*entity.TenantModel
 	query := db.WithContext(ctx).Model(&entity.TenantModel{}).
 		Joins("JOIN tenant_model_provider ON tenant_model_provider.id = tenant_model.provider_id").
-		Where("tenant_model_provider.tenant_id = ?", tenantID)
+		Where("(tenant_model_provider.tenant_id = ? OR tenant_model_provider.is_shared = ?)", tenantID, true)
 	if modelType != 0 {
 		query = query.Where("(tenant_model.model_type = 0 OR (tenant_model.model_type & ?) > 0)", modelType)
 	}

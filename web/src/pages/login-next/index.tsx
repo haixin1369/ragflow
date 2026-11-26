@@ -145,7 +145,6 @@ const Login = () => {
   const FormSchema = z.object({
     email: z
       .string()
-      .email()
       .min(1, { message: t('emailPlaceholder') }),
     password: z.string().min(1, { message: t('passwordPlaceholder') }),
     remember: z.boolean().optional(),

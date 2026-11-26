@@ -31,8 +31,9 @@ import (
 // SeedFunctionPermissions upserts the built-in function permission catalogue
 // into function_permission. Existing rows keep their stored name and
 // description only until the built-in definition changes: the upsert rewrites
-// both so the catalogue always mirrors the code. Role-to-permission grants
-// (role_permission) are never touched.
+// both so the catalogue always mirrors the code. Codes that no longer exist in
+// the built-in catalogue are deleted together with any role_permission grants
+// referencing them.
 func SeedFunctionPermissions(ctx context.Context, db *gorm.DB) error {
 	if !db.WithContext(ctx).Migrator().HasTable(&entity.FunctionPermission{}) {
 		common.Warn("function_permission table missing, skipping function permission seeding")
@@ -46,6 +47,30 @@ func SeedFunctionPermissions(ctx context.Context, db *gorm.DB) error {
 	if result.Error != nil {
 		return fmt.Errorf("failed to seed function permissions: %w", result.Error)
 	}
+	if err := removeRetiredFunctionPermissions(ctx, db, seeds); err != nil {
+		return err
+	}
 	common.Info("Seeded function permissions", zap.Int("count", len(seeds)))
+	return nil
+}
+
+// removeRetiredFunctionPermissions deletes function_permission rows (and their
+// role_permission grants) whose code is no longer part of the built-in
+// catalogue, so removed capability gates disappear from role configuration.
+func removeRetiredFunctionPermissions(ctx context.Context, db *gorm.DB, seeds []entity.FunctionPermission) error {
+	codes := make([]string, 0, len(seeds))
+	for _, seed := range seeds {
+		codes = append(codes, seed.Code)
+	}
+	if err := db.WithContext(ctx).
+		Where("permission_code NOT IN ?", codes).
+		Delete(&entity.RolePermission{}).Error; err != nil {
+		return fmt.Errorf("failed to delete retired role permissions: %w", err)
+	}
+	if err := db.WithContext(ctx).
+		Where("code NOT IN ?", codes).
+		Delete(&entity.FunctionPermission{}).Error; err != nil {
+		return fmt.Errorf("failed to delete retired function permissions: %w", err)
+	}
 	return nil
 }

@@ -22,6 +22,8 @@ interface ChunkResultBarProps {
   createChunk: () => void;
   handleInputChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   searchString?: string;
+  // Read-only members get no add action; the filter stays for viewing.
+  editDisabled?: boolean;
 }
 export default function ChunkResultBar({
   className,
@@ -34,6 +36,7 @@ export default function ChunkResultBar({
   createChunk,
   handleInputChange,
   searchString,
+  editDisabled = false,
 }: ChunkResultBarProps) {
   const datasetEditButtonDisabled = useDatasetEditButtonDisabled();
   const { t } = useTranslation('translation', { keyPrefix: 'chunk' });
@@ -105,14 +108,15 @@ export default function ChunkResultBar({
         value={searchString}
       />
 
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => createChunk()}
-        disabled={datasetEditButtonDisabled}
-      >
-        <Plus size={44} />
-      </Button>
+      {!editDisabled && !datasetEditButtonDisabled && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => createChunk()}
+        >
+          <Plus size={44} />
+        </Button>
+      )}
     </div>
   );
 }

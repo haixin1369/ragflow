@@ -340,7 +340,34 @@ func ptrStringValue(value *string) string {
 	return *value
 }
 
+// superuserDefaultMembership returns the superuser's owner-tenant membership.
+// Its default-model selections act as the deployment-wide fallback for users
+// who have not configured default models themselves.
+func (s *UserTenantService) superuserDefaultMembership(ctx context.Context) (*entity.UserTenant, error) {
+	var superuserIDs []string
+	if err := dao.DB.WithContext(ctx).Model(&entity.User{}).
+		Where("is_superuser = ?", true).
+		Order("create_time, id").
+		Limit(1).
+		Pluck("id", &superuserIDs).Error; err != nil {
+		return nil, err
+	}
+	if len(superuserIDs) == 0 {
+		return nil, nil
+	}
+	membership, err := s.userTenantDAO.GetOwnerByUserID(ctx, dao.DB, superuserIDs[0])
+	if err != nil {
+		if dao.IsNotFoundErr(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return membership, nil
+}
+
 // ListDefaultModels returns the models configured on the user's current tenant membership.
+// Model types the user has not selected themselves fall back to the superuser's
+// defaults, so every user can work with the deployment's shared default models.
 func (s *UserTenantService) ListDefaultModels(ctx context.Context) ([]ModelItem, error) {
 	userID := permission.UserIDFromContext(ctx)
 	tenantID, err := requireCurrentTenantID(ctx)
@@ -366,6 +393,32 @@ func (s *UserTenantService) ListDefaultModels(ctx context.Context) ([]ModelItem,
 		{modelType: "tts", modelName: ptrStringValue(membership.TTSID), modelID: membership.TenantTTSID},
 		{modelType: "decision", modelName: ptrStringValue(membership.DecisionID), modelID: membership.TenantDecisionID},
 		{modelType: "scoring", modelName: ptrStringValue(membership.ScoringID), modelID: membership.TenantScoringID},
+	}
+	fallback, err := s.superuserDefaultMembership(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if fallback != nil {
+		fallbacks := map[string]defaultModel{
+			"chat":      {modelName: fallback.LLMID, modelID: fallback.TenantLLMID},
+			"embedding": {modelName: fallback.EmbdID, modelID: fallback.TenantEmbdID},
+			"rerank":    {modelName: fallback.RerankID, modelID: fallback.TenantRerankID},
+			"asr":       {modelName: fallback.ASRID, modelID: fallback.TenantASRID},
+			"vision":    {modelName: fallback.Img2TxtID, modelID: fallback.TenantImg2TxtID},
+			"ocr":       {modelName: ptrStringValue(fallback.OCRID), modelID: fallback.TenantOCRID},
+			"tts":       {modelName: ptrStringValue(fallback.TTSID), modelID: fallback.TenantTTSID},
+			"decision":  {modelName: ptrStringValue(fallback.DecisionID), modelID: fallback.TenantDecisionID},
+			"scoring":   {modelName: ptrStringValue(fallback.ScoringID), modelID: fallback.TenantScoringID},
+		}
+		for i := range models {
+			if strings.TrimSpace(ptrStringValue(models[i].modelID)) != "" || strings.TrimSpace(models[i].modelName) != "" {
+				continue
+			}
+			if fb, ok := fallbacks[models[i].modelType]; ok {
+				models[i].modelName = fb.modelName
+				models[i].modelID = fb.modelID
+			}
+		}
 	}
 	factory := NewModelFactory()
 	result := make([]ModelItem, 0, len(models))

@@ -59,25 +59,23 @@ func (FunctionPermission) TableName() string {
 }
 
 // Function permission codes. A role holds a set of these; a user holds at most
-// one role; the superuser holds every capability without a role.
+// one role; the superuser holds every capability without a role. Document
+// actions (upload/delete/reparse) are governed per knowledge base by its
+// member grants, not by role permissions.
 const (
-	PermissionKbCreate   = "kb.create"
-	PermissionDocUpload  = "doc.upload"
-	PermissionDocDelete  = "doc.delete"
-	PermissionDocReparse = "doc.reparse"
-	PermissionChatCreate = "chat.create"
+	PermissionKbCreate    = "kb.create"
+	PermissionChatCreate  = "chat.create"
 	PermissionAgentCreate = "agent.create"
-	PermissionFileManage = "file.manage"
+	PermissionFileManage  = "file.manage"
 )
 
 // BuiltinFunctionPermissions is the seeded catalogue in upsert order. Keep it
 // in sync with the feature menus; new capability gates must register here.
+// Codes removed from this catalogue are deleted by the seed on startup, along
+// with any role grants referencing them.
 func BuiltinFunctionPermissions() []FunctionPermission {
 	return []FunctionPermission{
 		{Code: PermissionKbCreate, Name: "创建知识库", Description: "允许创建新的知识库"},
-		{Code: PermissionDocUpload, Name: "上传文档", Description: "允许向知识库上传文档"},
-		{Code: PermissionDocDelete, Name: "删除文档", Description: "允许删除知识库中的文档"},
-		{Code: PermissionDocReparse, Name: "重新解析文档", Description: "允许触发文档重新解析"},
 		{Code: PermissionChatCreate, Name: "创建对话助手", Description: "允许创建新的对话助手"},
 		{Code: PermissionAgentCreate, Name: "创建 Agent", Description: "允许创建新的 Agent 应用"},
 		{Code: PermissionFileManage, Name: "文件管理", Description: "允许使用文件管理功能"},

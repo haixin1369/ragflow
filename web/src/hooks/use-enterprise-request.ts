@@ -31,6 +31,7 @@ import {
   type EnterpriseRole,
   type EnterpriseSaveDepartmentParams,
   type EnterpriseSaveRoleParams,
+  type EnterpriseUpdateUserParams,
   type EnterpriseUser,
   type EnterpriseUserListParams,
 } from '@/services/enterprise-service';
@@ -235,6 +236,23 @@ export const useCreateEnterpriseUser = () => {
   return useMutation({
     mutationFn: (params: EnterpriseCreateUserParams) =>
       unwrap(enterpriseService.createUser(params)),
+    onSuccess: () => {
+      invalidateUsers();
+    },
+  });
+};
+
+export const useUpdateEnterpriseUser = () => {
+  const { invalidateUsers } = useInvalidateEnterprise();
+
+  return useMutation({
+    mutationFn: ({
+      username,
+      params,
+    }: {
+      username: string;
+      params: EnterpriseUpdateUserParams;
+    }) => unwrap(enterpriseService.updateUser(username, params)),
     onSuccess: () => {
       invalidateUsers();
     },

@@ -65,6 +65,7 @@ func (r *Router) Setup(engine *gin.Engine) {
 			protected.GET("/users", r.handler.ListUsers)
 			protected.POST("/users", r.handler.CreateUser)
 			protected.GET("/users/:username", r.handler.GetUser)
+			protected.PUT("/users/:username", r.handler.UpdateUser)
 			protected.DELETE("/users/:username", r.handler.DeleteUser)
 			protected.PUT("/users/:username/password", r.handler.ChangePassword)
 			protected.PUT("/users/:username/activate", r.handler.UpdateUserActivateStatus)

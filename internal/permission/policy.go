@@ -302,13 +302,14 @@ func (p *communityPolicy) modelQueryScope(ctx context.Context, query ScopeQuery)
 			Limit(1)
 		provider = provider.Where("tenant_model_provider.user_id = COALESCE((?), tenant_model_provider.tenant_id)", owner)
 		if ownerOnly {
-			return provider.Where("tenant_model_provider.user_id = ?", userID)
+			// Shared providers (superuser-added) are readable by everyone.
+			return provider.Where("(tenant_model_provider.user_id = ? OR tenant_model_provider.is_shared)", userID)
 		}
 		membership := source.db.WithContext(ctx).Model(&entity.UserTenant{}).
 			Select("1").
 			Where("user_tenant.tenant_id = tenant_model_provider.tenant_id AND user_tenant.user_id = ? AND user_tenant.status = ? AND user_tenant.role IN ?",
 				userID, string(entity.StatusValid), []string{string(RoleOwner), string(RoleAdmin), string(RoleNormal)})
-		return provider.Where("(tenant_model_provider.user_id = ? OR EXISTS (?))", userID, membership)
+		return provider.Where("(tenant_model_provider.user_id = ? OR tenant_model_provider.is_shared OR EXISTS (?))", userID, membership)
 	}
 
 	switch query.Kind {
@@ -328,7 +329,7 @@ func (p *communityPolicy) modelQueryScope(ctx context.Context, query ScopeQuery)
 					userID, string(entity.StatusValid), []string{string(RoleOwner), string(RoleAdmin), string(RoleNormal)})
 			return query.
 				Where("tenant_model_provider.user_id = COALESCE((?), tenant_model_provider.tenant_id)", owner).
-				Where("(tenant_model_provider.user_id = ? OR EXISTS (?))", userID, membership)
+				Where("(tenant_model_provider.user_id = ? OR tenant_model_provider.is_shared OR EXISTS (?))", userID, membership)
 		}}, true, nil
 	case ResourceKindModelInstance:
 		if query.Operation != OperationRead && query.Operation != OperationUse {
@@ -649,7 +650,7 @@ func (e *evaluation) resolveResourceForUser(ctx context.Context, userID string, 
 		return resourceAccess(resource, AccessSourceOwner), nil
 	}
 	switch resource.Visibility {
-	case VisibilityPrivate, VisibilityTenant, VisibilityShared:
+	case VisibilityPrivate, VisibilityTenant, VisibilityShared, VisibilityPublic:
 	default:
 		return Access{}, fmt.Errorf("%w: unknown resource visibility %q", ErrInvalidPermission, resource.Visibility)
 	}
@@ -679,6 +680,14 @@ func (e *evaluation) resolveResourceForUser(ctx context.Context, userID string, 
 			operations = resource.OwnerOperations
 		}
 		return resourceAccessWithOperations(resource, AccessSourceTenant, operations), nil
+	case VisibilityPublic:
+		// Every authenticated user gets exactly the tenant operations (e.g.
+		// read/use of superuser-added shared model providers); management
+		// stays owner-only.
+		if len(resource.TenantOperations) == 0 {
+			return Access{}, ErrPermissionDenied
+		}
+		return resourceAccessWithOperations(resource, AccessSourceShared, resource.TenantOperations), nil
 	case VisibilityShared:
 		if slices.Contains(resource.SharedEditUserIDs, userID) {
 			return resourceAccessWithOperations(resource, AccessSourceShared, sharedOperations(resource.SharedEditOperations, resource.OwnerOperations)), nil

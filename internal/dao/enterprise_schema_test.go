@@ -109,7 +109,8 @@ func TestEnterpriseSchemaUniqueConstraints(t *testing.T) {
 
 // TestSeedFunctionPermissionsUpserts covers the startup seed: first run
 // inserts the built-in catalogue, a changed built-in definition is rewritten,
-// and role grants are never touched.
+// grants of live codes survive, and codes retired from the catalogue are
+// deleted together with their role grants.
 func TestSeedFunctionPermissionsUpserts(t *testing.T) {
 	db := newEnterpriseSchemaTestDB(t)
 	ctx := t.Context()
@@ -151,5 +152,32 @@ func TestSeedFunctionPermissionsUpserts(t *testing.T) {
 	db.Model(&entity.RolePermission{}).Count(&grants)
 	if grants != 1 {
 		t.Fatalf("re-seed touched role_permission: %d grants, want 1", grants)
+	}
+
+	// A code retired from the built-in catalogue disappears from the seed
+	// together with its role grants.
+	if err := db.Create(&entity.FunctionPermission{Code: "doc.upload", Name: "上传文档"}).Error; err != nil {
+		t.Fatalf("create retired permission: %v", err)
+	}
+	if err := db.Create(&entity.RolePermission{RoleID: "r1", PermissionCode: "doc.upload"}).Error; err != nil {
+		t.Fatalf("create retired grant: %v", err)
+	}
+	if err := SeedFunctionPermissions(ctx, db); err != nil {
+		t.Fatalf("seed after retirement: %v", err)
+	}
+	var retired int64
+	db.Model(&entity.FunctionPermission{}).Where("code = ?", "doc.upload").Count(&retired)
+	if retired != 0 {
+		t.Fatalf("retired function permission survived the seed")
+	}
+	var retiredGrants int64
+	db.Model(&entity.RolePermission{}).Where("permission_code = ?", "doc.upload").Count(&retiredGrants)
+	if retiredGrants != 0 {
+		t.Fatalf("retired role permission survived the seed")
+	}
+	var kept int64
+	db.Model(&entity.FunctionPermission{}).Count(&kept)
+	if kept != int64(len(entity.BuiltinFunctionPermissions())) {
+		t.Fatalf("catalogue has %d rows, want %d", kept, len(entity.BuiltinFunctionPermissions()))
 	}
 }

@@ -1,13 +1,18 @@
 import { Routes } from '@/routes';
 import {
   LucideBoxes,
+  LucideBrain,
+  LucideBrainCircuit,
   LucideBuilding2,
+  LucideDatabase,
   LucideHome,
   LucideLibrary,
   LucideMessagesSquare,
   LucidePlug,
+  LucideSearch,
   LucideShieldCheck,
   LucideSparkles,
+  LucideWebhook,
   type LucideIcon,
 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -21,11 +26,16 @@ export function matchesPath(pathname: string, candidate: string) {
 
 export enum NavItemKey {
   Home = 'home',
-  Context = 'context',
-  Application = 'application',
+  KnowledgeBase = 'knowledgeBase',
+  Chat = 'chat',
+  Search = 'search',
   Studio = 'studio',
   Library = 'library',
-  Integrations = 'integrations',
+  Memories = 'memories',
+  ModelProviders = 'modelProviders',
+  DataSources = 'dataSources',
+  ChatChannels = 'chatChannels',
+  Mcp = 'mcp',
   UserManagement = 'userManagement',
   RoleManagement = 'roleManagement',
 }
@@ -51,18 +61,25 @@ export const NavItems: NavItem[] = [
     activeAliases: [],
   },
   {
-    key: NavItemKey.Context,
+    key: NavItemKey.KnowledgeBase,
     path: Routes.Datasets,
-    labelKey: 'sidebar.context',
+    labelKey: 'sidebar.knowledgeBase',
     icon: LucideBoxes,
-    activeAliases: [Routes.DatasetBase, Routes.Memories, Routes.Memory],
+    activeAliases: [Routes.DatasetBase],
   },
   {
-    key: NavItemKey.Application,
+    key: NavItemKey.Chat,
     path: Routes.Chats,
-    labelKey: 'sidebar.application',
+    labelKey: 'sidebar.chat',
     icon: LucideMessagesSquare,
-    activeAliases: [Routes.Chat, Routes.Searches, Routes.Search],
+    activeAliases: [Routes.Chat],
+  },
+  {
+    key: NavItemKey.Search,
+    path: Routes.Searches,
+    labelKey: 'sidebar.search',
+    icon: LucideSearch,
+    activeAliases: [Routes.Search],
   },
   {
     key: NavItemKey.Studio,
@@ -85,6 +102,47 @@ export const NavItems: NavItem[] = [
     activeAliases: [],
   },
   {
+    key: NavItemKey.Memories,
+    path: Routes.Memories,
+    labelKey: 'sidebar.aiMemory',
+    icon: LucideBrain,
+    activeAliases: [Routes.Memory],
+  },
+  {
+    key: NavItemKey.ModelProviders,
+    path: `${Routes.Integrations}${Routes.Model}`,
+    labelKey: 'setting.model',
+    icon: LucideBrainCircuit,
+    activeAliases: [],
+    superuserOnly: true,
+  },
+  {
+    key: NavItemKey.DataSources,
+    path: `${Routes.Integrations}${Routes.DataSource}`,
+    labelKey: 'setting.dataSources',
+    icon: LucideDatabase,
+    activeAliases: [
+      `${Routes.Integrations}${Routes.DataSource}${Routes.DataSourceDetailPage}`,
+    ],
+    superuserOnly: true,
+  },
+  {
+    key: NavItemKey.ChatChannels,
+    path: `${Routes.Integrations}${Routes.ChatChannel}`,
+    labelKey: 'setting.chatChannels',
+    icon: LucideWebhook,
+    activeAliases: [],
+    superuserOnly: true,
+  },
+  {
+    key: NavItemKey.Mcp,
+    path: `${Routes.Integrations}${Routes.Mcp}`,
+    labelKey: 'sidebar.mcp',
+    icon: LucidePlug,
+    activeAliases: [],
+    superuserOnly: true,
+  },
+  {
     key: NavItemKey.UserManagement,
     path: Routes.UserManagement,
     labelKey: 'sidebar.userManagement',
@@ -102,64 +160,6 @@ export const NavItems: NavItem[] = [
   },
 ];
 
-export interface IntegrationChild {
-  key: string;
-  path: string;
-  labelKey: string;
-}
-
-export const IntegrationChildren: IntegrationChild[] = [
-  {
-    key: 'model',
-    path: `${Routes.Integrations}${Routes.Model}`,
-    labelKey: 'setting.model',
-  },
-  {
-    key: 'data-source',
-    path: `${Routes.Integrations}${Routes.DataSource}`,
-    labelKey: 'setting.dataSources',
-  },
-  {
-    key: 'chat-channel',
-    path: `${Routes.Integrations}${Routes.ChatChannel}`,
-    labelKey: 'setting.chatChannels',
-  },
-  {
-    key: 'mcp',
-    path: `${Routes.Integrations}${Routes.Mcp}`,
-    labelKey: 'sidebar.mcp',
-  },
-];
-
-export const IntegrationsNavItem = {
-  key: NavItemKey.Integrations,
-  labelKey: 'sidebar.integrations',
-  icon: LucidePlug,
-};
-
-// Page-level pill tabs rendered above the list pages of a sidebar group.
-export interface PageTabGroup {
-  key: NavItemKey.Context | NavItemKey.Application;
-  tabs: { path: string; labelKey: string }[];
-}
-
-export const PageTabGroups: PageTabGroup[] = [
-  {
-    key: NavItemKey.Context,
-    tabs: [
-      { path: Routes.Datasets, labelKey: 'header.dataset' },
-      { path: Routes.Memories, labelKey: 'header.memories' },
-    ],
-  },
-  {
-    key: NavItemKey.Application,
-    tabs: [
-      { path: Routes.Chats, labelKey: 'header.chat' },
-      { path: Routes.Searches, labelKey: 'header.search' },
-    ],
-  },
-];
-
 export function getActiveNavItemKey(pathname: string): NavItemKey | undefined {
   const item = NavItems.find(
     (x) =>
@@ -171,29 +171,12 @@ export function getActiveNavItemKey(pathname: string): NavItemKey | undefined {
   return item?.key;
 }
 
-export function getActiveIntegrationKey(pathname: string): string | undefined {
-  return IntegrationChildren.find((x) => matchesPath(pathname, x.path))?.key;
-}
-
-export function getActivePageTab(pathname: string) {
-  const group = PageTabGroups.find((g) =>
-    g.tabs.some((tab) => matchesPath(pathname, tab.path)),
-  );
-  if (!group) {
-    return undefined;
-  }
-  const activeTab = group.tabs.find((tab) => matchesPath(pathname, tab.path));
-  return { group, activePath: activeTab?.path ?? group.tabs[0].path };
-}
-
 export function useActiveNavigation() {
   const { pathname } = useLocation();
 
   return useMemo(
     () => ({
       activeNavKey: getActiveNavItemKey(pathname),
-      activeIntegrationKey: getActiveIntegrationKey(pathname),
-      pageTab: getActivePageTab(pathname),
     }),
     [pathname],
   );

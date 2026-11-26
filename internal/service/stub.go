@@ -50,7 +50,13 @@ func (s *ModelFactory) pickGroupModel(_ context.Context, _, _ string, _ entity.M
 	return nil, fmt.Errorf("%w: model group references are not supported", errModelConfigUnavailable)
 }
 
-func authorizeNonOwnerModelConfiguration(context.Context, *entity.TenantModelProvider, *entity.TenantModelInstance, []*entity.TenantModel) error {
+// authorizeNonOwnerModelConfiguration authorizes use of another tenant's
+// provider configuration only for shared providers (added by the superuser);
+// every other cross-tenant reference stays unavailable.
+func authorizeNonOwnerModelConfiguration(_ context.Context, provider *entity.TenantModelProvider, _ *entity.TenantModelInstance, _ []*entity.TenantModel) error {
+	if provider != nil && provider.IsShared {
+		return nil
+	}
 	return errModelConfigUnavailable
 }
 
@@ -64,11 +70,9 @@ func authorizeModelMetadataReadEE(_ context.Context, identity *modelIdentity) er
 }
 
 func (m *ModelProviderService) listModelProvidersForTenantEE(ctx context.Context, query *gorm.DB, tenantID string) ([]*entity.TenantModelProvider, error) {
-	tenantOwner, err := m.userTenantDAO.GetOwnerByTenantID(ctx, dao.DB, tenantID)
-	if err != nil {
-		return nil, err
-	}
-	return m.modelProviderDAO.ListByTenantIDAndUserID(ctx, query, tenantID, tenantOwner.UserID)
+	// The permission scope applied to query already restricts the result to
+	// the providers readable in this tenant (own, tenant-owner, or shared).
+	return m.modelProviderDAO.ListByTenantIDOrShared(ctx, query, tenantID)
 }
 
 func (*ModelProviderService) setModelOwnerInfoEE(context.Context, []map[string]interface{}, map[string]*entity.TenantModelProvider) error {
@@ -76,7 +80,7 @@ func (*ModelProviderService) setModelOwnerInfoEE(context.Context, []map[string]i
 }
 
 func (m *ModelProviderService) listReadableModelProvidersForUserEE(ctx context.Context, tenantID, userID string) ([]*entity.TenantModelProvider, error) {
-	return m.modelProviderDAO.ListByTenantIDAndUserID(ctx, dao.DB, tenantID, userID)
+	return m.modelProviderDAO.ListByTenantIDAndUserIDOrShared(ctx, dao.DB, tenantID, userID)
 }
 
 func (m *ModelProviderService) providersForInstanceList(ctx context.Context, providerIDOrName string) ([]*entity.TenantModelProvider, error) {

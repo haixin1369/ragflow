@@ -61,10 +61,13 @@ export function SideBar({ dataset: data, onCollapse, onMenuSelect }: PropType) {
         label: t(`knowledgeDetails.overview`),
         key: Routes.DataSetOverview,
       },
+      // Configuration stays with the knowledge base creator (and the
+      // superuser); members manage content, not the knowledge base itself.
       {
         icon: <LucideSettings className="size-[1em]" />,
         label: t(`knowledgeDetails.configuration`),
         key: Routes.DataSetSetting,
+        manageOnly: true,
       },
       {
         icon: <LucideBookText className="size-[1em]" />,
@@ -73,8 +76,11 @@ export function SideBar({ dataset: data, onCollapse, onMenuSelect }: PropType) {
       },
     ];
 
-    return [...list, ...extraItems];
-  }, [t, extraItems]);
+    return [
+      ...list.filter((item) => !item.manageOnly || canManageMembers),
+      ...extraItems,
+    ];
+  }, [t, extraItems, canManageMembers]);
 
   return (
     <aside className="flex flex-col w-64 relative">

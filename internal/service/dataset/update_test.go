@@ -219,7 +219,7 @@ func TestUpdateDataset_RejectsSimultaneousParserIDAndPipelineID(t *testing.T) {
 	chunkMethod := "book"
 	pipelineID := "abcdef0123456789abcdef0123456789"
 
-	ctx := t.Context()
+	ctx := withDatasetTestContext(t.Context(), "tenant-1", "tenant-1")
 	_, code, err := testDatasetUpdateService(t).UpdateDataset(ctx, "kb-1", service.UpdateDatasetRequest{
 		ParserID:   &chunkMethod,
 		PipelineID: &pipelineID,
@@ -427,7 +427,7 @@ func TestUpdateDatasetRejectsInvalidPages(t *testing.T) {
 
 	chunkMethod := "manual"
 	parseType := 1
-	ctx := t.Context()
+	ctx := withDatasetTestContext(t.Context(), "tenant-1", "tenant-1")
 	_, code, err := testDatasetUpdateService(t).UpdateDataset(ctx, "kb-1", service.UpdateDatasetRequest{
 		ParserID:  &chunkMethod,
 		ParseType: &parseType,

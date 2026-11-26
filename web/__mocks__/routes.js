@@ -64,6 +64,8 @@ const Routes = {
   ChatShare: '/chats/share',
   ChatWidget: '/chats/widget',
   UserSetting: '/user-setting',
+  UserManagement: '/user-management',
+  RoleManagement: '/role-management',
   DataSetOverview: '/logs',
   DataSetSetting: '/configuration',
   DataflowResult: '/dataflow-result',

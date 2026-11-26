@@ -1,5 +1,4 @@
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
-import { PermissionGate } from '@/components/permission-gate';
 import { Button } from '@/components/ui/button';
 import { RAGFlowTooltip } from '@/components/ui/tooltip';
 import {
@@ -15,7 +14,6 @@ import {
 import { UseRowSelectionType } from '@/hooks/logic-hooks/use-row-selection';
 import { useRemoveDocument } from '@/hooks/use-document-request';
 import { IDocumentInfo } from '@/interfaces/database/document';
-import { FunctionPermissionCode } from '@/services/user-permission-service';
 import { cn } from '@/lib/utils';
 import { downloadDatasetDocument } from '@/services/file-manager-service';
 import { formatFileSize } from '@/utils/common-util';
@@ -39,6 +37,8 @@ const FunctionMap = {
 type DatasetActionCellProps = {
   record: IDocumentInfo;
   datasetEditButtonDisabled?: boolean;
+  // Content management is owner/superuser/edit-member only: rename, delete.
+  canManage?: boolean;
   // Folder management is owner/superuser/edit-member only.
   canMoveToFolder?: boolean;
   showMoveToFolderModal?: (record: IDocumentInfo) => void;
@@ -49,6 +49,7 @@ export function DatasetActionCell({
   record,
   showRenameModal,
   showMoveToFolderModal,
+  canManage,
   canMoveToFolder,
   setRowSelection,
   datasetEditButtonDisabled,
@@ -114,14 +115,16 @@ export function DatasetActionCell({
           </Button>
         </RAGFlowTooltip>
       )}
-      <Button
-        size="icon-xs"
-        variant="ghost"
-        disabled={actionDisabled}
-        onClick={handleRename}
-      >
-        <PenLine className="size-[1em]" />
-      </Button>
+      {canManage && (
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          disabled={actionDisabled}
+          onClick={handleRename}
+        >
+          <PenLine className="size-[1em]" />
+        </Button>
+      )}
       <HoverCard>
         <HoverCardTrigger>
           <Button size="icon-xs" variant="ghost" disabled={isRunning}>
@@ -159,7 +162,7 @@ export function DatasetActionCell({
           <Download className="size-[1em]" />
         </Button>
       )}
-      <PermissionGate code={FunctionPermissionCode.DocDelete}>
+      {canManage && (
         <ConfirmDeleteDialog onOk={handleRemove}>
           <Button
             data-testid="document-delete"
@@ -170,7 +173,7 @@ export function DatasetActionCell({
             <Trash2 className="size-[1em]" />
           </Button>
         </ConfirmDeleteDialog>
-      </PermissionGate>
+      )}
     </div>
   );
 }

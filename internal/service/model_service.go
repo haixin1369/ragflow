@@ -137,11 +137,21 @@ func (m *ModelProviderService) AddModelProvider(ctx context.Context, providerNam
 
 	providerID := common.GenerateToken()
 
+	// Providers added by the superuser are shared: every user can read them
+	// and use their instances and models.
+	var superuserCount int64
+	if err := dao.DB.WithContext(ctx).Model(&entity.User{}).
+		Where("id = ? AND is_superuser = ?", userID, true).
+		Count(&superuserCount).Error; err != nil {
+		return common.CodeServerError, err
+	}
+
 	tenantModelProvider := &entity.TenantModelProvider{
 		ID:           providerID,
 		UserID:       userID,
 		ProviderName: providerName,
 		TenantID:     tenantID,
+		IsShared:     superuserCount > 0,
 	}
 	err = m.modelProviderDAO.Create(ctx, dao.DB, tenantModelProvider)
 	if err != nil {
@@ -702,6 +712,9 @@ func mergeSavedProviderAPIKeyConfig(existing string, submitted json.RawMessage) 
 	return string(encoded), nil
 }
 
+// findProviderByIDOrNameInCurrentTenant resolves a provider by primary key or
+// name. Beyond the caller's own tenant (and optionally the tenant owner's
+// provider), shared providers added by the superuser resolve for every user.
 func (m *ModelProviderService) findProviderByIDOrNameInCurrentTenant(ctx context.Context, providerIDOrName string, includeTenantOwner bool) (*entity.TenantModelProvider, error) {
 	userID := permission.UserIDFromContext(ctx)
 	tenantID, err := requireCurrentTenantID(ctx)
@@ -714,6 +727,10 @@ func (m *ModelProviderService) findProviderByIDOrNameInCurrentTenant(ctx context
 	}
 	provider, err := m.modelProviderDAO.GetByID(ctx, dao.DB, providerIDOrName)
 	if err == nil {
+		// Shared providers (added by the superuser) resolve for every user.
+		if provider.IsShared {
+			return provider, nil
+		}
 		if provider.TenantID != tenantID {
 			return nil, gorm.ErrRecordNotFound
 		}
@@ -735,8 +752,19 @@ func (m *ModelProviderService) findProviderByIDOrNameInCurrentTenant(ctx context
 		return nil, err
 	}
 	provider, err = m.modelProviderDAO.GetByTenantIDAndUserIDAndProviderName(ctx, dao.DB, tenantID, userID, providerIDOrName)
-	if err == nil || !errors.Is(err, gorm.ErrRecordNotFound) || !includeTenantOwner {
+	if err == nil || !errors.Is(err, gorm.ErrRecordNotFound) {
 		return provider, err
+	}
+	// Fall back to a shared provider referenced by name from another tenant.
+	provider, sharedErr := m.modelProviderDAO.GetSharedByProviderName(ctx, dao.DB, providerIDOrName)
+	if sharedErr == nil {
+		return provider, nil
+	}
+	if !errors.Is(sharedErr, gorm.ErrRecordNotFound) {
+		return nil, sharedErr
+	}
+	if !includeTenantOwner {
+		return nil, gorm.ErrRecordNotFound
 	}
 	owner, err := m.userTenantDAO.GetOwnerByTenantID(ctx, dao.DB, tenantID)
 	if err != nil {
@@ -2118,8 +2146,17 @@ func (m *ModelProviderService) resolveModelListTenant(ctx context.Context, reque
 		}
 	} else {
 		if err := permission.NewDatabaseChecker(dao.DB).CheckTenant(ctx, tenantID, permission.TenantMember); err != nil {
-			code, normalizedErr := permissionresponse.NormalizeHidden(err)
-			return nil, code, normalizedErr
+			// Knowledge-base surfaces (retrieval testing, dialogs) request the
+			// KB owner's tenant explicitly; members of such a knowledge base
+			// — and the superuser — may list that tenant's readable models
+			// without a user_tenant membership. The scope SQL below still
+			// restricts rows to shared or membership-visible providers.
+			userID := strings.TrimSpace(permission.UserIDFromContext(ctx))
+			if !errors.Is(err, permission.ErrMembershipNotFound) || userID == "" ||
+				!userHasCrossTenantModelAccess(ctx, userID, tenantID) {
+				code, normalizedErr := permissionresponse.NormalizeHidden(err)
+				return nil, code, normalizedErr
+			}
 		}
 	}
 

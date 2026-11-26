@@ -115,19 +115,26 @@ export function useParserTreeData({ value }: { value?: string }) {
       return { id: nodeId, title: item.name, children };
     });
 
-    const builtins = builtinOptions.map((option): TreeSelectNode => ({
-      id: buildParserOptionValue(ParserOptionKind.BuiltIn, option.value),
-      title: option.label,
-      searchKeywords: [option.label],
-      label: (
-        <span className="flex items-center gap-1.5 min-w-0">
-          <span className="truncate">{option.label}</span>
-          <span className="shrink-0 rounded-md bg-bg-card px-1.5 py-0.5 text-xs text-text-secondary">
-            {builtInTag}
+    const builtins = builtinOptions.map((option): TreeSelectNode => {
+      // Backend template titles are English; localize via the parserNames
+      // locale map and fall back to the raw title for unmapped ids.
+      const name = t(`knowledgeConfiguration.parserNames.${option.value}`, {
+        defaultValue: option.label,
+      });
+      return {
+        id: buildParserOptionValue(ParserOptionKind.BuiltIn, option.value),
+        title: name,
+        searchKeywords: [name, option.label],
+        label: (
+          <span className="flex items-center gap-1.5 min-w-0">
+            <span className="truncate">{name}</span>
+            <span className="shrink-0 rounded-md bg-bg-card px-1.5 py-0.5 text-xs text-text-secondary">
+              {builtInTag}
+            </span>
           </span>
-        </span>
-      ),
-    }));
+        ),
+      };
+    });
 
     // Pipeline branches first, builtin leaves below — the same ordering the
     // flat parser select used.

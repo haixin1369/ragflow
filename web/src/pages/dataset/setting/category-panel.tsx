@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/svg-icon';
 import Divider from '@/components/ui/divider';
+import { resolveBuiltinParserId } from '@/hooks/use-parser-options';
 import { useSelectParserList } from '@/hooks/use-user-setting-request';
 import DOMPurify from 'dompurify';
 import camelCase from 'lodash/camelCase';
@@ -83,8 +84,13 @@ const CategoryPanel = ({ chunkMethod }: { chunkMethod: string }) => {
     const item = parserList.find((x) => x.value === chunkMethod);
     if (item) {
       const descriptionKey = DescriptionKeyMap[item.value] ?? item.value;
+      // Backend labels are English; localize via the parserNames locale map.
+      const title = t(
+        `knowledgeConfiguration.parserNames.${resolveBuiltinParserId(item.value)}`,
+        { defaultValue: item.label },
+      );
       return {
-        title: item.label,
+        title,
         // Methods without a description entry get an empty string, so the
         // empty placeholder below is still shown for them.
         description: t(`knowledgeConfiguration.${camelCase(descriptionKey)}`, {

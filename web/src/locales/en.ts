@@ -826,6 +826,20 @@ Example: A 1 KB message with 1024-dim embedding uses ~9 KB. The 5 MB default lim
     knowledgeConfiguration: {
       builtInSuffix: 'Built in',
       builtInBadge: 'Built in',
+      parserNames: {
+        general: 'General',
+        qa: 'Q&A',
+        manual: 'Manual',
+        table: 'Table',
+        paper: 'Paper',
+        book: 'Book',
+        laws: 'Laws',
+        presentation: 'Presentation',
+        picture: 'Picture',
+        one: 'One',
+        audio: 'Audio',
+        email: 'Email',
+      },
       builtInPipelines: 'Built-in pipelines',
       parserSelectPlaceholder: 'Select a parser',
       parserOptionUnavailable: 'unavailable',
@@ -4042,6 +4056,16 @@ This process aggregates variables from multiple branches into a single variable 
       titleChunkerDescription:
         'Split documents into sections by title hierarchy. Define heading levels with regex rules, then choose Hierarchy or Group mode to control how chunks are structured.',
       titleChunker: 'Title Chunker',
+      generalChunker: 'General Chunker',
+      manualChunker: 'Manual Chunker',
+      qAChunker: 'QA Chunker',
+      tableChunker: 'Table Chunker',
+      pageChunker: 'Page Chunker',
+      oneChunker: 'One Chunker',
+      audioChunker: 'Audio Chunker',
+      pictureChunker: 'Picture Chunker',
+      presentationChunker: 'Presentation Chunker',
+      emailChunker: 'Email Chunker',
       manualChunkerDescription:
         'A chunking method for manual-style documents such as product manuals and user guides, with structure-aware splitting that preserves relevant context.',
       oneChunkerDescription:

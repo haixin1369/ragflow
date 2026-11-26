@@ -12,6 +12,8 @@ import {
 import { Input } from '@/components/ui/input';
 import {
   DESCRIPTION_MAX_LENGTH,
+  LanguageAbbreviation,
+  LanguageAbbreviationMap,
   LanguageTranslationMap,
 } from '@/constants/common';
 import { useMemo } from 'react';
@@ -26,10 +28,21 @@ export function GeneralForm() {
   const resourceTenantId = useResourceTenantId();
 
   const languageOptions = useMemo(() => {
-    return Object.keys(LanguageTranslationMap).map((x) => ({
-      label: x,
-      value: x,
-    }));
+    // The stored value is the English name (the backend contract); the label
+    // is the language's native name so the dropdown is readable in every UI
+    // language. Entries of LanguageTranslationMap collapse to the same
+    // abbreviation (e.g. Indonesian/Indonesia) — keep the first of each.
+    const seen = new Set<string>();
+    return Object.entries(LanguageTranslationMap)
+      .filter(([, abbrev]) => {
+        if (seen.has(abbrev)) return false;
+        seen.add(abbrev);
+        return true;
+      })
+      .map(([key, abbrev]) => ({
+        label: LanguageAbbreviationMap[abbrev as LanguageAbbreviation] ?? key,
+        value: key,
+      }));
   }, []);
 
   return (

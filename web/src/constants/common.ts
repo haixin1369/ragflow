@@ -77,6 +77,15 @@ export enum LanguageAbbreviation {
   Nl = 'nl',
   Az = 'az',
   Uz = 'uz',
+  Ta = 'ta',
+  Te = 'te',
+  Ka = 'ka',
+  Th = 'th',
+  El = 'el',
+  Hi = 'hi',
+  Uk = 'uk',
+  Sk = 'sk',
+  Cs = 'cs',
 }
 
 export const LanguageAbbreviationMap = {
@@ -99,6 +108,15 @@ export const LanguageAbbreviationMap = {
   [LanguageAbbreviation.Nl]: 'Nederlands',
   [LanguageAbbreviation.Az]: 'Azərbaycanca',
   [LanguageAbbreviation.Uz]: 'O‘zbekcha',
+  [LanguageAbbreviation.Ta]: 'தமிழ்',
+  [LanguageAbbreviation.Te]: 'తెలుగు',
+  [LanguageAbbreviation.Ka]: 'ಕನ್ನಡ',
+  [LanguageAbbreviation.Th]: 'ไทย',
+  [LanguageAbbreviation.El]: 'Ελληνικά',
+  [LanguageAbbreviation.Hi]: 'हिन्दी',
+  [LanguageAbbreviation.Uk]: 'Українська',
+  [LanguageAbbreviation.Sk]: 'Slovenčina',
+  [LanguageAbbreviation.Cs]: 'Čeština',
 };
 
 export const LanguageTranslationMap = {

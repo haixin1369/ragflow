@@ -18,8 +18,59 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RAGFlowNodeType } from '@/interfaces/database/agent';
 import { normalizeOperatorForm } from '@/utils/pipeline-operator';
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FieldErrors } from 'react-hook-form';
 import PipelineOperatorForm from './pipeline-operator-form';
+
+// Node display names come from the pipeline DSL (backend templates and
+// canvas-created nodes) and are frozen in English at creation time. Map the
+// known canonical names (and the raw Operator enum labels) to their locale
+// keys; unknown names render as-is so user renames still work.
+const OperatorNameLocaleKeys: Record<string, string> = {
+  Parser: 'flow.parser',
+  Tokenizer: 'flow.tokenizer',
+  Indexer: 'flow.tokenizer',
+  Extractor: 'flow.extractor',
+  Transformer: 'flow.extractor',
+  Compiler: 'flow.compiler',
+  TokenChunker: 'flow.tokenChunker',
+  TitleChunker: 'flow.titleChunker',
+  GeneralChunker: 'flow.generalChunker',
+  ManualChunker: 'flow.manualChunker',
+  QAChunker: 'flow.qAChunker',
+  TableChunker: 'flow.tableChunker',
+  PageChunker: 'flow.pageChunker',
+  OneChunker: 'flow.oneChunker',
+  'Token Chunker': 'flow.tokenChunker',
+  'Title Chunker': 'flow.titleChunker',
+  'General Chunker': 'flow.generalChunker',
+  'Manual Chunker': 'flow.manualChunker',
+  'QA Chunker': 'flow.qAChunker',
+  'Table Chunker': 'flow.tableChunker',
+  'Page Chunker': 'flow.pageChunker',
+  'One Chunker': 'flow.oneChunker',
+  'Audio Chunker': 'flow.audioChunker',
+  'Picture Chunker': 'flow.pictureChunker',
+  'Presentation Chunker': 'flow.presentationChunker',
+  'Email Chunker': 'flow.emailChunker',
+  AudioChunker: 'flow.audioChunker',
+  PictureChunker: 'flow.pictureChunker',
+  PresentationChunker: 'flow.presentationChunker',
+  EmailChunker: 'flow.emailChunker',
+};
+
+// Trailing "_N" suffixes ("Token Chunker_0") are template-instance markers.
+const useOperatorTabLabel = () => {
+  const { t } = useTranslation();
+  return useCallback(
+    (name: string) => {
+      const canonical = name.replace(/_\d+$/, '').trim();
+      const key = OperatorNameLocaleKeys[canonical];
+      return key ? t(key, { defaultValue: canonical }) : canonical;
+    },
+    [t],
+  );
+};
 
 type PipelineOperatorTabsProps = {
   nodes: RAGFlowNodeType[];
@@ -49,6 +100,7 @@ const PipelineOperatorTabs = ({
   operatorFormErrors,
   fixedFileFormats,
 }: PipelineOperatorTabsProps) => {
+  const getTabLabel = useOperatorTabLabel();
   const getOperatorId = useCallback((node: RAGFlowNodeType) => {
     return (
       (node.data as Record<string, any>)?.operatorId || node.data?.label || ''
@@ -96,7 +148,7 @@ const PipelineOperatorTabs = ({
           const tabValue = getTabValue(node, index);
           return (
             <TabsTrigger key={tabValue} value={tabValue}>
-              {node.data?.name || node.data?.label || tabValue}
+              {getTabLabel(node.data?.name || node.data?.label || tabValue)}
             </TabsTrigger>
           );
         })}

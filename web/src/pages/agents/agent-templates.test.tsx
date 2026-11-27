@@ -51,8 +51,8 @@ function makeTemplate(id: string, canvasType: string, canvasCategory?: string) {
     update_date: '',
     update_time: 0,
     dsl: { graph: { nodes: [], edges: [] }, components: {}, history: [] },
-    title: { en: id, zh: id, de: id },
-    description: { en: `${id} description`, zh: '', de: '' },
+    title: { en: id, zh: id },
+    description: { en: `${id} description`, zh: '' },
   };
 }
 

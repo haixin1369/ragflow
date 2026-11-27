@@ -150,12 +150,10 @@ export interface IFlowTemplate {
   description: {
     en: string;
     zh: string;
-    de: string;
   };
   title: {
     en: string;
     zh: string;
-    de: string;
   };
 }
 

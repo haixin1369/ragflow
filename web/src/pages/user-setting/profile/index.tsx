@@ -226,9 +226,6 @@ const ProfilePage: FC = () => {
             <div className="text-sm text-text-primary flex-1 rounded-md py-1.5 ">
               {profile.email}
             </div>
-            <span className="text-text-secondary text-xs">
-              {t('emailDescription')}
-            </span>
           </div>
         </div>
 

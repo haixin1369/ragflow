@@ -10,11 +10,12 @@ import {
 } from '@/components/ui/card';
 
 import WhatIsThis from '@/components/what-is-this';
-import { RunningStatusMap, RunningStatusOld } from '@/constants/knowledge';
+import { RunningStatusOld } from '@/constants/knowledge';
 import { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router';
 import { RunningStatus } from '../dataset/constant';
+import { getRunningStatusLabel } from '@/utils/ingestion-message';
 import { DatasetPageFrame } from '../components/dataset-page-frame';
 import { LogTabs } from './dataset-common';
 import DataSourceLogsTable from './data-source-logs-table';
@@ -146,11 +147,9 @@ const FileLogsPage: FC = () => {
         list: Object.values(RunningStatusOld)
           .filter((value) => value !== RunningStatusOld.UNSTART)
           .map((value) => {
-            // const value = key as RunningStatus;
             return {
               id: value,
-              // label: RunningStatusMap[value].label,
-              label: RunningStatusMap[value],
+              label: getRunningStatusLabel(t, value),
             };
           }),
       },
@@ -185,12 +184,15 @@ const FileLogsPage: FC = () => {
         return {
           ...item,
           status: item.operation_status as RunningStatus,
-          statusName: RunningStatusMap[item.operation_status as RunningStatus],
+          statusName: getRunningStatusLabel(
+            t,
+            item.operation_status as RunningStatus,
+          ),
         } as unknown as IFileLogItem & DocumentLog;
       });
     }
     return [];
-  }, [tableOriginData]);
+  }, [t, tableOriginData]);
 
   const changeActiveLogs = (active: (typeof LogTabs)[keyof typeof LogTabs]) => {
     setFilterValue({});

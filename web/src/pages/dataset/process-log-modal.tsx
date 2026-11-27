@@ -6,7 +6,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { RunningStatusMap } from '@/constants/knowledge';
 import { useTranslate } from '@/hooks/common-hooks';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +13,10 @@ import reactStringReplace from 'react-string-replace';
 import { RunningStatus } from './dataset/constant';
 import { IngestionEventItem } from '@/interfaces/database/ingestion';
 import { formatTime } from '@/utils/date';
+import {
+  getRunningStatusLabel,
+  translateIngestionMessage,
+} from '@/utils/ingestion-message';
 export interface ILogInfo {
   fileType?: string;
   uploadedBy?: string;
@@ -125,7 +128,7 @@ const ProcessLogModal: React.FC<ProcessLogModalProps> = ({
   const eventCount = logInfo.events?.length ?? 0;
   const missingStorageFileHint = hasMissingStorageFile && (
     <div className="text-state-error font-medium">
-      File not found in object storage.
+      {t('fileNotFoundInStorage')}
     </div>
   );
   useEffect(() => {
@@ -184,7 +187,7 @@ const ProcessLogModal: React.FC<ProcessLogModalProps> = ({
                       >
                         {logInfo.isLoadingPreviousEvents && (
                           <div className="text-text-secondary text-xs mb-1">
-                            Loading earlier events…
+                            {t('loadingEarlierEvents')}
                           </div>
                         )}
                         {logInfo.events?.map((event) => {
@@ -206,7 +209,9 @@ const ProcessLogModal: React.FC<ProcessLogModalProps> = ({
                                   {time}
                                 </span>
                               )}
-                              {replaceText(event.message)}
+                              {replaceText(
+                                translateIngestionMessage(event.message),
+                              )}
                             </div>
                           );
                         })}
@@ -224,7 +229,7 @@ const ProcessLogModal: React.FC<ProcessLogModalProps> = ({
                     label={t(key)}
                     value={
                       <div className="w-full  whitespace-pre-line text-wrap bg-bg-card rounded-lg h-fit max-h-[350px] overflow-y-auto scrollbar-auto p-2.5">
-                        {replaceText(logInfo.details)}
+                        {replaceText(translateIngestionMessage(logInfo.details))}
                         {eventCount === 0 && missingStorageFileHint}
                       </div>
                     }
@@ -241,7 +246,10 @@ const ProcessLogModal: React.FC<ProcessLogModalProps> = ({
                   <div className="mt-1">
                     <FileStatusBadge
                       status={logInfo.status as RunningStatus}
-                      name={RunningStatusMap[logInfo.status as RunningStatus]}
+                      name={getRunningStatusLabel(
+                        tc,
+                        logInfo.status as RunningStatus,
+                      )}
                     />
                   </div>
                 </div>

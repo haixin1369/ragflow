@@ -20,7 +20,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { WebSearchFormField } from '@/components/web-search-form-field';
 import { useFetchAgenticRagConfig } from '@/hooks/use-chat-request';
 import { prefixName } from '@/utils/form';
 import { getDirAttribute } from '@/utils/text-direction';
@@ -79,7 +78,6 @@ export function ChatPromptEngine({
           label={t('chat.tts')}
           tooltip={t('chat.ttsTip')}
         ></SwitchFormField>
-        <WebSearchFormField prefix={prefix} />
         <MetadataFilter></MetadataFilter>
 
         <Collapse

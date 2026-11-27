@@ -1,6 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { IDocumentInfo } from '@/interfaces/database/document';
 import { formatDate } from '@/utils/date';
+import {
+  getRunningStatusLabel,
+  translateIngestionMessage,
+} from '@/utils/ingestion-message';
 import { useTranslation } from 'react-i18next';
 import reactStringReplace from 'react-string-replace';
 import { RunningStatus, RunningStatusMap } from './constant';
@@ -25,7 +29,7 @@ export const PopoverContent = ({ record }: IProps) => {
   const { t } = useTranslation();
   // Go derives state from ingestion_status; Python reads the legacy run.
   const run = getDocumentRunningStatus(record);
-  const label = t(`knowledgeDetails.runningStatus${run}`);
+  const label = getRunningStatusLabel(t, run);
 
   const replaceText = (text: string) => {
     // Remove duplicate \n
@@ -60,7 +64,9 @@ export const PopoverContent = ({ record }: IProps) => {
     {
       key: 'progress_msg',
       label: t('knowledgeDetails.progressMsg'),
-      children: replaceText(getDocumentProgressMessage(record).trim()),
+      children: replaceText(
+        translateIngestionMessage(getDocumentProgressMessage(record).trim()),
+      ),
     },
   ];
 

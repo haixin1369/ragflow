@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
-import { CrossLanguageFormField } from '@/components/cross-language-form-field';
 import { FormContainer } from '@/components/form-container';
 import { RerankCandidatesCountFormField } from '@/components/rerank-candidates-count-item';
 import {
@@ -114,9 +113,6 @@ export default function TestingForm({
             <RerankFormFields
               resourceTenantId={resourceTenantId}
             ></RerankFormFields>
-            <CrossLanguageFormField
-              name={'cross_languages'}
-            ></CrossLanguageFormField>
             <MetadataFilter prefix=""></MetadataFilter>
             <RerankCandidatesCountFormField></RerankCandidatesCountFormField>
             <TopSelectFormItem></TopSelectFormItem>

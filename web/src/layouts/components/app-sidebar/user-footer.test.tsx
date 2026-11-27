@@ -24,10 +24,6 @@ jest.mock('@/ee/layouts/components/header-enterprise', () => ({
   EnterpriseSidebarTenantSwitcher: () => null,
 }));
 
-jest.mock('@/hooks/logic-hooks', () => ({
-  useChangeLanguage: () => jest.fn(),
-}));
-
 jest.mock('@/hooks/use-login-request', () => ({
   useLogout: () => ({ logout: jest.fn() }),
 }));
@@ -46,10 +42,6 @@ jest.mock('@/hooks/use-user-setting-request', () => ({
     },
   }),
   useListTenant: () => ({ data: [] }),
-}));
-
-jest.mock('@/locales/config', () => ({
-  supportedLanguages: [],
 }));
 
 jest.mock('./use-sidebar-collapse', () => ({

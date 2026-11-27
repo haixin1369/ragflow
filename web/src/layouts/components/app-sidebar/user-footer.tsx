@@ -7,9 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ThemeEnum } from '@/constants/common';
@@ -18,17 +15,14 @@ import {
   EnterpriseHeaderTicketsLink,
   EnterpriseSidebarTenantSwitcher,
 } from '@/ee/layouts/components/header-enterprise';
-import { useChangeLanguage } from '@/hooks/logic-hooks';
 import { useNavigatePage } from '@/hooks/logic-hooks/navigate-hooks';
 import { useLogout } from '@/hooks/use-login-request';
 import { useFetchUserInfo, useListTenant } from '@/hooks/use-user-setting-request';
 import { cn } from '@/lib/utils';
-import { supportedLanguages } from '@/locales/config';
 import { TenantMembershipStatus } from '@/pages/user-setting/constants';
 import {
   LucideChevronLeft,
   LucideCircleHelp,
-  LucideLanguages,
   LucideLogOut,
   LucideMoon,
   LucideSun,
@@ -46,14 +40,13 @@ export function UserFooter() {
   const { t } = useTranslation();
   const { navigateToUserSettingProfile, navigateToUserSettingApi } =
     useNavigatePage();
-  const changeLanguage = useChangeLanguage();
   const { logout } = useLogout();
   const { theme, setTheme } = useTheme();
   const isDark = useIsDarkTheme();
   const { collapsed, toggleCollapsed } = useSidebarCollapse();
 
   const {
-    data: { language = 'en', avatar, nickname, email },
+    data: { avatar, nickname, email },
   } = useFetchUserInfo();
 
   const { data: tenantData } = useListTenant();
@@ -65,13 +58,6 @@ export function UserFooter() {
   const toggleTheme = useCallback(() => {
     setTheme(theme === ThemeEnum.Dark ? ThemeEnum.Light : ThemeEnum.Dark);
   }, [setTheme, theme]);
-
-  const handleLanguageChange = useCallback(
-    (code: string) => () => {
-      changeLanguage(code);
-    },
-    [changeLanguage],
-  );
 
   const openHelp = useCallback(() => {
     window.open(HelpUrl, '_blank', 'noreferrer,noopener');
@@ -157,27 +143,6 @@ export function UserFooter() {
               <ThemeIcon />
               {t('sidebar.theme')}
             </DropdownMenuItem>
-
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <LucideLanguages />
-                {t('sidebar.language')}
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                {supportedLanguages.map((x) => (
-                  <DropdownMenuItem
-                    key={x.code}
-                    onClick={handleLanguageChange(x.code)}
-                  >
-                    <span
-                      className={cn(x.code === language && 'font-semibold')}
-                    >
-                      {x.displayName}
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
 
             <DropdownMenuSeparator />
 

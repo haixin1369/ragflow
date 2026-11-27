@@ -47,7 +47,7 @@ export function TestingResult({
     return [
       {
         field: 'doc_ids',
-        label: 'File',
+        label: t('knowledgeDetails.file'),
         list:
           data.doc_aggs?.map((x) => ({
             id: x.doc_id,

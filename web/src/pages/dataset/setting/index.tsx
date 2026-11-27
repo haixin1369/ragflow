@@ -71,7 +71,7 @@ export default function DatasetSetting() {
       name: '',
       description: '',
       avatar: null,
-      language: 'English',
+      language: 'Chinese',
       embedding_model: '',
       pagerank: 0,
       connectors: [],

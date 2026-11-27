@@ -222,10 +222,12 @@ export function useDatasetTableColumns({
                 });
               }}
             >
-              {length + ' fields'}
+              {t('metadata.fieldsCount', { count: length })}
             </Button>
           ) : (
-            <span className="text-text-secondary">{length + ' fields'}</span>
+            <span className="text-text-secondary">
+              {t('metadata.fieldsCount', { count: length })}
+            </span>
           );
         },
       },

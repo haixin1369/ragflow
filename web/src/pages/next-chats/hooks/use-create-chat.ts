@@ -19,7 +19,7 @@ export const useCreateChatDialog = () => {
     () => ({
       name: '',
       icon: '',
-      language: 'English',
+      language: 'Chinese',
       description: '',
       dataset_ids: [],
       prompt_config: {

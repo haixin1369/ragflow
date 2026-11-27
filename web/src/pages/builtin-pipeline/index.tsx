@@ -17,7 +17,13 @@ export default function BuiltinPipelinePage() {
   const { t } = useTranslation();
   const { loading } = useFetchBuiltinPipelineDataOnMount();
   const { data } = useFetchBuiltinPipelines();
-  const title = data.canvas.find((x) => x.id === id)?.title ?? '';
+  const builtin = data.canvas.find((x) => x.id === id);
+  // Backend serves the English title; display the localized parser name.
+  const title = builtin
+    ? t(`knowledgeConfiguration.parserNames.${builtin.id}`, {
+        defaultValue: builtin.title,
+      })
+    : '';
 
   return (
     <section className="h-full" data-testid="builtin-pipeline-page">

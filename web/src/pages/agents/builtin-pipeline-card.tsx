@@ -27,6 +27,16 @@ export function BuiltinPipelineCard({
   const { navigateToBuiltinPipeline } = useNavigatePage();
   const { setCollapsed: setPrimarySidebarCollapsed } = useSidebarCollapse();
 
+  // Backend registry serves English title/description; localize for display
+  // while keeping the raw English title as the copy name payload.
+  const title = t(`knowledgeConfiguration.parserNames.${data.id}`, {
+    defaultValue: data.title ?? '',
+  });
+  const description = t(
+    `knowledgeConfiguration.builtinPipelineDescriptions.${data.id}`,
+    { defaultValue: data.description ?? '' },
+  );
+
   const handleCardClick = useCallback(() => {
     setPrimarySidebarCollapsed(true);
     navigateToBuiltinPipeline(data.id)();
@@ -41,8 +51,8 @@ export function BuiltinPipelineCard({
     <HomeCard
       testId="builtin-pipeline-card"
       data={{
-        name: data.title ?? '',
-        description: data.description || '',
+        name: title,
+        description,
       }}
       // Read-only: clicking opens the built-in pipeline on the view-only
       // canvas; the template itself can never be edited.

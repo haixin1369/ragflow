@@ -55,13 +55,10 @@ import {
 import { Trash2, UserPlus } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useKbManagePermission } from './hooks/use-kb-manage-permission';
-import { OrgMemberSelector } from './org-member-selector';
-
-interface MemberManagementDialogProps {
-  datasetId: string;
-  hideModal: () => void;
-}
+import { useParams } from 'react-router';
+import { DatasetPageFrame } from '../components/dataset-page-frame';
+import { useKbManagePermission } from '../hooks/use-kb-manage-permission';
+import { OrgMemberSelector } from '../org-member-selector';
 
 const PermissionOptions = [
   DatasetMemberPermission.View,
@@ -107,11 +104,10 @@ function MemberPermissionSelect({
   );
 }
 
-export function MemberManagementDialog({
-  datasetId,
-  hideModal,
-}: MemberManagementDialogProps) {
+export default function MemberManagement() {
   const { t } = useTranslation();
+  const { id } = useParams();
+  const datasetId = id ?? '';
   const { isSuperuser } = useKbManagePermission();
   const { data: members = [], isPending: membersLoading } =
     useFetchDatasetMembers(datasetId);
@@ -124,15 +120,6 @@ export function MemberManagementDialog({
   const [transferTargetId, setTransferTargetId] = useState('');
   const [transferConfirmVisible, setTransferConfirmVisible] = useState(false);
   const [orgSelectorVisible, setOrgSelectorVisible] = useState(false);
-
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (!open) {
-        hideModal();
-      }
-    },
-    [hideModal],
-  );
 
   const showOrgSelector = useCallback(() => {
     setOrgSelectorVisible(true);
@@ -201,161 +188,154 @@ export function MemberManagementDialog({
     transferMutation.mutate(transferTargetId, {
       onSuccess: () => {
         setTransferConfirmVisible(false);
-        hideModal();
+        setTransferTargetId('');
       },
     });
-  }, [transferTargetId, transferMutation, hideModal]);
+  }, [transferTargetId, transferMutation]);
 
   const transferTarget = members.find(
     (member) => member.user_id === transferTargetId,
   );
 
   return (
-    <>
-      <Dialog open onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[640px]">
-          <DialogHeader className="min-w-0">
-            <DialogTitle className="truncate">
-              {t('kbMember.memberManagement')}
-            </DialogTitle>
-          </DialogHeader>
+    <DatasetPageFrame className="px-5 pt-5">
+      <header className="shrink-0 flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold truncate">
+          {t('kbMember.memberManagement')}
+        </h1>
+        <Button className="shrink-0" onClick={showOrgSelector}>
+          <UserPlus className="size-[1em]" />
+          {t('kbMember.addMember')}
+        </Button>
+      </header>
 
+      <div className="flex-1 min-h-0 overflow-y-auto mt-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-1/4">
+                {t('enterprise.nickname')}
+              </TableHead>
+              <TableHead className="w-2/5">{t('enterprise.email')}</TableHead>
+              <TableHead className="w-1/5">
+                {t('kbMember.permission')}
+              </TableHead>
+              <TableHead className="w-16 text-right">
+                {t('enterprise.actions')}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {membersLoading && !members.length ? (
+              <TableRow>
+                <TableCell colSpan={4}>
+                  <div className="flex justify-center py-6">
+                    <Spin size="large" />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : members.length ? (
+              members.map((member) => (
+                <TableRow key={member.user_id}>
+                  <TableCell>
+                    <span
+                      className="block max-w-32 truncate"
+                      title={member.nickname}
+                    >
+                      {member.nickname}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className="block max-w-52 truncate"
+                      title={member.email}
+                    >
+                      {member.email}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <MemberPermissionSelect
+                      member={member}
+                      disabled={setMemberMutation.isPending}
+                      onChange={(permission) =>
+                        handleMemberPermissionChange(member, permission)
+                      }
+                    />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <ConfirmDeleteDialog
+                      title={t('kbMember.removeMemberTitle')}
+                      content={{
+                        title: member.email,
+                        node: (
+                          <div className="text-sm text-text-secondary">
+                            {t('kbMember.removeMemberWarn')}
+                          </div>
+                        ),
+                      }}
+                      onOk={() => handleRemoveMember(member)}
+                    >
+                      <Button
+                        variant="delete"
+                        size="icon-sm"
+                        disabled={removeMemberMutation.isPending}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </ConfirmDeleteDialog>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="text-center text-text-secondary py-6"
+                >
+                  {t('kbMember.memberEmpty')}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {isSuperuser && (
+        <div className="shrink-0 mt-4 flex flex-col gap-2 border-t-0.5 border-border-button pt-4">
+          <span className="text-sm text-text-secondary">
+            {t('kbMember.transferOwnership')}
+          </span>
           <div className="flex items-center gap-2">
-            <Button className="shrink-0" onClick={showOrgSelector}>
-              <UserPlus className="size-[1em]" />
-              {t('kbMember.addMember')}
+            <Select
+              value={transferTargetId}
+              onValueChange={handleTransferTargetChange}
+            >
+              <SelectTrigger className="flex-1 min-w-0">
+                <SelectValue
+                  placeholder={t('kbMember.transferTargetPlaceholder')}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {members.map((member) => (
+                  <SelectItem key={member.user_id} value={member.user_id}>
+                    <span className="block max-w-56 truncate">
+                      {member.nickname}（{member.email}）
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              className="shrink-0"
+              loading={transferMutation.isPending}
+              disabled={!transferTargetId}
+              onClick={showTransferConfirm}
+            >
+              {t('kbMember.transferOwnership')}
             </Button>
           </div>
-
-          <div className="max-h-80 overflow-y-auto min-h-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-1/4">
-                    {t('enterprise.nickname')}
-                  </TableHead>
-                  <TableHead className="w-2/5">
-                    {t('enterprise.email')}
-                  </TableHead>
-                  <TableHead className="w-1/5">
-                    {t('kbMember.permission')}
-                  </TableHead>
-                  <TableHead className="w-16 text-right">
-                    {t('enterprise.actions')}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {membersLoading && !members.length ? (
-                  <TableRow>
-                    <TableCell colSpan={4}>
-                      <div className="flex justify-center py-6">
-                        <Spin size="large" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : members.length ? (
-                  members.map((member) => (
-                    <TableRow key={member.user_id}>
-                      <TableCell>
-                        <span
-                          className="block max-w-32 truncate"
-                          title={member.nickname}
-                        >
-                          {member.nickname}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className="block max-w-52 truncate"
-                          title={member.email}
-                        >
-                          {member.email}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <MemberPermissionSelect
-                          member={member}
-                          disabled={setMemberMutation.isPending}
-                          onChange={(permission) =>
-                            handleMemberPermissionChange(member, permission)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <ConfirmDeleteDialog
-                          title={t('kbMember.removeMemberTitle')}
-                          content={{
-                            title: member.email,
-                            node: (
-                              <div className="text-sm text-text-secondary">
-                                {t('kbMember.removeMemberWarn')}
-                              </div>
-                            ),
-                          }}
-                          onOk={() => handleRemoveMember(member)}
-                        >
-                          <Button
-                            variant="delete"
-                            size="icon-sm"
-                            disabled={removeMemberMutation.isPending}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </ConfirmDeleteDialog>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="text-center text-text-secondary py-6"
-                    >
-                      {t('kbMember.memberEmpty')}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {isSuperuser && (
-            <div className="flex items-center gap-2 border-t-0.5 border-border-button pt-4">
-              <span className="text-sm text-text-secondary shrink-0">
-                {t('kbMember.transferOwnership')}
-              </span>
-              <Select
-                value={transferTargetId}
-                onValueChange={handleTransferTargetChange}
-              >
-                <SelectTrigger className="flex-1 min-w-0">
-                  <SelectValue
-                    placeholder={t('kbMember.transferTargetPlaceholder')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.map((member) => (
-                    <SelectItem key={member.user_id} value={member.user_id}>
-                      <span className="block max-w-56 truncate">
-                        {member.nickname}（{member.email}）
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                className="shrink-0"
-                loading={transferMutation.isPending}
-                disabled={!transferTargetId}
-                onClick={showTransferConfirm}
-              >
-                {t('kbMember.transferOwnership')}
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {transferConfirmVisible && (
         <Dialog open onOpenChange={hideTransferConfirm}>
@@ -395,6 +375,6 @@ export function MemberManagementDialog({
           loading={batchMutation.isPending}
         />
       )}
-    </>
+    </DatasetPageFrame>
   );
 }

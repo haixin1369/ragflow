@@ -17,9 +17,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ProcessingTypeMap, RunningStatusMap } from '@/constants/knowledge';
+import { ProcessingTypeMap } from '@/constants/knowledge';
 import { useTranslate } from '@/hooks/common-hooks';
 import { cn } from '@/lib/utils';
+import { getRunningStatusLabel } from '@/utils/ingestion-message';
 import { useDataSourceInfo } from '@/pages/user-setting/data-source/constant';
 import { useGetKnowledgeSearchParams } from '@/hooks/route-hook';
 import { IDataSourceInfoMap } from '@/pages/user-setting/data-source/interface';
@@ -55,6 +56,7 @@ import { DocumentLog, FileLogsTableProps, IFileLogItem } from './interface';
 
 export const getFileLogsTableColumns = (
   t: TFunction<'translation', string>,
+  tRoot: TFunction<'translation', string>,
   showLog: (row: Row<IFileLogItem & DocumentLog>, active: LogTabs) => void,
   dataSourceInfo: IDataSourceInfoMap,
 ) => {
@@ -182,7 +184,11 @@ export const getFileLogsTableColumns = (
       accessorKey: 'task_type',
       header: t('task'),
       cell: ({ row }) => (
-        <div className="text-text-primary">{row.original.task_type}</div>
+        <div className="text-text-primary">
+          {t(`taskTypes.${row.original.task_type}`, {
+            defaultValue: row.original.task_type,
+          })}
+        </div>
       ),
     },
     {
@@ -191,9 +197,7 @@ export const getFileLogsTableColumns = (
       cell: ({ row }) => (
         <FileStatusBadge
           status={row.original.operation_status as RunningStatus}
-          name={
-            RunningStatusMap[row.original.operation_status as RunningStatus]
-          }
+          name={getRunningStatusLabel(tRoot, row.original.operation_status)}
         />
       ),
     },
@@ -300,9 +304,7 @@ export const getDatasetLogsTableColumns = (
       cell: ({ row }) => (
         <FileStatusBadge
           status={row.original.operation_status as RunningStatus}
-          name={
-            RunningStatusMap[row.original.operation_status as RunningStatus]
-          }
+          name={getRunningStatusLabel(tRoot, row.original.operation_status)}
         />
       ),
     },
@@ -398,7 +400,7 @@ const FileLogsTable: FC<FileLogsTableProps> = ({
   const { dataSourceInfo } = useDataSourceInfo();
   const columns = useMemo(() => {
     return active === LogTabs.FILE_LOGS
-      ? getFileLogsTableColumns(t, showLog, dataSourceInfo)
+      ? getFileLogsTableColumns(t, tRoot, showLog, dataSourceInfo)
       : getDatasetLogsTableColumns(t, tRoot, showLog);
   }, [active, dataSourceInfo, showLog, t, tRoot]);
 

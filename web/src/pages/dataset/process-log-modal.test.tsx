@@ -16,7 +16,8 @@ import { formatTime } from '@/utils/date';
 const eventTs = '2026-09-18T10:20:30+08:00';
 const MissingFileMessage =
   'Parser: storage.Get("source-bucket", "source-file.txt"): The specified key does not exist.';
-const MissingFileHint = 'File not found in object storage.';
+// The mocked t() echoes the key; the modal renders the hint via t('fileNotFoundInStorage').
+const MissingFileHint = 'fileNotFoundInStorage';
 
 type LogEvent = {
   id: number;
@@ -101,7 +102,8 @@ describe('ProcessLogModal ingestion events', () => {
     expect(
       screen.queryByTestId('ingestion-event-time'),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('Tokenizer Started')).toBeInTheDocument();
+    // Event messages are translated for display ("Tokenizer Started" -> 向量化开始).
+    expect(screen.getByText('向量化开始')).toBeInTheDocument();
   });
 
   it('shows one missing-file hint inside either log source', () => {
@@ -118,9 +120,11 @@ describe('ProcessLogModal ingestion events', () => {
     );
 
     const hint = screen.getByText(MissingFileHint);
-    messages.forEach((message) => {
-      expect(screen.getByText(message)).toBeInTheDocument();
-    });
+    // The "Task failed: ..." event line is translated for display.
+    expect(screen.getByText(MissingFileMessage)).toBeInTheDocument();
+    expect(
+      screen.getByText(`任务失败：${MissingFileMessage}`),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(MissingFileMessage).closest('.overflow-y-auto')
         ?.lastElementChild,

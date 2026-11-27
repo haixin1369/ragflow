@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -20,7 +20,6 @@ import { Routes } from '@/routes';
 import { IDataset } from '@/interfaces/database/dataset';
 import { useParams } from 'react-router';
 import { useKbManagePermission } from '../hooks/use-kb-manage-permission';
-import { MemberManagementDialog } from '../member-management-dialog';
 
 type PropType = {
   dataset: IDataset;
@@ -34,15 +33,6 @@ export function SideBar({ dataset: data, onCollapse, onMenuSelect }: PropType) {
   const { t } = useTranslation();
   const extraItems = useDatasetSidebarExtraItems();
   const { canManageMembers } = useKbManagePermission();
-  const [memberDialogVisible, setMemberDialogVisible] = useState(false);
-
-  const showMemberDialog = useCallback(() => {
-    setMemberDialogVisible(true);
-  }, []);
-
-  const hideMemberDialog = useCallback(() => {
-    setMemberDialogVisible(false);
-  }, []);
 
   const items = useMemo(() => {
     const list = [
@@ -116,10 +106,16 @@ export function SideBar({ dataset: data, onCollapse, onMenuSelect }: PropType) {
           <ul className="space-y-5 pt-5">
             <li>
               <Button
+                asLink
                 block
                 variant="ghost"
-                className="justify-start gap-2.5 px-3 relative h-10 text-base"
-                onClick={showMemberDialog}
+                className={cn(
+                  'justify-start gap-2.5 px-3 relative h-10 text-base',
+                  '/' + pathName === Routes.DatasetMembers &&
+                    'bg-bg-card text-text-primary',
+                )}
+                to={`${Routes.DatasetBase}${Routes.DatasetMembers}/${id}`}
+                onClick={onMenuSelect}
               >
                 <LucideUsers className="size-[1em]" />
                 <span>{t('kbMember.memberManagement')}</span>
@@ -128,13 +124,6 @@ export function SideBar({ dataset: data, onCollapse, onMenuSelect }: PropType) {
           </ul>
         )}
       </nav>
-
-      {memberDialogVisible && (
-        <MemberManagementDialog
-          datasetId={id ?? ''}
-          hideModal={hideMemberDialog}
-        ></MemberManagementDialog>
-      )}
     </aside>
   );
 }

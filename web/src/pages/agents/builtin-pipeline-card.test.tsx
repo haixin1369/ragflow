@@ -4,7 +4,8 @@ import { BuiltinPipelineCard } from './builtin-pipeline-card';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => (key === 'common.copy' ? 'Copy' : key),
+    t: (key: string, options?: { defaultValue?: string }) =>
+      key === 'common.copy' ? 'Copy' : (options?.defaultValue ?? key),
   }),
 }));
 

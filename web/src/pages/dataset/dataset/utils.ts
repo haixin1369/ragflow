@@ -88,25 +88,34 @@ export const getDocumentProgressMessage = (
 
 /**
  * Parser label for a document. A built-in pipeline uses an edition-provided
- * display name when available, then capitalizes the parser id's first letter
- * ("general" -> "General"); a canvas pipeline
- * keeps the user-chosen title (falling back to the raw id) untouched. "naive"
- * is the legacy alias of the built-in general pipeline. The parse column shows
- * this for built-in parsers, and as the fallback for pipeline documents until
- * their pipeline version resolves (see useDocumentPipelineVersion).
+ * display name when available, then the localized parser name
+ * (knowledgeConfiguration.parserNames.<id>, falling back to the capitalized
+ * parser id); a canvas pipeline keeps the user-chosen title (falling back to
+ * the raw id) untouched. "naive" is the legacy alias of the built-in general
+ * pipeline. The parse column shows this for built-in parsers, and as the
+ * fallback for pipeline documents until their pipeline version resolves (see
+ * useDocumentPipelineVersion). Pass `t` to localize; without it the label
+ * stays the capitalized parser id.
  */
 export const getDocumentParserLabel = (
   document: Pick<
     IDocumentInfo,
     'pipeline_id' | 'pipeline_name' | 'chunk_method'
   >,
+  t?: (key: string, options?: Record<string, unknown>) => string,
 ) => {
   const { pipeline_id, pipeline_name, chunk_method } = document;
   if (pipeline_id) {
     return pipeline_name || pipeline_id;
   }
   const parserId = chunk_method === 'naive' ? 'general' : chunk_method;
-  return getEnterpriseDocumentParserLabel(parserId) ?? upperFirst(parserId);
+  const fallback = getEnterpriseDocumentParserLabel(parserId) ?? upperFirst(parserId);
+  if (!t) {
+    return fallback;
+  }
+  return t(`knowledgeConfiguration.parserNames.${parserId}`, {
+    defaultValue: fallback,
+  });
 };
 
 /**

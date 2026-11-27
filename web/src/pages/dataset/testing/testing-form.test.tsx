@@ -30,10 +30,7 @@ jest.mock('react-router', () => ({
 
 jest.mock('../contexts/knowledge-base-context', () => ({
   useOwnerTenantId: () => 'tenant-1',
-}));
-
-jest.mock('@/components/cross-language-form-field', () => ({
-  CrossLanguageFormField: () => null,
+  useResourceTenantId: () => 'tenant-1',
 }));
 
 jest.mock('@/components/form-container', () => ({

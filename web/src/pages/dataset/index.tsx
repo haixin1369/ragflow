@@ -30,6 +30,9 @@ export default function DatasetWrapper() {
   const isDatasetTesting = Boolean(
     useMatch(`${Routes.DatasetBase}${Routes.DatasetTesting}/:id`),
   );
+  const isDatasetMembers = Boolean(
+    useMatch(`${Routes.DatasetBase}${Routes.DatasetMembers}/:id`),
+  );
 
   useEffect(() => {
     setCollapsed(false);
@@ -76,7 +79,10 @@ export default function DatasetWrapper() {
               <div
                 className={cn(
                   'min-h-0 min-w-0',
-                  isDatasetOverview || isDatasetFiles || isDatasetTesting
+                  isDatasetOverview ||
+                  isDatasetFiles ||
+                  isDatasetTesting ||
+                  isDatasetMembers
                     ? 'pt-2.5'
                     : 'pt-3',
                 )}

@@ -78,7 +78,9 @@ function renderUploadGapLine(
     ? t('knowledgeDetails.fileTypeUnsupportedAutoSwitch', {
         name: gap.name,
         fileType,
-        parser: BuiltinSwitchTargetLabels[gap.autoSwitchTarget],
+        parser: t(`knowledgeConfiguration.parserNames.${gap.autoSwitchTarget}`, {
+          defaultValue: BuiltinSwitchTargetLabels[gap.autoSwitchTarget],
+        }),
       })
     : t('knowledgeDetails.fileTypeUnsupportedManualSwitch', {
         name: gap.name,

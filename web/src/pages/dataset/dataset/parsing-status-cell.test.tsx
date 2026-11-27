@@ -2,7 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import React, { StrictMode } from 'react';
 
 jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, options?: { defaultValue?: string }) =>
+      options?.defaultValue ?? key,
+  }),
 }));
 
 jest.mock('./reparse-dialog', () => ({

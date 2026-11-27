@@ -75,7 +75,7 @@ export function ParseDropdownButton({
   canManage?: boolean;
 } & UseChangeDocumentParserShowType) {
   const { t } = useTranslation();
-  const parserLabel = getDocumentParserLabel(record);
+  const parserLabel = getDocumentParserLabel(record, t);
   const { version, missing: parserMissing } =
     useDocumentPipelineVersion(record);
   const isPipeline = !!record.pipeline_id;
